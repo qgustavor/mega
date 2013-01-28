@@ -1,0 +1,16 @@
+{
+  "name": "mega",
+  "version": "0.0.1",
+  "description": "mega storage upload",
+  "main": "lib/mega.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tonistiigi/mega.git"
+  },
+  "keywords": [
+    "mega",
+    "storage"
+  ],
+  "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
+  "license": "MIT"
+}
