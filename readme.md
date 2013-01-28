@@ -42,4 +42,8 @@ storage.close()
 
 mega.file(link, key, [cb])
 
+// Low level duplex streams
+mega.encrypt(key) // 192bit
+mega.decrypt(key) // 256bit
+
 ```
