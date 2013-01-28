@@ -12,5 +12,8 @@
     "storage"
   ],
   "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "request": "~2.12.0"
+  }
 }
