@@ -9,8 +9,15 @@ var argv = require('optimist')
 var storage = mega(argv._[0], argv._[1])
 
 storage.on('ready', function() {
-  storage.upload(path.basename(argv._[2]), fs.readFileSync(argv._[2]), function(err, file) {
-    console.log('uploaded', file.name, file.size + 'B')
-  })
+  fs.createReadStream(argv._[2]).pipe(
+    storage.upload({
+      name: path.basename(argv._[2]),
+     // size: fs.statSync(argv._[2]).size
+    },
+    fs.readFileSync(argv._[2]),
+    function(err, file) {
+      console.log('Uploaded', file.name, file.size + 'B')
+    })
+  )
 })
 
