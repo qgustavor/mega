@@ -31,7 +31,9 @@ storage.on('ready', function() {
 
 function print(f, indent) {
   indent = indent || ''
-  console.log(indent, f.directory ? '+' : '-', f.name, f.directory ? '' : f.size + 'B', new Date(f.timestamp * 1000))
+  console.log(indent, f.directory ? '+' : '-', f.name,
+    f.directory ? '' : f.size + 'B', new Date(f.timestamp * 1000),
+    '(' + f.nodeId + ')')
   if (f.children) {
     f.children.forEach(function(f) {
       print(f, indent + '  ')
