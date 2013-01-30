@@ -12,11 +12,17 @@ storage.on('ready', function() {
   fs.createReadStream(argv._[2]).pipe(
     storage.upload({
       name: path.basename(argv._[2]),
-     // size: fs.statSync(argv._[2]).size
+  //    size: fs.statSync(argv._[2]).size
     },
-    fs.readFileSync(argv._[2]),
+  //  fs.readFileSync(argv._[2]),
     function(err, file) {
+      if (err) throw err
       console.log('Uploaded', file.name, file.size + 'B')
+
+      file.link(function(err, link) {
+        if (err) throw err
+        console.log('Download from:', link)
+      })
     })
   )
 })
