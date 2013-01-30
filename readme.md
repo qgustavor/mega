@@ -1,49 +1,138 @@
-## Work in progress. Nothing functional.
-
-###Plan
+## Read first
 
 - This is all unofficial and only serves as an educational hack.
-- I only plan to implement part of the API.
-- Official SDK will probably be released in the future.
-- Based on [developer guide](https://mega.co.nz/#developers) and site source.
+- Official SDK will probably be released in the future. You may want to wait.
+- Only part of the API is implemented.
 - Crypto is mostly ported from browser code and isn't optimal. Probably some of it could be done with openssl, [ursa](https://github.com/Obvious/ursa) or [cryptojs](https://github.com/gwjjeff/cryptojs.git) or the algorithms could at least be ported to use Buffer format, but this is no way a priority.
+- Based on [developer guide](https://mega.co.nz/#developers) and site source.
 - If you use it for something make sure you agree with Mega's [Terms of Service](https://mega.co.nz/#terms).
 
 
-###API
+## Installation
+
+```
+npm install git://github.com/tonistiigi/mega.git
+```
 
 ```
 var mega = require('mega')
+```
 
+See examples directory for quick start.
 
-var storage = mega([email], [pass], [cb])
-// user, pass also optional
+## Missing functionality
 
+- No sharing features
+- Server to client requests are not handled.
+- Missing file management: move, mkdir, symlink etc.
+- methods can only be called after ready event.
 
-storage.email
-storage.status = connecting | ready | closed
-// After status = ready
-storage.user
-storage.key
-storage.sid
+## API
 
-storage.on('ready', ...)
-storage.on(<server-to-client-calls>)
+### var storage = mega([email], [password], [readyCallback])
 
-storage.listFiles([root], function(err, files))
-storage.download(name, [cb])
-storage.upload(name, [buffer], [cb])
+Create new connection instance to Mega. If you don't specify email/password then temporary account will be created. Once connection closes for temporary account you cannot access same account again so you need to save a link to file. Temporary accounts regularly get deleted.
 
-file.download([cb])
-file.getName([cb])
-file.getLink([cb])
+**After `readyCallback()` or `ready` event fires storage has following properties:**
 
-storage.close()
+`name` - Account owner name
 
-mega.file(link, key, [cb])
+`key` - Account master key
 
-// Low level duplex streams
-mega.encrypt(key) // 192bit
-mega.decrypt(key) // 256bit
+`rsaPrivateKey` - RSA private Key
+
+`sid` - Current session ID
+
+`files` - Hash of `File` objects by node ID-s.
+
+`root` - `File` object for Cloud Drive main directory
+
+`trash` - `File` object for Rubbish bin
+
+`inbox` - `File` object for Inbox
+
+`mounts` - Array of all top level directories
+
+### storage.upload(options | name, [buffer], [cb])
 
 ```
+fs.createReadStream('myfile.txt').pipe(storage.upload('myfile.txt'))
+```
+
+Upload a file to mega. You can pass in buffer data or just pipe data into it. Callback returns uploaded file object. If you don't specify callback you can listen for `complete` event to get the file handle.
+
+**Supported options:**
+
+`name` - File name *required*
+
+`attributes` - Object of file attributes.
+
+`size` - File size. Note that because Mega's API needs final data length before uploading can start, streaming only fully works if you specify the size of your data. Otherwise it needs to first buffer your data to determine the size.
+
+`target` - Target directory file object or node ID. Defaults to `storage.root`.
+
+
+
+### storage.reload(cb)
+
+Reloads files tree. No need to call this.
+
+### mega.file(url | opt)
+
+```
+var file = mega.file('https://mega....')
+```
+
+Returns file object based on download URL or options. Options can be `downloadId` and `key`.
+
+### File
+
+**Properties:**
+
+`name` - File name
+
+`attributes` - Object of attributes
+
+`size` - File size
+
+`key` - File key(buffer)
+
+`timestamp` - File creation time
+
+`nodeId` - File ID
+
+`downloadId` - Link ID to file. Only if created from link.
+
+`directory` - Boolean if file is directory.
+
+`children` - Array of files for directories.
+
+### file.download([cb])
+
+Read file contents.
+
+```
+file.download().pipe(fs.createWriteStream('myfile.txt'))
+
+file.download(function(err, data) {
+  // data is buffer
+})
+```
+
+### file.link([noKey], cb)
+
+Make download link for a file.
+
+```
+file.link(function(err, url) {
+  // url: https://mega.co.nz/#!downloadId!key
+})
+```
+
+### mega.encrypt([key]) / mega.decrypt(key)
+
+Lower level duplex streams. These could be used if you want to do network traffic and crypto on different time.
+
+Takes in encrypted file data and outputs decrypted data and vice versa. Also does MAC verification / generation.
+
+Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit are for the MAC. You can later read the full key from the `key` property of the stream.
