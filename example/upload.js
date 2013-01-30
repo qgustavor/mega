@@ -2,19 +2,28 @@ var fs = require('fs')
 var path = require('path')
 var mega = require('../lib/mega')
 var argv = require('optimist')
-  .demand(2)
-  .usage('USAGE: node example/list <email> <password> <file>')
+  .demand(1)
+  .usage('USAGE: node example/upload [email] [password] <file>')
   .argv
 
-var storage = mega(argv._[0], argv._[1])
+var email = argv._[0]
+var password = argv._[1]
+var filepath = argv._[2]
+
+if (argv._.length === 1) {
+  email = password = undefined
+  filepath = argv._[0]
+}
+
+var storage = mega(email, password)
 
 storage.on('ready', function() {
-  fs.createReadStream(argv._[2]).pipe(
+  fs.createReadStream(filepath).pipe(
     storage.upload({
-      name: path.basename(argv._[2]),
-  //    size: fs.statSync(argv._[2]).size
+      name: path.basename(filepath),
+  //    size: fs.statSync(filepath).size
     },
-  //  fs.readFileSync(argv._[2]),
+  //  fs.readFileSync(filepath),
     function(err, file) {
       if (err) throw err
       console.log('Uploaded', file.name, file.size + 'B')
