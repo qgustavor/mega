@@ -9,7 +9,7 @@ var argv = require('optimist')
 var storage = mega(argv._[0], argv._[1])
 
 storage.on('ready', function() {
-  storage.root.forEach(function(f) {print(f)})
+  storage.mounts.forEach(function(f) {print(f)})
 
   for (var id in storage.files) {
     var f = storage.files[id]
