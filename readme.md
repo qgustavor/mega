@@ -1,17 +1,16 @@
 ## Read first
 
-- This is all unofficial and only serves as an educational hack.
+- This is all unofficial, based on [developer guide](https://mega.co.nz/#developers) and site source.
 - Official SDK will probably be released in the future. You may want to wait.
 - Only part of the API is implemented.
 - Crypto is mostly ported from browser code and isn't optimal. Probably some of it could be done with openssl, [ursa](https://github.com/Obvious/ursa) or [cryptojs](https://github.com/gwjjeff/cryptojs.git) or the algorithms could at least be ported to use Buffer format, but this is no way a priority.
-- Based on [developer guide](https://mega.co.nz/#developers) and site source.
 - If you use it for something make sure you agree with Mega's [Terms of Service](https://mega.co.nz/#terms).
 
 
 ## Installation
 
 ```
-npm install git://github.com/tonistiigi/mega.git
+npm install mega
 ```
 
 ```
@@ -23,9 +22,8 @@ See examples directory for quick start.
 ## Missing functionality
 
 - No sharing features
-- Server to client requests are not handled.
+- Server to client requests are not parsed.
 - Missing file management: move, mkdir, symlink etc.
-- methods can only be called after ready event.
 
 ## API
 
@@ -59,7 +57,7 @@ Create new connection instance to Mega. If you don't specify email/password then
 fs.createReadStream('myfile.txt').pipe(storage.upload('myfile.txt'))
 ```
 
-Upload a file to mega. You can pass in buffer data or just pipe data into it. Callback returns uploaded file object. If you don't specify callback you can listen for `complete` event to get the file handle.
+Upload a file to Mega. You can pass in buffer data or just pipe data into it. Callback returns uploaded file object. If you don't specify callback you can listen for `complete` event to get the file handle.
 
 **Supported options:**
 
