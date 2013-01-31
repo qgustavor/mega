@@ -17,22 +17,20 @@ if (argv._.length === 1) {
 
 var storage = mega(email, password)
 
-storage.on('ready', function() {
-  fs.createReadStream(filepath).pipe(
-    storage.upload({
-      name: path.basename(filepath),
-  //    size: fs.statSync(filepath).size
-    },
-  //  fs.readFileSync(filepath),
-    function(err, file) {
-      if (err) throw err
-      console.log('Uploaded', file.name, file.size + 'B')
+fs.createReadStream(filepath).pipe(
+  storage.upload({
+    name: path.basename(filepath),
+    size: fs.statSync(filepath).size // removing this causes data buffering.
+  },
+  // fs.readFileSync(filepath),
+  function(err, file) {
+    if (err) throw err
+    console.log('Uploaded', file.name, file.size + 'B')
 
-      file.link(function(err, link) {
-        if (err) throw err
-        console.log('Download from:', link)
-      })
+    file.link(function(err, link) {
+      if (err) throw err
+      console.log('Download from:', link)
     })
-  )
-})
+  })
+)
 
