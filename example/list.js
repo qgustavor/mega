@@ -28,6 +28,10 @@ storage.on('ready', function() {
     }
   }
 
+  if (!argv.monitor) {
+    storage.close()
+  }
+
 })
 
 function print(f, indent) {
