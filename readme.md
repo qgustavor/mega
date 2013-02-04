@@ -139,9 +139,9 @@ file.delete(function(err) {
 
 ### file.loadAttributes(cb)
 
-Download and encrypt file attributes. Attributes normally contain file name("n"), but it seems you can put anything you want in there.
+Download and decrypt file attributes. Attributes normally contain file name("n"), but it seems you can put anything you want in there.
 
-Only makes sense when file is created from download link with `mega.file(url)`, otherwise attributes are already loaded/encrypted.
+Only makes sense when file is created from download link with `mega.file(url)`, otherwise attributes are already loaded/decrypted.
 
 ```
 mega.file(url).loadAttributes(err, file) {
