@@ -127,6 +127,30 @@ file.link(function(err, url) {
 })
 ```
 
+### file.delete(cb)
+
+Delete file permanently.
+
+```
+file.delete(function(err) {
+  // deleted.
+})
+```
+
+### file.loadAttributes(cb)
+
+Download and encrypt file attributes. Attributes normally contain file name("n"), but it seems you can put anything you want in there.
+
+Only makes sense when file is created from download link with `mega.file(url)`, otherwise attributes are already loaded/encrypted.
+
+```
+mega.file(url).loadAttributes(err, file) {
+  // file.name
+  // file.size
+  // file.attributes
+}
+```
+
 ### mega.encrypt([key]) / mega.decrypt(key)
 
 Lower level duplex streams. These could be used if you want to do network traffic and crypto on different time.
