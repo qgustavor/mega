@@ -1,6 +1,7 @@
 var fs = require('fs')
 var path = require('path')
 var mega = require('../lib/mega')
+var ProgressBar = require('progress')
 var argv = require('optimist')
   .demand(1)
   .usage('USAGE: node example/upload [email] [password] <file>')
@@ -17,20 +18,29 @@ if (argv._.length === 1) {
 
 var storage = mega(email, password)
 
-fs.createReadStream(filepath).pipe(
-  storage.upload({
+var up = storage.upload({
     name: path.basename(filepath),
     size: fs.statSync(filepath).size // removing this causes data buffering.
   },
   // fs.readFileSync(filepath),
   function(err, file) {
     if (err) throw err
-    console.log('Uploaded', file.name, file.size + 'B')
+    console.log('\nUploaded', file.name, file.size + 'B')
 
     file.link(function(err, link) {
       if (err) throw err
       console.log('Download from:', link)
     })
   })
-)
+
+fs.createReadStream(filepath).pipe(up)
+
+var bar
+up.on('progress', function (stats) {
+  if (!bar) bar = new ProgressBar('uploading [:bar] :percent :etas', {
+    total: stats.bytesTotal,
+    width: 50
+  })
+  bar.tick(stats.bytesLoaded - bar.curr)
+})
 
