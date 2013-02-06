@@ -18,5 +18,9 @@
     "through": "~2.1.0",
     "stream-combiner": "0.0.1",
     "pause-stream": "0.0.7"
+  },
+  "optionalDependencies": {
+    "optimist": "~0.3.5",
+    "progress": "~0.1.0"
   }
 }
