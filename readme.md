@@ -27,9 +27,22 @@ See examples directory for quick start.
 
 ## API
 
-### var storage = mega([email], [password], [readyCallback])
+### var storage = mega([options], [readyCallback])
 
-Create new connection instance to Mega. If you don't specify email/password then temporary account will be created. Once connection closes for temporary account you cannot access same account again so you need to save a link to file. Temporary accounts regularly get deleted.
+Create new connection instance to Mega.
+
+**Supported options:**
+
+`email` - User login email.
+
+`password` - User password.
+
+`keepalive` - Keep connection open to receive server-to-client requests. These will eventually be mapped to events. Defaults to true.
+
+`autoload` - Load in file structure. Defaults to true.
+
+
+If you don't specify email/password then temporary account will be created. Once connection closes for temporary account you cannot access same account again so you need to save a link to file. Temporary accounts regularly get deleted.
 
 **After `readyCallback()` or `ready` event fires storage has following properties:**
 
@@ -73,7 +86,7 @@ Upload a file to Mega. You can pass in buffer data or just pipe data into it. Ca
 
 ### storage.reload(cb)
 
-Reloads files tree. No need to call this.
+Reloads files tree. No need to call this if `autoload` is used.
 
 ### mega.file(url | opt)
 
@@ -144,11 +157,11 @@ Download and decrypt file attributes. Attributes normally contain file name("n")
 Only makes sense when file is created from download link with `mega.file(url)`, otherwise attributes are already loaded/decrypted.
 
 ```
-mega.file(url).loadAttributes(err, file) {
+mega.file(url).loadAttributes(function(err, file) {
   // file.name
   // file.size
   // file.attributes
-}
+})
 ```
 
 ### mega.encrypt([key]) / mega.decrypt(key)
