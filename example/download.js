@@ -14,7 +14,7 @@ mega.file(argv._[0]).loadAttributes(function(err, file) {
   console.log(file.name, file.size + 'B')
 
   var dl = file.download()
-  dl.pipe(fs.createWriteStream(file.name), {end: false})
+  dl.pipe(fs.createWriteStream(file.name))
 
   var bar
   dl.on('progress', function (stats) {

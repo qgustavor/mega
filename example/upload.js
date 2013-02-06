@@ -16,7 +16,7 @@ if (argv._.length === 1) {
   filepath = argv._[0]
 }
 
-var storage = mega(email, password)
+var storage = mega({email:email, password:password, keepalive: false})
 
 var up = storage.upload({
     name: path.basename(filepath),

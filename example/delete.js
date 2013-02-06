@@ -6,7 +6,7 @@ var argv = require('optimist')
   .usage('USAGE: node example/delete <email> <password> <nodeId>')
   .argv
 
-var storage = mega(argv._[0], argv._[1])
+var storage = mega({email: argv._[0], password: argv._[1], keepalive: false})
 
 storage.on('ready', function() {
   if (storage.files[argv._[2]]) {

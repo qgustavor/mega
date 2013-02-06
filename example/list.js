@@ -7,7 +7,7 @@ var argv = require('optimist')
          '       node example/list <email> <password> --monitor')
   .argv
 
-var storage = mega(argv._[0], argv._[1])
+var storage = mega({email: argv._[0], password:argv._[1], keepalive: !!argv.monitor})
 
 storage.on('ready', function() {
   storage.mounts.forEach(function(f) {print(f)})
@@ -50,6 +50,4 @@ if (argv.monitor) {
   storage.api.on('sc', function(json) {
     console.log('server notification>', json)
   })
-
-  setTimeout(function(){}, 1e9)
 }
