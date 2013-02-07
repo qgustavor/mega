@@ -43,4 +43,6 @@ up.on('progress', function (stats) {
   })
   bar.tick(stats.bytesLoaded - bar.curr)
 })
-
+up.on('complete', function() {
+  bar.tick()
+})

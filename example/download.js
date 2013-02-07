@@ -26,6 +26,7 @@ mega.file(argv._[0]).loadAttributes(function(err, file) {
   })
 
   dl.on('end', function() {
+    bar.tick()
     console.log('\nSaved OK!')
   })
 })
