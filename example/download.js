@@ -11,14 +11,14 @@ var mega = require('../lib/mega')
 mega.file(argv._[0]).loadAttributes(function(err, file) {
   if (err) throw err
 
-  console.log(file.name, file.size + 'B')
+  console.log('File:', file.name, file.size + 'B')
 
   var dl = file.download()
   dl.pipe(fs.createWriteStream(file.name))
 
   var bar
   dl.on('progress', function (stats) {
-    if (!bar) bar = new ProgressBar('downloading [:bar] :percent :etas', {
+    if (!bar) bar = new ProgressBar('Downloading [:bar] :percent :etas', {
       total: stats.bytesTotal,
       width: 50
     })

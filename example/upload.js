@@ -37,7 +37,7 @@ fs.createReadStream(filepath).pipe(up)
 
 var bar
 up.on('progress', function (stats) {
-  if (!bar) bar = new ProgressBar('uploading [:bar] :percent :etas', {
+  if (!bar) bar = new ProgressBar('Uploading [:bar] :percent :etas', {
     total: stats.bytesTotal,
     width: 50
   })
