@@ -22,7 +22,6 @@ See examples directory for quick start.
 ## Missing functionality
 
 - No sharing features
-- Server to client requests are not parsed.
 - Missing file management: move, mkdir, symlink etc.
 
 ## API
@@ -37,7 +36,7 @@ Create new connection instance to Mega.
 
 `password` - User password.
 
-`keepalive` - Keep connection open to receive server-to-client requests. These will eventually be mapped to events. Defaults to true.
+`keepalive` - Keep connection open to receive server-to-client requests that will be mapped to events. Defaults to true.
 
 `autoload` - Load in file structure. Defaults to true.
 
@@ -87,6 +86,20 @@ Upload a file to Mega. You can pass in buffer data or just pipe data into it. Ca
 ### storage.reload(cb)
 
 Reloads files tree. No need to call this if `autoload` is used.
+
+
+### Events:
+
+These events fire on file changes when `keepalive` is used. The changes can be triggered from any session connected to the same account.
+
+`add` - New file/dir was added. Parameters: file.
+
+`move` - File was moved to another dir. Parameters: file, olddir.
+
+`delete` - File was deleted. Parameters: file.
+
+`update` - File was changed(renamed). Parameters: file.
+
 
 ### mega.file(url | opt)
 
@@ -163,6 +176,18 @@ mega.file(url).loadAttributes(function(err, file) {
   // file.attributes
 })
 ```
+
+
+### Events:
+
+Same events as for Storage objects. Only trigger for a specific file.
+
+`move` - File was moved to another dir. Parameters: olddir.
+
+`delete` - File was deleted.
+
+`update` - File was changed(renamed).
+
 
 ### mega.encrypt([key]) / mega.decrypt(key)
 
