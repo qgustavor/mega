@@ -55,4 +55,18 @@ if (argv.monitor) {
   storage.on('update', function(f) {
     console.log('> File changed. New name:', f.name)
   })
+
+  storage.on('add', function(f) {
+    console.log('> New file added:', f.name)
+  })
+
+  storage.on('delete', function(f) {
+    console.log('> File deleted:', f.name)
+  })
+
+  storage.on('move', function(f, from) {
+    console.log('> File', f.name, 'moved from', from.name, 'to', f.parent.name)
+  })
+
+
 }
