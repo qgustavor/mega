@@ -48,6 +48,11 @@ function print(f, indent) {
 
 if (argv.monitor) {
   storage.api.on('sc', function(json) {
-    console.log('server notification>', json)
+    var inspect = require('util').inspect
+    //console.log('server notification>', inspect(json, false, 4))
+  })
+
+  storage.on('update', function(f) {
+    console.log('> File changed. New name:', f.name)
   })
 }
