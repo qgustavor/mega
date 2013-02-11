@@ -57,12 +57,14 @@ assert.deepEqual(d0, d0d)
 var size = 151511
 var d0 = randBuffer(size)
 var d0e = new Buffer(d0)
-var encrypt = mega.encrypt()
+var key = randBuffer(24, 100, 7)
+var encrypt = mega.encrypt(key)
 
 expect('encrypt callback')
 util.stream2cb(encrypt, function(err, buffer) {
   fulfill('encrypt callback')
 
+  assert.equal(sha(encrypt.key), '560cabd8bf1dbb42911c9b599b0812f9f236a8a7')
   // Correct decrypt.
   var decrypt = mega.decrypt(encrypt.key)
   expect('valid decrypt callback')
