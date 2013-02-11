@@ -1,3 +1,5 @@
+[![Build Status](https://secure.travis-ci.org/tonistiigi/mega.png)](http://travis-ci.org/tonistiigi/mega)
+
 ## Read first
 
 - This is all unofficial, based on [developer guide](https://mega.co.nz/#developers) and site source.
