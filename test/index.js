@@ -46,10 +46,10 @@ process.addListener('exit', function () {
 var aes = new crypto.AES(randBuffer(16))
 var d0 = randBuffer(160)
 var d0e = new Buffer(d0)
-aes.encrypt_cbc(d0e)
+aes.encryptCBC(d0e)
 assert.equal(sha(d0e), 'cd9a7168ec42cb0cc1f2a18575ff7794b4b5a95d')
 var d0d = new Buffer(d0e)
-aes.decrypt_cbc(d0d)
+aes.decryptCBC(d0d)
 assert.deepEqual(d0, d0d)
 
 
