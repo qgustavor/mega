@@ -26,6 +26,10 @@ See examples directory for quick start.
 - No sharing features
 - Missing file management: move, mkdir, symlink etc.
 
+## Browser support
+
+This module also works in the browser with [browserify](https://github.com/substack/node-browserify). Not all patches have landed yet so you should use [this fork](https://github.com/tonistiigi/node-browserify) and `request@2.10.0`. See [demo page](http://tonistiigi.github.com/mega/) for preview.
+
 ## API
 
 ### var storage = mega([options], [readyCallback])
