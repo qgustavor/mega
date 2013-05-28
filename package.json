@@ -17,7 +17,7 @@
   "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "request": "~2.12.0",
+    "request": ">=2.10.0",
     "through": "~2.1.0",
     "stream-combiner": "0.0.1"
   },
