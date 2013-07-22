@@ -1,6 +1,6 @@
 {
   "name": "mega",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Unofficial Node.js SDK for mega.co.nz",
   "main": "lib/mega.js",
   "repository": {
