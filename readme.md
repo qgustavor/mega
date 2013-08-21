@@ -88,6 +88,22 @@ Upload a file to Mega. You can pass in buffer data or just pipe data into it. Ca
 `target` - Target directory file object or node ID. Defaults to `storage.root`.
 
 
+### storage.mkdir(options | name, cb)
+
+```
+storage.mkdir('dirname', function(err, file) {
+})
+```
+
+**Supported options:**
+
+`name` - Directory name *required*
+
+`attributes` - Object of file attributes.
+
+`target` - Parent directory file object or node ID. Defaults to `storage.root`.
+
+
 
 ### storage.reload(cb)
 
