@@ -24,7 +24,7 @@ See examples directory for quick start.
 ## Missing functionality
 
 - No sharing features
-- Missing file management: move, mkdir, symlink etc.
+- Missing file management: move, symlink etc.
 
 ## Browser support
 
