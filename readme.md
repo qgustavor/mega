@@ -1,4 +1,4 @@
-[![Build Status](https://secure.travis-ci.org/tonistiigi/mega.png)](http://travis-ci.org/tonistiigi/mega)
+*[Read fork info below.](#fork-info)*
 
 ## Read first
 
@@ -218,3 +218,15 @@ Lower level duplex streams. These could be used if you want to do network traffi
 Takes in encrypted file data and outputs decrypted data and vice versa. Also does MAC verification / generation.
 
 Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit are for the MAC. You can later read the full key from the `key` property of the stream.
+
+## Fork info:
+
+This fork intents to:
+
+* Make the original package work in browsers again;
+* Reduce dependencies, and replace big dependencies with smaller ones;
+    * Replace request in browser with browser-request or other lightweight library;
+    * Temporally remove crypto dependency, which is only used for key generation;
+* Rewrite code using the new JavaScript syntax, allowing to use rollup;
+* Make tests work again after the changes above;
+* Continue the original library development implementing new features.
