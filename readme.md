@@ -223,7 +223,9 @@ Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit 
 
 This fork intents to:
 
-* Make the original package work in browsers again;
+* Make the original package work in browsers again, because, even following [the instructions from the original
+library](https://github.com/tonistiigi/mega#browser-support), it stopped working because the required libraries
+depends on `__proto__`, which is non standard;
 * Reduce dependencies, and replace big dependencies with smaller ones;
     * Replace request in browser with browser-request or other lightweight library;
     * Temporally remove crypto dependency, which is only used for key generation;
