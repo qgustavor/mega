@@ -227,8 +227,14 @@ This fork intents to:
 library](https://github.com/tonistiigi/mega#browser-support), it stopped working because the required libraries
 depends on `__proto__`, which is non standard;
 * Reduce dependencies, and replace big dependencies with smaller ones;
-    * Replace request in browser with browser-request or other lightweight library;
+    * <strike>Replace request in browser with browser-request or other lightweight library;</strike> see below
     * Temporally remove crypto dependency, which is only used for key generation;
 * Rewrite code using the new JavaScript syntax, allowing to use rollup;
 * Make tests work again after the changes above;
 * Continue the original library development implementing new features.
+
+Request package can't be browserified well using rollup, so it was replaced with a shim based in
+[browser-request](https://www.npmjs.com/package/browser-request) and
+[xhr-stream](https://www.npmjs.com/package/xhr-stream), which additional changes in order to make
+it work inside Service Workers, which in current Chrome Canary don't support XMLHttpRequest, just
+fetch.
