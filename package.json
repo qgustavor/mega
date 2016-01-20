@@ -1,6 +1,6 @@
 {
   "name": "mega",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Unofficial Node.js SDK for mega.co.nz",
   "main": "lib/mega.js",
   "repository": {
@@ -19,7 +19,11 @@
   "dependencies": {
     "request": ">=2.10.0",
     "through": "~2.1.0",
-    "stream-combiner": "0.0.1"
+    "stream-combiner": "0.0.1",
+    "combined-stream": "~1.0.5"
+  },
+  "browser": {
+    "request": "./shims/request.js"
   },
   "devDependencies": {
     "optimist": "~0.3.5",
