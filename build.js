@@ -4,7 +4,16 @@ var npm = require('rollup-plugin-npm')
 var babel = require('rollup-plugin-babel')
 var inject = require('rollup-plugin-inject')
 var commonjs = require('rollup-plugin-commonjs')
-var sourceMapEnabled = false
+var sourceMapEnabled = false // todo: use a command line argument to enable?
+
+var formats = {
+  browser: {
+    moduleName: 'mega',
+    format: 'umd'
+  },
+  cjs: { format: 'cjs' },
+  es6: { format: 'es6' }
+};
 
 rollup.rollup({
   entry: 'lib/mega.js',
@@ -30,20 +39,24 @@ rollup.rollup({
     babel()
   ]
 }).then(function (bundle) {
-  var result = bundle.generate({
-    format: 'iife',
-    sourceMap: sourceMapEnabled
-  })
+  Object.keys(formats).forEach(function (format) {
+    var result = bundle.generate(Object.assign({
+      sourceMap: sourceMapEnabled
+    }, formats[format]))
+    var resultCode = result.code
 
-  var resultCode = result.code
-  if (sourceMapEnabled) {
-    resultCode += '\n//# sourceMappingURL=main.js.map'
-    fs.writeFile('dist/main.js.map', result.map.toString(), function (err) {
+    if (sourceMapEnabled) {
+      resultCode += '\n//# sourceMappingURL=mega.' + format + '.js.map'
+      fs.writeFile('dist/mega.' + format + '.js.map', result.map.toString(), function (err) {
+        if (err) throw err
+      })
+    }
+
+    fs.writeFile('dist/main.' + format + '.js', resultCode, function (err) {
       if (err) throw err
     })
-  }
-
-  fs.writeFile('dist/main.js', resultCode, function (err) {
-    if (err) throw err
   })
+}, function (error) {
+  console.error(error.stack || error)
+  throw error
 })
