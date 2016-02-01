@@ -15,31 +15,36 @@ var formats = {
   es6: { format: 'es6' }
 };
 
-rollup.rollup({
-  entry: 'lib/mega.js',
-  plugins: [
-    npm({
-      jsnext: true,
-      main: true,
-      browser: true,
-      alias: {
-        'stream': 'stream-browserify',
-        'crypto': 'crypto-browserify'
-      }
-    }),
-    commonjs({
-      namedExports: {
-        'events': ['EventEmitter']
-      }
-    }),
-    inject({
-      'process': 'process',
-      'Buffer': ['buffer', 'Buffer']
-    }),
-    babel()
+Object.keys(formats).forEach(function (format) {
+  var injectConfig = format === 'browser' ? {
+    'process': 'browser-process',
+    'Buffer': ['buffer', 'Buffer']
+  } : {}
+  
+  var externalConfig = format === 'browser' ? [] : [
+    'zlib', 'https', 'http', 'crypto', 'fs', 'tls',
+    'net', 'string_decoder', 'assert', 'punycode',
+    'dns', 'dgram'
   ]
-}).then(function (bundle) {
-  Object.keys(formats).forEach(function (format) {
+  
+  rollup.rollup({
+    entry: 'lib/mega.js',
+    external: externalConfig,
+    plugins: [
+      npm({
+        jsnext: true,
+        main: true,
+        browser: format === 'browser'
+      }),
+      commonjs({
+        namedExports: {
+          'events': ['EventEmitter']
+        }
+      }),
+      inject(injectConfig),
+      babel()
+    ]
+  }).then(function (bundle) {
     var result = bundle.generate(Object.assign({
       sourceMap: sourceMapEnabled
     }, formats[format]))
@@ -55,8 +60,8 @@ rollup.rollup({
     fs.writeFile('dist/main.' + format + '.js', resultCode, function (err) {
       if (err) throw err
     })
+  }, function (error) {
+    console.error(error.stack || error)
+    throw error
   })
-}, function (error) {
-  console.error(error.stack || error)
-  throw error
 })
