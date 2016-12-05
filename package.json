@@ -2,7 +2,9 @@
   "name": "mega",
   "version": "0.3.0",
   "description": "Unofficial Node.js SDK for mega.nz",
-  "main": "lib/mega.js",
+  "main": "dist/mega.cjs.js",
+  "jsnext:main": "dist/mega.es6.js",
+  "browser": "dist/mega.browser.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/tonistiigi/mega.git"
