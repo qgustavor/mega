@@ -2,8 +2,9 @@ var fs = require('fs')
 var rollup = require('rollup')
 var nodeResolve = require('rollup-plugin-node-resolve')
 var babel = require('rollup-plugin-babel')
-var inject = require('rollup-plugin-inject')
 var commonjs = require('rollup-plugin-commonjs')
+var globals = require('rollup-plugin-node-globals')
+var builtins = require('rollup-plugin-node-builtins')
 var json = require('rollup-plugin-json')
 var sourceMapEnabled = false // todo: use a command line argument to enable?
 
@@ -16,12 +17,7 @@ var formats = {
   es: { format: 'es' }
 }
 
-Object.keys(formats).forEach(function (format) {
-  var injectConfig = format === 'browser' ? {
-    'process': 'browser-process',
-    'Buffer': ['buffer', 'Buffer']
-  } : {}
-  
+Object.keys(formats).forEach(function (format) {  
   var externalConfig = format === 'browser' ? [] : [
     'zlib', 'https', 'http', 'crypto', 'fs', 'tls',
     'net', 'string_decoder', 'assert', 'punycode',
@@ -44,7 +40,8 @@ Object.keys(formats).forEach(function (format) {
         }
       }),
       json(),
-      inject(injectConfig),
+      globals(),
+      builtins(),
       babel()
     ]
   }).then(function (bundle) {

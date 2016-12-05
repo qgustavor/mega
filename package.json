@@ -28,24 +28,17 @@
     "combined-stream": "^1.0.5",
     "request": "^2.69.0",
     "stream-combiner": "^0.2.2",
-    "through": "^2.1.0"
+    "through": "^2.1.0",
+    "secure-random": "^1.1.1"
   },
   "devDependencies": {
     "babel-preset-es2015-rollup": "^1.1.1",
-    "browser-process": "0.0.1",
-    "buffer": "^4.4.0",
-    "events": "^1.1.0",
-    "path": "^0.12.7",
-    "querystring": "^0.2.0",
     "rollup": "^0.25.8",
     "rollup-plugin-babel": "^2.3.9",
     "rollup-plugin-commonjs": "^2.2.1",
-    "rollup-plugin-inject": "^1.4.0",
     "rollup-plugin-json": "^2.0.2",
-    "rollup-plugin-node-resolve": "^2.0.0",
-    "secure-random": "^1.1.1",
-    "stream-browserify": "^2.0.1",
-    "url": "^0.11.0",
-    "util": "^0.10.3"
+    "rollup-plugin-node-builtins": "^2.0.0",
+    "rollup-plugin-node-globals": "^1.1.0",
+    "rollup-plugin-node-resolve": "^2.0.0"
   }
 }
