@@ -59,11 +59,11 @@ If you don't specify email/password then temporary account will be created. Once
 
 ### storage.upload(options | name, [buffer], [cb])
 
-```
+```javascript
 fs.createReadStream('myfile.txt').pipe(storage.upload('myfile.txt'))
 ```
 
-Upload a file to Mega. You can pass in buffer data or just pipe data into it. Callback returns uploaded file object. If you don't specify callback you can listen for `complete` event to get the file handle.
+Upload a file to MEGA. You can pass in buffer data or just pipe data into it. Callback returns uploaded file object. If you don't specify callback you can listen for `complete` event to get the file handle.
 
 **Supported options:**
 
@@ -106,6 +106,8 @@ var file = mega.file('https://mega.nz/#!...')
 Returns file object based on download URL or options. Options can be `downloadId` and `key`.
 
 ### File
+
+Can be a file or folder. Currently only files are supported using `mega.file`.
 
 **Properties:**
 
@@ -153,7 +155,7 @@ file.delete((err) => {
 
 ### file.loadAttributes(cb)
 
-Download and decrypt file attributes. Attributes normally contain file name("n"), but it seems you can put anything you want in there.
+Download and decrypt file attributes. Attributes normally contain file name (`'n'`) but is possible to put anything there, as long it can be encoded as JSON.
 
 Only makes sense when file is created from download link with `mega.file(url)`, otherwise attributes are already loaded/decrypted.
 
@@ -164,7 +166,6 @@ mega.file(url).loadAttributes((err, file) => {
   // file.attributes
 })
 ```
-
 
 ### Events:
 
@@ -186,13 +187,14 @@ Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit 
 
 This fork intents to:
 
-* Make the original package work in browsers again, because, even following [the instructions from the original
-library](https://github.com/tonistiigi/mega#browser-support), it stopped working because the required libraries
-depends on `__proto__`, which is non-standard and isn't supported in many browsers;
-* Reduce dependencies, and replace big dependencies with smaller ones;
+* Make the original package work in browsers again, because, even following
+[the instructions from the original library](https://github.com/tonistiigi/mega#browser-support),
+it stopped working because some dependencies used `__proto__`, which is non-standard and isn't
+supported in many browsers, and the updated versions of those libraries broke backyards compatibility;
+* Reduce dependencies and replace big dependencies with smaller ones;
 * Rewrite code using the new JavaScript syntax, allowing to use rollup;
 * Make tests work again after the changes above;
-* Continue the original library development implementing new features.
+* Continue the original library development implementing new features and improving performance.
 
 Request package can't be browserified well using rollup, so it was replaced with a shim based in
 [browser-request](https://www.npmjs.com/package/browser-request) and
