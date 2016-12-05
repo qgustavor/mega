@@ -11,11 +11,11 @@
 
 ## Installation
 
-```
+```shell
 npm install mega
 ```
 
-```
+```javascript
 var mega = require('mega')
 ```
 
@@ -38,129 +38,97 @@ Create new connection instance to Mega.
 
 **Supported options:**
 
-`email` - User login email.
-
-`password` - User password.
-
-`keepalive` - Keep connection open to receive server-to-client requests that will be mapped to events. Defaults to true.
-
-`autoload` - Load in file structure. Defaults to true.
-
+* `email` - User login email.
+* `password` - User password.
+* `keepalive` - Keep connection open to receive server-to-client requests that will be mapped to events. Defaults to `true`.
+* `autoload` - Load in file structure. Defaults to `true`.
 
 If you don't specify email/password then temporary account will be created. Once connection closes for temporary account you cannot access same account again so you need to save a link to file. Temporary accounts regularly get deleted.
 
 **After `readyCallback()` or `ready` event fires storage has following properties:**
 
-`name` - Account owner name
-
-`key` - Account master key
-
-`rsaPrivateKey` - RSA private Key
-
-`sid` - Current session ID
-
-`files` - Hash of `File` objects by node ID-s.
-
-`root` - `File` object for Cloud Drive main directory
-
-`trash` - `File` object for Rubbish bin
-
-`inbox` - `File` object for Inbox
-
-`mounts` - Array of all top level directories
+* `name` - Account owner name
+* `key` - Account master key
+* `rsaPrivateKey` - RSA private Key
+* `sid` - Current session ID
+* `files` - Hash of `File` objects by node ID-s.
+* `root` - `File` object for Cloud Drive main directory
+* `trash` - `File` object for Rubbish bin
+* `inbox` - `File` object for Inbox
+* `mounts` - Array of all top level directories
 
 ### storage.upload(options | name, [buffer], [cb])
 
-```
+```javascript
 fs.createReadStream('myfile.txt').pipe(storage.upload('myfile.txt'))
 ```
 
-Upload a file to Mega. You can pass in buffer data or just pipe data into it. Callback returns uploaded file object. If you don't specify callback you can listen for `complete` event to get the file handle.
+Upload a file to MEGA. You can pass in buffer data or just pipe data into it. Callback returns uploaded file object. If you don't specify callback you can listen for `complete` event to get the file handle.
 
 **Supported options:**
 
-`name` - File name *required*
-
-`attributes` - Object of file attributes.
-
-`size` - File size. Note that because Mega's API needs final data length before uploading can start, streaming only fully works if you specify the size of your data. Otherwise it needs to first buffer your data to determine the size.
-
-`target` - Target directory file object or node ID. Defaults to `storage.root`.
-
+* `name` - File name *required*
+* `attributes` - Object of file attributes.
+* `size` - File size. Note that because Mega's API needs final data length before uploading can start, streaming only fully works if you specify the size of your data. Otherwise it needs to first buffer your data to determine the size.
+* `target` - Target directory file object or node ID. Defaults to `storage.root`.
 
 ### storage.mkdir(options | name, cb)
 
-```
-storage.mkdir('dirname', function(err, file) {
-})
+```javascript
+storage.mkdir('dirname', (err, file) => { ... })
 ```
 
 **Supported options:**
 
-`name` - Directory name *required*
-
-`attributes` - Object of file attributes.
-
-`target` - Parent directory file object or node ID. Defaults to `storage.root`.
-
-
+* `name` - Directory name *required*
+* `attributes` - Object of file attributes.
+* `target` - Parent directory file object or node ID. Defaults to `storage.root`.
 
 ### storage.reload(cb)
 
 Reloads files tree. No need to call this if `autoload` is used.
 
-
 ### Events:
 
 These events fire on file changes when `keepalive` is used. The changes can be triggered from any session connected to the same account.
 
-`add` - New file/dir was added. Parameters: file.
-
-`move` - File was moved to another dir. Parameters: file, olddir.
-
-`delete` - File was deleted. Parameters: file.
-
-`update` - File was changed(renamed). Parameters: file.
-
+* `add` - New file/dir was added. Parameters: file.
+* `move` - File was moved to another dir. Parameters: file, olddir.
+* `delete` - File was deleted. Parameters: file.
+* `update` - File was changed(renamed). Parameters: file.
 
 ### mega.file(url | opt)
 
-```
-var file = mega.file('https://mega....')
+```javascript
+var file = mega.file('https://mega.nz/#!...')
 ```
 
 Returns file object based on download URL or options. Options can be `downloadId` and `key`.
 
 ### File
 
+Can be a file or folder. Currently only files are supported using `mega.file`.
+
 **Properties:**
 
-`name` - File name
-
-`attributes` - Object of attributes
-
-`size` - File size
-
-`key` - File key(buffer)
-
-`timestamp` - File creation time
-
-`nodeId` - File ID
-
-`downloadId` - Link ID to file. Only if created from link.
-
-`directory` - Boolean if file is directory.
-
-`children` - Array of files for directories.
+* `name` - File name
+* `attributes` - Object of attributes
+* `size` - File size
+* `key` - File key(buffer)
+* `timestamp` - File creation time
+* `nodeId` - File ID
+* `downloadId` - Link ID to file. Only if created from link.
+* `directory` - Boolean if file is directory.
+* `children` - Array of files for directories.
 
 ### file.download([cb])
 
 Read file contents.
 
-```
+```javascript
 file.download().pipe(fs.createWriteStream('myfile.txt'))
 
-file.download(function(err, data) {
+file.download((err, data) => {
   // data is buffer
 })
 ```
@@ -169,9 +137,9 @@ file.download(function(err, data) {
 
 Make download link for a file.
 
-```
-file.link(function(err, url) {
-  // url: https://mega.co.nz/#!downloadId!key
+```javascript
+file.link((err, url) => {
+  // url: https://mega.nz/#!downloadId!key
 })
 ```
 
@@ -179,37 +147,33 @@ file.link(function(err, url) {
 
 Delete file permanently.
 
-```
-file.delete(function(err) {
+```javascript
+file.delete((err) => {
   // deleted.
 })
 ```
 
 ### file.loadAttributes(cb)
 
-Download and decrypt file attributes. Attributes normally contain file name("n"), but it seems you can put anything you want in there.
+Download and decrypt file attributes. Attributes normally contain file name (`'n'`) but is possible to put anything there, as long it can be encoded as JSON.
 
 Only makes sense when file is created from download link with `mega.file(url)`, otherwise attributes are already loaded/decrypted.
 
-```
-mega.file(url).loadAttributes(function(err, file) {
+```javascript
+mega.file(url).loadAttributes((err, file) => {
   // file.name
   // file.size
   // file.attributes
 })
 ```
 
-
 ### Events:
 
 Same events as for Storage objects. Only trigger for a specific file.
 
-`move` - File was moved to another dir. Parameters: olddir.
-
-`delete` - File was deleted.
-
-`update` - File was changed(renamed).
-
+* `move` - File was moved to another dir. Parameters: olddir.
+* `delete` - File was deleted.
+* `update` - File was changed(renamed).
 
 ### mega.encrypt([key]) / mega.decrypt(key)
 
@@ -223,13 +187,14 @@ Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit 
 
 This fork intents to:
 
-* Make the original package work in browsers again, because, even following [the instructions from the original
-library](https://github.com/tonistiigi/mega#browser-support), it stopped working because the required libraries
-depends on `__proto__`, which is non-standard and isn't supported in many browsers;
-* Reduce dependencies, and replace big dependencies with smaller ones;
+* Make the original package work in browsers again, because, even following
+[the instructions from the original library](https://github.com/tonistiigi/mega#browser-support),
+it stopped working because some dependencies used `__proto__`, which is non-standard and isn't
+supported in many browsers, and the updated versions of those libraries broke backyards compatibility;
+* Reduce dependencies and replace big dependencies with smaller ones;
 * Rewrite code using the new JavaScript syntax, allowing to use rollup;
 * Make tests work again after the changes above;
-* Continue the original library development implementing new features.
+* Continue the original library development implementing new features and improving performance.
 
 Request package can't be browserified well using rollup, so it was replaced with a shim based in
 [browser-request](https://www.npmjs.com/package/browser-request) and
