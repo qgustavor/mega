@@ -9101,7 +9101,7 @@ var File = function (_EventEmitter) {
         cb = options;
         options = {};
       }
-      var maxStreams = options.maxStreams || 4;
+      var maxConnections = options.maxConnections || 4;
       var req = { a: 'g', g: 1, ssl: 2 };
       if (this.nodeId) {
         req.n = this.nodeId;
@@ -9134,7 +9134,7 @@ var File = function (_EventEmitter) {
           currentOffset = currentMax;
           chunkSize = Math.min(chunkSize + 128 * 1024, 1024 * 1024);
 
-          if (++activeStreams < maxStreams) {
+          if (++activeStreams < maxConnections) {
             setTimeout(getChunk, 1000);
           }
         }
