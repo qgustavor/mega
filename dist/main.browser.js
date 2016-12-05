@@ -9109,6 +9109,9 @@ var File = function (_EventEmitter) {
       var cs = this.api || api;
       cs.request(req, function (err, response) {
         if (err) return stream.emit('error', err);
+        if (typeof response.g !== 'string' || response.g.substr(0, 4) !== 'http') {
+          return stream.emit('error', Error('MEGA servers returned an invalid response, maybe caused by rate limit'));
+        }
 
         var activeStreams = 0;
         var currentOffset = 0;
