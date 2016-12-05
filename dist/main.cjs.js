@@ -1362,7 +1362,12 @@ var File = function (_EventEmitter) {
     }
   }, {
     key: 'download',
-    value: function download(cb) {
+    value: function download(options, cb) {
+      if (typeof options === 'function') {
+        cb = options;
+        options = {};
+      }
+      var maxStreams = options.maxStreams || 4;
       var req = { a: 'g', g: 1, ssl: 2 };
       if (this.nodeId) {
         req.n = this.nodeId;
@@ -1393,9 +1398,9 @@ var File = function (_EventEmitter) {
           combined.append(r, { contentLength: currentMax - currentOffset });
 
           currentOffset = currentMax;
-          chunkSize = Math.max(chunkSize + 128 * 1024, 1024 * 1024);
+          chunkSize = Math.min(chunkSize + 128 * 1024, 1024 * 1024);
 
-          if (++activeStreams < 4) {
+          if (++activeStreams < maxStreams) {
             setTimeout(getChunk, 1000);
           }
         }
