@@ -12,8 +12,8 @@ var formats = {
     format: 'umd'
   },
   cjs: { format: 'cjs' },
-  es6: { format: 'es6' }
-};
+  es: { format: 'es' }
+}
 
 Object.keys(formats).forEach(function (format) {
   var injectConfig = format === 'browser' ? {
