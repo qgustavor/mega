@@ -6,7 +6,7 @@
 - Official SDK will probably be released in the future. You may want to wait.
 - Only part of the API is implemented.
 - Crypto is mostly ported from browser code and isn't optimal. Probably some of it could be done with openssl, [ursa](https://github.com/Obvious/ursa) or [cryptojs](https://github.com/gwjjeff/cryptojs.git) or the algorithms could at least be ported to use Buffer format, but this is no way a priority.
-- If you use it for something make sure you agree with Mega's [Terms of Service](https://mega.co.nz/#terms).
+- If you use it for something make sure you agree with MEGA's [Terms of Service](https://mega.co.nz/#terms).
 
 
 ## Installation
@@ -28,7 +28,7 @@ See examples directory for quick start.
 
 ## Browser support
 
-This module also works in the browser with [browserify](https://github.com/substack/node-browserify). Not all patches have landed yet so you should use [this fork](https://github.com/tonistiigi/node-browserify) and `request@2.10.0`. See [demo page](http://tonistiigi.github.com/mega/) for preview.
+This module works in the browser via browserify, webpack, rollup and similar module bundlers. For some of those build maybe some configuration for node globals and native packages is needed. There is also a browser specific build in `/dist` folder. This version is the one used in the fallback mode of https://directme.ga.
 
 ## API
 
@@ -225,10 +225,8 @@ This fork intents to:
 
 * Make the original package work in browsers again, because, even following [the instructions from the original
 library](https://github.com/tonistiigi/mega#browser-support), it stopped working because the required libraries
-depends on `__proto__`, which is non standard;
+depends on `__proto__`, which is non-standard and isn't supported in many browsers;
 * Reduce dependencies, and replace big dependencies with smaller ones;
-    * <strike>Replace request in browser with browser-request or other lightweight library;</strike> see below
-    * Temporally remove crypto dependency, which is only used for key generation;
 * Rewrite code using the new JavaScript syntax, allowing to use rollup;
 * Make tests work again after the changes above;
 * Continue the original library development implementing new features.
@@ -238,3 +236,6 @@ Request package can't be browserified well using rollup, so it was replaced with
 [xhr-stream](https://www.npmjs.com/package/xhr-stream), which additional changes in order to make
 it work inside Service Workers, which in current Chrome Canary don't support XMLHttpRequest, just
 fetch.
+
+Crypto dependency was replaced with [secure-random](https://www.npmjs.com/package/secure-random) as node crypto was only used
+for key generation.
