@@ -1,6 +1,6 @@
 var fs = require('fs')
 var rollup = require('rollup')
-var npm = require('rollup-plugin-npm')
+var nodeResolve = require('rollup-plugin-node-resolve')
 var babel = require('rollup-plugin-babel')
 var inject = require('rollup-plugin-inject')
 var commonjs = require('rollup-plugin-commonjs')
@@ -31,7 +31,7 @@ Object.keys(formats).forEach(function (format) {
     entry: 'lib/mega.js',
     external: externalConfig,
     plugins: [
-      npm({
+      nodeResolve({
         jsnext: true,
         main: true,
         browser: format === 'browser'
