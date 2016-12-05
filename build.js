@@ -1,67 +1,96 @@
-var fs = require('fs')
 var rollup = require('rollup')
 var nodeResolve = require('rollup-plugin-node-resolve')
 var babel = require('rollup-plugin-babel')
 var commonjs = require('rollup-plugin-commonjs')
 var globals = require('rollup-plugin-node-globals')
 var builtins = require('rollup-plugin-node-builtins')
+var alias = require('rollup-plugin-alias')
 var json = require('rollup-plugin-json')
-var sourceMapEnabled = false // todo: use a command line argument to enable?
+
+var fs = require('fs')
+var path = require('path')
+
+// as there is just one supported argument the line below is dead simple
+var sourceMapEnabled = process.argv.includes('--generate-sourcemap')
 
 var formats = {
-  browser: {
+  browser: [{
+    name: 'browser',
     moduleName: 'mega',
     format: 'umd'
-  },
-  cjs: { format: 'cjs' },
-  es: { format: 'es' }
+  }],
+  node: [
+    { name: 'cjs', format: 'cjs' },
+    { name: 'es', format: 'es' }
+  ]
 }
 
-Object.keys(formats).forEach(function (format) {  
+console.error('Starting build...\nIt should end without any output between this line and the success line')
+
+Promise.all(Object.keys(formats).map(function (format) {
   var externalConfig = format === 'browser' ? [] : [
     'zlib', 'https', 'http', 'crypto', 'fs', 'tls',
     'net', 'string_decoder', 'assert', 'punycode',
-    'dns', 'dgram'
+    'dns', 'dgram', 'request', 'combined-stream',
+    'url', 'through', 'stream-combiner', 'events',
+    'secure-random', 'querystring'
   ]
-  
-  rollup.rollup({
+
+  return rollup.rollup({
     entry: 'lib/mega.js',
     external: externalConfig,
     plugins: [
-      nodeResolve({
+      commonjs({
+        include: [
+          'node_modules/stream-combiner/**',
+          'node_modules/combined-stream/**',
+          'node_modules/secure-random/**',
+          'node_modules/through/**',
+          'lib/**'
+        ]
+      }),
+      format === 'browser' && builtins(),
+      format === 'browser' && globals(),
+      format === 'browser' && alias({
+        request: path.resolve(__dirname, './shims/request.js')
+      }),
+      format === 'browser' && nodeResolve({
         jsnext: true,
         main: true,
         browser: format === 'browser',
         preferBuiltins: format !== 'browser'
       }),
-      commonjs({
-        namedExports: {
-          'events': ['EventEmitter']
-        }
-      }),
       json(),
-      globals(),
-      builtins(),
-      babel()
+      babel({
+        exclude: 'node_modules/**'
+      })
     ]
   }).then(function (bundle) {
-    var result = bundle.generate(Object.assign({
-      sourceMap: sourceMapEnabled
-    }, formats[format]))
-    var resultCode = result.code
+    return Promise.all(formats[format].map(function (options) {
+      var result = bundle.generate(Object.assign({
+        sourceMap: sourceMapEnabled && 'inline'
+      }, options))
 
-    if (sourceMapEnabled) {
-      resultCode += '\n//# sourceMappingURL=mega.' + format + '.js.map'
-      fs.writeFile('dist/mega.' + format + '.js.map', result.map.toString(), function (err) {
-        if (err) throw err
-      })
-    }
-
-    fs.writeFile('dist/main.' + format + '.js', resultCode, function (err) {
-      if (err) throw err
-    })
-  }, function (error) {
-    console.error(error.stack || error)
-    throw error
+      return writeFilePromise('dist/main.' + options.name + '.js', result.code)
+    }))
   })
+}))
+.then(function () {
+  console.log('Build completed with success')
 })
+.catch(function (error) {
+  console.error(error.stack || error)
+  throw error
+})
+
+function writeFilePromise (...argv) {
+  return new Promise(function (resolve, reject) {
+    fs.writeFile(...argv, function (err) {
+      if (err) {
+        reject(err)
+      } else {
+        resolve()
+      }
+    })
+  })
+}
