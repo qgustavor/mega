@@ -4,6 +4,7 @@ var nodeResolve = require('rollup-plugin-node-resolve')
 var babel = require('rollup-plugin-babel')
 var inject = require('rollup-plugin-inject')
 var commonjs = require('rollup-plugin-commonjs')
+var json = require('rollup-plugin-json')
 var sourceMapEnabled = false // todo: use a command line argument to enable?
 
 var formats = {
@@ -34,13 +35,15 @@ Object.keys(formats).forEach(function (format) {
       nodeResolve({
         jsnext: true,
         main: true,
-        browser: format === 'browser'
+        browser: format === 'browser',
+        preferBuiltins: format !== 'browser'
       }),
       commonjs({
         namedExports: {
           'events': ['EventEmitter']
         }
       }),
+      json(),
       inject(injectConfig),
       babel()
     ]
