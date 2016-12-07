@@ -1943,10 +1943,10 @@ mega.file = function (opt) {
   }
 
   var url$$1 = parse(opt);
-  var split = url$$1.hash.split('!');
-
   if (url$$1.hostname !== 'mega.nz' && url$$1.hostname !== 'mega.co.nz') throw Error('Wrong URL supplied: wrong hostname');
   if (!url$$1.hash) throw Error('Wrong URL supplied: no hash');
+
+  var split = url$$1.hash.split('!');
   if (split.length <= 1) throw Error('Wrong URL supplied: too few arguments');
   if (split.length >= 4) throw Error('Wrong URL supplied: too many arguments');
   if (split[0] !== '#' && split[0] !== '#F') throw Error('Wrong URL supplied: not recognized');

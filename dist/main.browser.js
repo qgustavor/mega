@@ -9683,10 +9683,10 @@ mega.file = function (opt) {
   }
 
   var url = urlParse(opt);
-  var split = url.hash.split('!');
-
   if (url.hostname !== 'mega.nz' && url.hostname !== 'mega.co.nz') throw Error('Wrong URL supplied: wrong hostname');
   if (!url.hash) throw Error('Wrong URL supplied: no hash');
+
+  var split = url.hash.split('!');
   if (split.length <= 1) throw Error('Wrong URL supplied: too few arguments');
   if (split.length >= 4) throw Error('Wrong URL supplied: too many arguments');
   if (split[0] !== '#' && split[0] !== '#F') throw Error('Wrong URL supplied: not recognized');
