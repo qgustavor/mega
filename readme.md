@@ -2,11 +2,11 @@
 
 ## Read first
 
-- This is all unofficial, based on [developer guide](https://mega.co.nz/#developers) and site source.
-- Official SDK will probably be released in the future. You may want to wait.
+- This is all unofficial, based on [developer guide](https://mega.nz/#developers) and site source.
+- Official SDK will probably be released in the future. You may want to wait for it here: https://github.com/meganz/
 - Only part of the API is implemented.
-- Crypto is mostly ported from browser code and isn't optimal. Probably some of it could be done with openssl, [ursa](https://github.com/Obvious/ursa) or [cryptojs](https://github.com/gwjjeff/cryptojs.git) or the algorithms could at least be ported to use Buffer format, but this is no way a priority.
-- If you use it for something make sure you agree with MEGA's [Terms of Service](https://mega.co.nz/#terms).
+- Crypto is mostly ported from browser code and isn't optimal. [Related issue](https://github.com/qgustavor/mega/issues/3).
+- If you use it for something make sure you agree with MEGA's [Terms of Service](https://mega.nz/#terms).
 
 
 ## Installation
@@ -23,12 +23,14 @@ See examples directory for quick start.
 
 ## Missing functionality
 
-- No sharing features
+- Can open shared folders and files, but can't share those.
 - Missing file management: move, symlink etc.
 
 ## Browser support
 
-This module works in the browser via browserify, webpack, rollup and similar module bundlers. For some of those build maybe some configuration for node globals and native packages is needed. There is also a browser specific build in `/dist` folder. This version is the one used in the fallback mode of https://directme.ga.
+This module works in the browser via browserify, webpack, rollup and similar module bundlers. For some of those build maybe some configuration for
+node globals and native packages is needed. There is also a browser specific build in `/dist` folder. This version is the one used in the fallback
+mode of https://directme.ga.
 
 ## API
 
@@ -101,25 +103,32 @@ These events fire on file changes when `keepalive` is used. The changes can be t
 
 ```javascript
 var file = mega.file('https://mega.nz/#!...')
+var folder = mega.file('https://mega.nz/#F!...')
 ```
 
-Returns file object based on download URL or options. Options can be `downloadId` and `key`.
+Returns file object based on download URL or an options object containing `downloadId` (string), `key` (optional, string or buffer)
+and `directory` (boolean, `true` if is a shared folder).
+
+Please note: as MEGA security model allows access to file and folder metadata without needing encryption keys this library
+also don't requires it. Also, downloading files don't work if the encryption key isn't provided.
 
 ### File
 
-Can be a file or folder. Currently only files are supported using `mega.file`.
+Can be a file or folder.
 
 **Properties:**
 
-* `name` - File name
-* `attributes` - Object of attributes
+* `name` - File name✝
+* `attributes` - Object of attributes✝
 * `size` - File size
-* `key` - File key(buffer)
+* `key` - File key(buffer)✝
 * `timestamp` - File creation time
 * `nodeId` - File ID
 * `downloadId` - Link ID to file. Only if created from link.
 * `directory` - Boolean if file is directory.
 * `children` - Array of files for directories.
+
+✝ Those values are null or undefined when an encryption key isn't specified.
 
 ### file.download([cb])
 
@@ -159,6 +168,9 @@ Download and decrypt file attributes. Attributes normally contain file name (`'n
 
 Only makes sense when file is created from download link with `mega.file(url)`, otherwise attributes are already loaded/decrypted.
 
+This function can be also be used to load file information contained in shared folders. If this function isn't called the folder the `children`
+property will be undefined.
+
 ```javascript
 mega.file(url).loadAttributes((err, file) => {
   // file.name
@@ -181,7 +193,8 @@ Lower level duplex streams. These could be used if you want to do network traffi
 
 Takes in encrypted file data and outputs decrypted data and vice versa. Also does MAC verification / generation.
 
-Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit are for the MAC. You can later read the full key from the `key` property of the stream.
+Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit are for the MAC. You can later read the full key from
+the `key` property of the stream.
 
 ## Fork info:
 
@@ -200,7 +213,10 @@ Request package can't be browserified well using rollup, so it was replaced with
 [browser-request](https://www.npmjs.com/package/browser-request) and
 [xhr-stream](https://www.npmjs.com/package/xhr-stream), which additional changes in order to make
 it work inside Service Workers, which in current Chrome Canary don't support XMLHttpRequest, just
-fetch.
+fetch. Crypto dependency was replaced with [secure-random](https://www.npmjs.com/package/secure-random)
+as node crypto was only used for key generation.
 
-Crypto dependency was replaced with [secure-random](https://www.npmjs.com/package/secure-random) as node crypto was only used
-for key generation.
+*Please note:* as this library is a work in progress sometimes things may break, most because we still
+don't created any real test cases. Please don't use any undocumented functions as those can be removed
+or replaced any time (example: `File.getCiphers` was moved to `crypto.getCiphers` because don't makes
+sense a cryptographic function belonging to the file constructor).

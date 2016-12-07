@@ -1,11 +1,66 @@
 import { parse } from 'url';
-import through$1 from 'through';
-import pipeline$1 from 'stream-combiner';
+import through from 'through';
+import pipeline from 'stream-combiner';
+import secureRandom from 'secure-random';
 import { EventEmitter } from 'events';
-import secureRandom$1 from 'secure-random';
 import _request from 'request';
 import querystring from 'querystring';
 import CombinedStream from 'combined-stream';
+
+function streamToCb(stream, cb) {
+  var chunks = [];
+  var complete;
+  stream.on('data', function (d) {
+    chunks.push(d);
+  });
+  stream.on('end', function () {
+    if (!complete) {
+      complete = true;
+      cb(null, Buffer.concat(chunks));
+    }
+  });
+  stream.on('error', function (e) {
+    if (!complete) {
+      complete = true;
+      cb(e);
+    }
+  });
+}
+
+function chunkSizeSafe(size) {
+  var last = void 0;
+  return through(function (d) {
+    if (last) d = Buffer.concat([last, d]);
+
+    var end = Math.floor(d.length / size) * size;
+
+    if (!end) {
+      last = last ? Buffer.concat([last, d]) : d;
+    } else if (d.length > end) {
+      last = d.slice(end);
+      this.emit('data', d.slice(0, end));
+    } else {
+      last = undefined;
+      this.emit('data', d);
+    }
+  }, function () {
+    if (last) this.emit('data', last);
+    this.emit('end');
+  });
+}
+
+function detectSize(cb) {
+  var chunks = [];
+  var size = 0;
+  return through(function (d) {
+    chunks.push(d);
+    size += d.length;
+  }, function () {
+    cb(size);
+    chunks.forEach(this.emit.bind(this, 'data'));
+    this.emit('end');
+  });
+}
 
 /** @fileOverview Low-level AES implementation.
  *
@@ -695,39 +750,6 @@ function megaDecrypt(key) {
   return pipeline(chunkSizeSafe(16), stream);
 }
 
-function streamToCb(stream, cb) {
-  var chunks = [];
-  var complete;
-  stream.on('data', function (d) {
-    chunks.push(d);
-  });
-  stream.on('end', function () {
-    if (!complete) {
-      complete = true;
-      cb(null, Buffer.concat(chunks));
-    }
-  });
-  stream.on('error', function (e) {
-    if (!complete) {
-      complete = true;
-      cb(e);
-    }
-  });
-}
-
-function detectSize(cb) {
-  var chunks = [];
-  var size = 0;
-  return through$1(function (d) {
-    chunks.push(d);
-    size += d.length;
-  }, function () {
-    cb(size);
-    chunks.forEach(this.emit.bind(this, 'data'));
-    this.emit('end');
-  });
-}
-
 /* RSA public key encryption/decryption
  * The following functions are (c) 2000 by John M Hanna and are
  * released under the terms of the Gnu Public License.
@@ -1318,7 +1340,9 @@ var File = function (_EventEmitter) {
       this.timestamp = opt.ts || 0;
       this.type = opt.t;
       this.name = null;
+
       if (!aes || !opt.a) return;
+
       var parts = opt.k.split(':');
       this.key = formatKey(parts[parts.length - 1]);
       aes.decryptKey(this.key);
@@ -1378,6 +1402,8 @@ var File = function (_EventEmitter) {
 
                 var fileObj = new File(file, _this2.storage);
                 fileObj._decryptAttributes(aes, file);
+                // is it the best way to handle this?
+                fileObj.downloadId = [_this2.downloadId, file.h];
                 parent.children.push(fileObj);
                 file.parent = parent;
               }
@@ -1414,6 +1440,7 @@ var File = function (_EventEmitter) {
         cb = options;
         options = {};
       }
+      if (!options) options = {};
       var maxConnections = options.maxConnections || 4;
       var initialChunkSize = options.initialChunkSize || 128 * 1024;
       var chunkSizeIncrement = options.chunkSizeIncrement || 128 * 1024;
@@ -1422,6 +1449,9 @@ var File = function (_EventEmitter) {
       var req = { a: 'g', g: 1, ssl: 2 };
       if (this.nodeId) {
         req.n = this.nodeId;
+      } else if (Array.isArray(this.downloadId)) {
+        req.qs = { n: this.downloadId[0] };
+        req.n = this.downloadId[1];
       } else {
         req.p = this.downloadId;
       }
@@ -1733,7 +1763,7 @@ var Storage /* extends EventEmitter */ = function () {
       }
 
       if (!opt.target) opt.target = this.root;
-      if (!opt.key) opt.key = secureRandom$1(32);
+      if (!opt.key) opt.key = secureRandom(32);
 
       var key = opt.key;
       var at = File.packAttributes(opt.attributes);
@@ -1784,8 +1814,8 @@ var Storage /* extends EventEmitter */ = function () {
 
       var self = this;
       var encrypter = mega.encrypt();
-      var pause = through$1().pause();
-      var stream = pipeline$1(pause, encrypter);
+      var pause = through().pause();
+      var stream = pipeline(pause, encrypter);
 
       function returnError(e) {
         if (cb) cb(e);else stream.emit('error', e);
@@ -1816,7 +1846,7 @@ var Storage /* extends EventEmitter */ = function () {
       if (size) {
         upload(size);
       } else {
-        stream = pipeline$1(detectSize(upload), stream);
+        stream = pipeline(detectSize(upload), stream);
       }
 
       function defaultUpload(size) {

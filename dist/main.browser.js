@@ -6575,7 +6575,7 @@ function through (write, end, opts) {
 }
 });
 
-var through$1 = (index && typeof index === 'object' && 'default' in index ? index['default'] : index);
+var through = (index && typeof index === 'object' && 'default' in index ? index['default'] : index);
 
 var index$2 = __commonjs(function (module, exports) {
 var Stream$$1 = Stream;
@@ -6829,7 +6829,147 @@ module.exports = function () {
 };
 });
 
-var pipeline$1 = (index$1 && typeof index$1 === 'object' && 'default' in index$1 ? index$1['default'] : index$1);
+var pipeline = (index$1 && typeof index$1 === 'object' && 'default' in index$1 ? index$1['default'] : index$1);
+
+function streamToCb(stream, cb) {
+  var chunks = [];
+  var complete;
+  stream.on('data', function (d) {
+    chunks.push(d);
+  });
+  stream.on('end', function () {
+    if (!complete) {
+      complete = true;
+      cb(null, Buffer.concat(chunks));
+    }
+  });
+  stream.on('error', function (e) {
+    if (!complete) {
+      complete = true;
+      cb(e);
+    }
+  });
+}
+
+function chunkSizeSafe(size) {
+  var last = void 0;
+  return through(function (d) {
+    if (last) d = Buffer.concat([last, d]);
+
+    var end = Math.floor(d.length / size) * size;
+
+    if (!end) {
+      last = last ? Buffer.concat([last, d]) : d;
+    } else if (d.length > end) {
+      last = d.slice(end);
+      this.emit('data', d.slice(0, end));
+    } else {
+      last = undefined;
+      this.emit('data', d);
+    }
+  }, function () {
+    if (last) this.emit('data', last);
+    this.emit('end');
+  });
+}
+
+function detectSize(cb) {
+  var chunks = [];
+  var size = 0;
+  return through(function (d) {
+    chunks.push(d);
+    size += d.length;
+  }, function () {
+    cb(size);
+    chunks.forEach(this.emit.bind(this, 'data'));
+    this.emit('end');
+  });
+}
+
+var require$$0$2 = {};
+
+var secureRandom = __commonjs(function (module, exports, global) {
+!function(globals){
+'use strict';
+
+//*** UMD BEGIN
+if (typeof define !== 'undefined' && define.amd) { //require.js / AMD
+  define([], function() {
+    return secureRandom
+  });
+} else if (typeof module !== 'undefined' && module.exports) { //CommonJS
+  module.exports = secureRandom;
+} else { //script / browser
+  globals.secureRandom = secureRandom;
+}
+//*** UMD END
+
+//options.type is the only valid option
+function secureRandom(count, options) {
+  options = options || {type: 'Array'};
+  //we check for process.pid to prevent browserify from tricking us
+  if (typeof process != 'undefined' && typeof process.pid == 'number') {
+    return nodeRandom(count, options)
+  } else {
+    var crypto = window.crypto || window.msCrypto;
+    if (!crypto) throw new Error("Your browser does not support window.crypto.")
+    return browserRandom(count, options)
+  }
+}
+
+function nodeRandom(count, options) {
+  var crypto = require$$0$2;
+  var buf = crypto.randomBytes(count);
+
+  switch (options.type) {
+    case 'Array':
+      return [].slice.call(buf)
+    case 'Buffer':
+      return buf
+    case 'Uint8Array':
+      var arr = new Uint8Array(count);
+      for (var i = 0; i < count; ++i) { arr[i] = buf.readUInt8(i); }
+      return arr
+    default:
+      throw new Error(options.type + " is unsupported.")
+  }
+}
+
+function browserRandom(count, options) {
+  var nativeArr = new Uint8Array(count);
+  var crypto = window.crypto || window.msCrypto;
+  crypto.getRandomValues(nativeArr);
+
+  switch (options.type) {
+    case 'Array':
+      return [].slice.call(nativeArr)
+    case 'Buffer':
+      try { var b = new Buffer(1); } catch(e) { throw new Error('Buffer not supported in this environment. Use Node.js or Browserify for browser support.')}
+      return new Buffer(nativeArr)
+    case 'Uint8Array':
+      return nativeArr
+    default:
+      throw new Error(options.type + " is unsupported.")
+  }
+}
+
+secureRandom.randomArray = function(byteCount) {
+  return secureRandom(byteCount, {type: 'Array'})
+};
+
+secureRandom.randomUint8Array = function(byteCount) {
+  return secureRandom(byteCount, {type: 'Uint8Array'})
+};
+
+secureRandom.randomBuffer = function(byteCount) {
+  return secureRandom(byteCount, {type: 'Buffer'})
+};
+
+
+}(__commonjs_global);
+});
+
+var secureRandom$1 = (secureRandom && typeof secureRandom === 'object' && 'default' in secureRandom ? secureRandom['default'] : secureRandom);
 
 /** @fileOverview Low-level AES implementation.
  *
@@ -7456,7 +7596,7 @@ function megaEncrypt(key) {
   key = formatKey(key);
 
   if (!key) {
-    key = secureRandom(24);
+    key = secureRandom$1(24);
   }
   if (!(key instanceof Buffer)) {
     key = new Buffer(key);
@@ -7518,124 +7658,6 @@ function megaDecrypt(key) {
 
   return pipeline(chunkSizeSafe(16), stream);
 }
-
-function streamToCb(stream, cb) {
-  var chunks = [];
-  var complete;
-  stream.on('data', function (d) {
-    chunks.push(d);
-  });
-  stream.on('end', function () {
-    if (!complete) {
-      complete = true;
-      cb(null, Buffer.concat(chunks));
-    }
-  });
-  stream.on('error', function (e) {
-    if (!complete) {
-      complete = true;
-      cb(e);
-    }
-  });
-}
-
-function detectSize(cb) {
-  var chunks = [];
-  var size = 0;
-  return through$1(function (d) {
-    chunks.push(d);
-    size += d.length;
-  }, function () {
-    cb(size);
-    chunks.forEach(this.emit.bind(this, 'data'));
-    this.emit('end');
-  });
-}
-
-var require$$0$2 = {};
-
-var secureRandom$1 = __commonjs(function (module, exports, global) {
-!function(globals){
-'use strict';
-
-//*** UMD BEGIN
-if (typeof define !== 'undefined' && define.amd) { //require.js / AMD
-  define([], function() {
-    return secureRandom
-  });
-} else if (typeof module !== 'undefined' && module.exports) { //CommonJS
-  module.exports = secureRandom;
-} else { //script / browser
-  globals.secureRandom = secureRandom;
-}
-//*** UMD END
-
-//options.type is the only valid option
-function secureRandom(count, options) {
-  options = options || {type: 'Array'};
-  //we check for process.pid to prevent browserify from tricking us
-  if (typeof process != 'undefined' && typeof process.pid == 'number') {
-    return nodeRandom(count, options)
-  } else {
-    var crypto = window.crypto || window.msCrypto;
-    if (!crypto) throw new Error("Your browser does not support window.crypto.")
-    return browserRandom(count, options)
-  }
-}
-
-function nodeRandom(count, options) {
-  var crypto = require$$0$2;
-  var buf = crypto.randomBytes(count);
-
-  switch (options.type) {
-    case 'Array':
-      return [].slice.call(buf)
-    case 'Buffer':
-      return buf
-    case 'Uint8Array':
-      var arr = new Uint8Array(count);
-      for (var i = 0; i < count; ++i) { arr[i] = buf.readUInt8(i); }
-      return arr
-    default:
-      throw new Error(options.type + " is unsupported.")
-  }
-}
-
-function browserRandom(count, options) {
-  var nativeArr = new Uint8Array(count);
-  var crypto = window.crypto || window.msCrypto;
-  crypto.getRandomValues(nativeArr);
-
-  switch (options.type) {
-    case 'Array':
-      return [].slice.call(nativeArr)
-    case 'Buffer':
-      try { var b = new Buffer(1); } catch(e) { throw new Error('Buffer not supported in this environment. Use Node.js or Browserify for browser support.')}
-      return new Buffer(nativeArr)
-    case 'Uint8Array':
-      return nativeArr
-    default:
-      throw new Error(options.type + " is unsupported.")
-  }
-}
-
-secureRandom.randomArray = function(byteCount) {
-  return secureRandom(byteCount, {type: 'Array'})
-};
-
-secureRandom.randomUint8Array = function(byteCount) {
-  return secureRandom(byteCount, {type: 'Uint8Array'})
-};
-
-secureRandom.randomBuffer = function(byteCount) {
-  return secureRandom(byteCount, {type: 'Buffer'})
-};
-
-
-}(__commonjs_global);
-});
-
-var secureRandom$2 = (secureRandom$1 && typeof secureRandom$1 === 'object' && 'default' in secureRandom$1 ? secureRandom$1['default'] : secureRandom$1);
 
 var global$2 = typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : typeof global$2 !== 'undefined' ? self : {};
 
@@ -9058,7 +9080,9 @@ var File = function (_EventEmitter) {
       this.timestamp = opt.ts || 0;
       this.type = opt.t;
       this.name = null;
+
       if (!aes || !opt.a) return;
+
       var parts = opt.k.split(':');
       this.key = formatKey(parts[parts.length - 1]);
       aes.decryptKey(this.key);
@@ -9118,6 +9142,8 @@ var File = function (_EventEmitter) {
 
                 var fileObj = new File(file, _this2.storage);
                 fileObj._decryptAttributes(aes, file);
+                // is it the best way to handle this?
+                fileObj.downloadId = [_this2.downloadId, file.h];
                 parent.children.push(fileObj);
                 file.parent = parent;
               }
@@ -9154,6 +9180,7 @@ var File = function (_EventEmitter) {
         cb = options;
         options = {};
       }
+      if (!options) options = {};
       var maxConnections = options.maxConnections || 4;
       var initialChunkSize = options.initialChunkSize || 128 * 1024;
       var chunkSizeIncrement = options.chunkSizeIncrement || 128 * 1024;
@@ -9162,6 +9189,9 @@ var File = function (_EventEmitter) {
       var req = { a: 'g', g: 1, ssl: 2 };
       if (this.nodeId) {
         req.n = this.nodeId;
+      } else if (Array.isArray(this.downloadId)) {
+        req.qs = { n: this.downloadId[0] };
+        req.n = this.downloadId[1];
       } else {
         req.p = this.downloadId;
       }
@@ -9473,7 +9503,7 @@ var Storage /* extends EventEmitter */ = function () {
       }
 
       if (!opt.target) opt.target = this.root;
-      if (!opt.key) opt.key = secureRandom$2(32);
+      if (!opt.key) opt.key = secureRandom$1(32);
 
       var key = opt.key;
       var at = File.packAttributes(opt.attributes);
@@ -9524,8 +9554,8 @@ var Storage /* extends EventEmitter */ = function () {
 
       var self = this;
       var encrypter = mega.encrypt();
-      var pause = through$1().pause();
-      var stream = pipeline$1(pause, encrypter);
+      var pause = through().pause();
+      var stream = pipeline(pause, encrypter);
 
       function returnError(e) {
         if (cb) cb(e);else stream.emit('error', e);
@@ -9556,7 +9586,7 @@ var Storage /* extends EventEmitter */ = function () {
       if (size) {
         upload(size);
       } else {
-        stream = pipeline$1(detectSize(upload), stream);
+        stream = pipeline(detectSize(upload), stream);
       }
 
       function defaultUpload(size) {
