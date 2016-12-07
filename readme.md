@@ -196,6 +196,16 @@ Takes in encrypted file data and outputs decrypted data and vice versa. Also doe
 Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit are for the MAC. You can later read the full key from
 the `key` property of the stream.
 
+### Shared folder example:
+
+```javascript
+mega.file('https://mega.nz/#F!...').loadAttributes((err, folder) => {
+  if (err) throw err
+  const file = folder.children[0]
+  file.download().pipe(fs.createWriteStream(file.name))
+})
+```
+
 ## Fork info:
 
 This fork intents to:
