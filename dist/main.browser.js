@@ -7,6 +7,369 @@
 var __commonjs_global = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : this;
 function __commonjs(fn, module) { return module = { exports: {} }, fn(module, module.exports, __commonjs_global), module.exports; }
 
+/*! https://mths.be/punycode v1.4.1 by @mathias */
+
+
+/** Highest positive signed 32-bit float value */
+var maxInt = 2147483647; // aka. 0x7FFFFFFF or 2^31-1
+
+/** Bootstring parameters */
+var base = 36;
+var tMin = 1;
+var tMax = 26;
+var skew = 38;
+var damp = 700;
+var initialBias = 72;
+var initialN = 128; // 0x80
+var delimiter = '-'; // '\x2D'
+
+var regexNonASCII = /[^\x20-\x7E]/; // unprintable ASCII chars + non-ASCII chars
+var regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g; // RFC 3490 separators
+
+/** Error messages */
+var errors = {
+  'overflow': 'Overflow: input needs wider integers to process',
+  'not-basic': 'Illegal input >= 0x80 (not a basic code point)',
+  'invalid-input': 'Invalid input'
+};
+
+/** Convenience shortcuts */
+var baseMinusTMin = base - tMin;
+var floor = Math.floor;
+var stringFromCharCode = String.fromCharCode;
+
+/*--------------------------------------------------------------------------*/
+
+/**
+ * A generic error utility function.
+ * @private
+ * @param {String} type The error type.
+ * @returns {Error} Throws a `RangeError` with the applicable error message.
+ */
+function error$1(type) {
+  throw new RangeError(errors[type]);
+}
+
+/**
+ * A generic `Array#map` utility function.
+ * @private
+ * @param {Array} array The array to iterate over.
+ * @param {Function} callback The function that gets called for every array
+ * item.
+ * @returns {Array} A new array of values returned by the callback function.
+ */
+function map(array, fn) {
+  var length = array.length;
+  var result = [];
+  while (length--) {
+    result[length] = fn(array[length]);
+  }
+  return result;
+}
+
+/**
+ * A simple `Array#map`-like wrapper to work with domain name strings or email
+ * addresses.
+ * @private
+ * @param {String} domain The domain name or email address.
+ * @param {Function} callback The function that gets called for every
+ * character.
+ * @returns {Array} A new string of characters returned by the callback
+ * function.
+ */
+function mapDomain(string, fn) {
+  var parts = string.split('@');
+  var result = '';
+  if (parts.length > 1) {
+    // In email addresses, only the domain name should be punycoded. Leave
+    // the local part (i.e. everything up to `@`) intact.
+    result = parts[0] + '@';
+    string = parts[1];
+  }
+  // Avoid `split(regex)` for IE8 compatibility. See #17.
+  string = string.replace(regexSeparators, '\x2E');
+  var labels = string.split('.');
+  var encoded = map(labels, fn).join('.');
+  return result + encoded;
+}
+
+/**
+ * Creates an array containing the numeric code points of each Unicode
+ * character in the string. While JavaScript uses UCS-2 internally,
+ * this function will convert a pair of surrogate halves (each of which
+ * UCS-2 exposes as separate characters) into a single code point,
+ * matching UTF-16.
+ * @see `punycode.ucs2.encode`
+ * @see <https://mathiasbynens.be/notes/javascript-encoding>
+ * @memberOf punycode.ucs2
+ * @name decode
+ * @param {String} string The Unicode input string (UCS-2).
+ * @returns {Array} The new array of code points.
+ */
+function ucs2decode(string) {
+  var output = [],
+    counter = 0,
+    length = string.length,
+    value,
+    extra;
+  while (counter < length) {
+    value = string.charCodeAt(counter++);
+    if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
+      // high surrogate, and there is a next character
+      extra = string.charCodeAt(counter++);
+      if ((extra & 0xFC00) == 0xDC00) { // low surrogate
+        output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000);
+      } else {
+        // unmatched surrogate; only append this code unit, in case the next
+        // code unit is the high surrogate of a surrogate pair
+        output.push(value);
+        counter--;
+      }
+    } else {
+      output.push(value);
+    }
+  }
+  return output;
+}
+
+/**
+ * Creates a string based on an array of numeric code points.
+ * @see `punycode.ucs2.decode`
+ * @memberOf punycode.ucs2
+ * @name encode
+ * @param {Array} codePoints The array of numeric code points.
+ * @returns {String} The new Unicode string (UCS-2).
+ */
+function ucs2encode(array) {
+  return map(array, function(value) {
+    var output = '';
+    if (value > 0xFFFF) {
+      value -= 0x10000;
+      output += stringFromCharCode(value >>> 10 & 0x3FF | 0xD800);
+      value = 0xDC00 | value & 0x3FF;
+    }
+    output += stringFromCharCode(value);
+    return output;
+  }).join('');
+}
+
+/**
+ * Converts a basic code point into a digit/integer.
+ * @see `digitToBasic()`
+ * @private
+ * @param {Number} codePoint The basic numeric code point value.
+ * @returns {Number} The numeric value of a basic code point (for use in
+ * representing integers) in the range `0` to `base - 1`, or `base` if
+ * the code point does not represent a value.
+ */
+function basicToDigit(codePoint) {
+  if (codePoint - 48 < 10) {
+    return codePoint - 22;
+  }
+  if (codePoint - 65 < 26) {
+    return codePoint - 65;
+  }
+  if (codePoint - 97 < 26) {
+    return codePoint - 97;
+  }
+  return base;
+}
+
+/**
+ * Converts a digit/integer into a basic code point.
+ * @see `basicToDigit()`
+ * @private
+ * @param {Number} digit The numeric value of a basic code point.
+ * @returns {Number} The basic code point whose value (when used for
+ * representing integers) is `digit`, which needs to be in the range
+ * `0` to `base - 1`. If `flag` is non-zero, the uppercase form is
+ * used; else, the lowercase form is used. The behavior is undefined
+ * if `flag` is non-zero and `digit` has no uppercase form.
+ */
+function digitToBasic(digit, flag) {
+  //  0..25 map to ASCII a..z or A..Z
+  // 26..35 map to ASCII 0..9
+  return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
+}
+
+/**
+ * Bias adaptation function as per section 3.4 of RFC 3492.
+ * https://tools.ietf.org/html/rfc3492#section-3.4
+ * @private
+ */
+function adapt(delta, numPoints, firstTime) {
+  var k = 0;
+  delta = firstTime ? floor(delta / damp) : delta >> 1;
+  delta += floor(delta / numPoints);
+  for ( /* no initialization */ ; delta > baseMinusTMin * tMax >> 1; k += base) {
+    delta = floor(delta / baseMinusTMin);
+  }
+  return floor(k + (baseMinusTMin + 1) * delta / (delta + skew));
+}
+
+/**
+ * Converts a Punycode string of ASCII-only symbols to a string of Unicode
+ * symbols.
+ * @memberOf punycode
+ * @param {String} input The Punycode string of ASCII-only symbols.
+ * @returns {String} The resulting string of Unicode symbols.
+ */
+
+
+/**
+ * Converts a string of Unicode symbols (e.g. a domain name label) to a
+ * Punycode string of ASCII-only symbols.
+ * @memberOf punycode
+ * @param {String} input The string of Unicode symbols.
+ * @returns {String} The resulting Punycode string of ASCII-only symbols.
+ */
+function encode(input) {
+  var n,
+    delta,
+    handledCPCount,
+    basicLength,
+    bias,
+    j,
+    m,
+    q,
+    k,
+    t,
+    currentValue,
+    output = [],
+    /** `inputLength` will hold the number of code points in `input`. */
+    inputLength,
+    /** Cached calculation results */
+    handledCPCountPlusOne,
+    baseMinusT,
+    qMinusT;
+
+  // Convert the input in UCS-2 to Unicode
+  input = ucs2decode(input);
+
+  // Cache the length
+  inputLength = input.length;
+
+  // Initialize the state
+  n = initialN;
+  delta = 0;
+  bias = initialBias;
+
+  // Handle the basic code points
+  for (j = 0; j < inputLength; ++j) {
+    currentValue = input[j];
+    if (currentValue < 0x80) {
+      output.push(stringFromCharCode(currentValue));
+    }
+  }
+
+  handledCPCount = basicLength = output.length;
+
+  // `handledCPCount` is the number of code points that have been handled;
+  // `basicLength` is the number of basic code points.
+
+  // Finish the basic string - if it is not empty - with a delimiter
+  if (basicLength) {
+    output.push(delimiter);
+  }
+
+  // Main encoding loop:
+  while (handledCPCount < inputLength) {
+
+    // All non-basic code points < n have been handled already. Find the next
+    // larger one:
+    for (m = maxInt, j = 0; j < inputLength; ++j) {
+      currentValue = input[j];
+      if (currentValue >= n && currentValue < m) {
+        m = currentValue;
+      }
+    }
+
+    // Increase `delta` enough to advance the decoder's <n,i> state to <m,0>,
+    // but guard against overflow
+    handledCPCountPlusOne = handledCPCount + 1;
+    if (m - n > floor((maxInt - delta) / handledCPCountPlusOne)) {
+      error$1('overflow');
+    }
+
+    delta += (m - n) * handledCPCountPlusOne;
+    n = m;
+
+    for (j = 0; j < inputLength; ++j) {
+      currentValue = input[j];
+
+      if (currentValue < n && ++delta > maxInt) {
+        error$1('overflow');
+      }
+
+      if (currentValue == n) {
+        // Represent delta as a generalized variable-length integer
+        for (q = delta, k = base; /* no condition */ ; k += base) {
+          t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
+          if (q < t) {
+            break;
+          }
+          qMinusT = q - t;
+          baseMinusT = base - t;
+          output.push(
+            stringFromCharCode(digitToBasic(t + qMinusT % baseMinusT, 0))
+          );
+          q = floor(qMinusT / baseMinusT);
+        }
+
+        output.push(stringFromCharCode(digitToBasic(q, 0)));
+        bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
+        delta = 0;
+        ++handledCPCount;
+      }
+    }
+
+    ++delta;
+    ++n;
+
+  }
+  return output.join('');
+}
+
+/**
+ * Converts a Punycode string representing a domain name or an email address
+ * to Unicode. Only the Punycoded parts of the input will be converted, i.e.
+ * it doesn't matter if you call it on a string that has already been
+ * converted to Unicode.
+ * @memberOf punycode
+ * @param {String} input The Punycoded domain name or email address to
+ * convert to Unicode.
+ * @returns {String} The Unicode representation of the given Punycode
+ * string.
+ */
+
+
+/**
+ * Converts a Unicode string representing a domain name or an email address to
+ * Punycode. Only the non-ASCII parts of the domain name will be converted,
+ * i.e. it doesn't matter if you call it with a domain that's already in
+ * ASCII.
+ * @memberOf punycode
+ * @param {String} input The domain name or email address to convert, as a
+ * Unicode string.
+ * @returns {String} The Punycode representation of the given domain name or
+ * email address.
+ */
+function toASCII(input) {
+  return mapDomain(input, function(string) {
+    return regexNonASCII.test(string) ?
+      'xn--' + encode(string) :
+      string;
+  });
+}
+
+/**
+ * An object of methods to convert from JavaScript's internal character
+ * representation (UCS-2) to Unicode code points, and back.
+ * @see <https://mathiasbynens.be/notes/javascript-encoding>
+ * @memberOf punycode
+ * @type Object
+ */
+
 var global$1 = typeof global !== "undefined" ? global :
             typeof self !== "undefined" ? self :
             typeof window !== "undefined" ? window : {};
@@ -208,7 +571,7 @@ function write$1 (buffer, value, offset, isLE, mLen, nBytes) {
 
 var toString$1 = {}.toString;
 
-var isArray = Array.isArray || function (arr) {
+var isArray$1 = Array.isArray || function (arr) {
   return toString$1.call(arr) == '[object Array]';
 };
 
@@ -493,7 +856,7 @@ function fromObject (that, obj) {
       return fromArrayLike(that, obj)
     }
 
-    if (obj.type === 'Buffer' && isArray(obj.data)) {
+    if (obj.type === 'Buffer' && isArray$1(obj.data)) {
       return fromArrayLike(that, obj.data)
     }
   }
@@ -512,7 +875,7 @@ function checked (length) {
 }
 
 
-Buffer.isBuffer = isBuffer;
+Buffer.isBuffer = isBuffer$1;
 function internalIsBuffer (b) {
   return !!(b != null && b._isBuffer)
 }
@@ -560,7 +923,7 @@ Buffer.isEncoding = function isEncoding (encoding) {
 };
 
 Buffer.concat = function concat (list, length) {
-  if (!isArray(list)) {
+  if (!isArray$1(list)) {
     throw new TypeError('"list" argument must be an Array of Buffers')
   }
 
@@ -1978,7 +2341,7 @@ function isnan (val) {
 // the following is from is-buffer, also by Feross Aboukhadijeh and with same lisence
 // The _isBuffer check is for Safari 5-7 support, because it's missing
 // Object.prototype.constructor. Remove this eventually
-function isBuffer(obj) {
+function isBuffer$1(obj) {
   return obj != null && (!!obj._isBuffer || isFastBuffer(obj) || isSlowBuffer(obj))
 }
 
@@ -2129,7 +2492,7 @@ var platform = 'browser';
 var browser = true;
 var env = {};
 var argv = [];
-var version = ''; // empty string to avoid regexp issues
+var version$1 = ''; // empty string to avoid regexp issues
 var versions = {};
 var release = {};
 var config = {};
@@ -2194,7 +2557,7 @@ var process = {
   browser: browser,
   env: env,
   argv: argv,
-  version: version,
+  version: version$1,
   versions: versions,
   on: on,
   addListener: addListener$1,
@@ -2213,369 +2576,6 @@ var process = {
   config: config,
   uptime: uptime
 };
-
-/*! https://mths.be/punycode v1.4.1 by @mathias */
-
-
-/** Highest positive signed 32-bit float value */
-var maxInt = 2147483647; // aka. 0x7FFFFFFF or 2^31-1
-
-/** Bootstring parameters */
-var base = 36;
-var tMin = 1;
-var tMax = 26;
-var skew = 38;
-var damp = 700;
-var initialBias = 72;
-var initialN = 128; // 0x80
-var delimiter = '-'; // '\x2D'
-
-var regexNonASCII = /[^\x20-\x7E]/; // unprintable ASCII chars + non-ASCII chars
-var regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g; // RFC 3490 separators
-
-/** Error messages */
-var errors = {
-  'overflow': 'Overflow: input needs wider integers to process',
-  'not-basic': 'Illegal input >= 0x80 (not a basic code point)',
-  'invalid-input': 'Invalid input'
-};
-
-/** Convenience shortcuts */
-var baseMinusTMin = base - tMin;
-var floor = Math.floor;
-var stringFromCharCode = String.fromCharCode;
-
-/*--------------------------------------------------------------------------*/
-
-/**
- * A generic error utility function.
- * @private
- * @param {String} type The error type.
- * @returns {Error} Throws a `RangeError` with the applicable error message.
- */
-function error$1(type) {
-  throw new RangeError(errors[type]);
-}
-
-/**
- * A generic `Array#map` utility function.
- * @private
- * @param {Array} array The array to iterate over.
- * @param {Function} callback The function that gets called for every array
- * item.
- * @returns {Array} A new array of values returned by the callback function.
- */
-function map(array, fn) {
-  var length = array.length;
-  var result = [];
-  while (length--) {
-    result[length] = fn(array[length]);
-  }
-  return result;
-}
-
-/**
- * A simple `Array#map`-like wrapper to work with domain name strings or email
- * addresses.
- * @private
- * @param {String} domain The domain name or email address.
- * @param {Function} callback The function that gets called for every
- * character.
- * @returns {Array} A new string of characters returned by the callback
- * function.
- */
-function mapDomain(string, fn) {
-  var parts = string.split('@');
-  var result = '';
-  if (parts.length > 1) {
-    // In email addresses, only the domain name should be punycoded. Leave
-    // the local part (i.e. everything up to `@`) intact.
-    result = parts[0] + '@';
-    string = parts[1];
-  }
-  // Avoid `split(regex)` for IE8 compatibility. See #17.
-  string = string.replace(regexSeparators, '\x2E');
-  var labels = string.split('.');
-  var encoded = map(labels, fn).join('.');
-  return result + encoded;
-}
-
-/**
- * Creates an array containing the numeric code points of each Unicode
- * character in the string. While JavaScript uses UCS-2 internally,
- * this function will convert a pair of surrogate halves (each of which
- * UCS-2 exposes as separate characters) into a single code point,
- * matching UTF-16.
- * @see `punycode.ucs2.encode`
- * @see <https://mathiasbynens.be/notes/javascript-encoding>
- * @memberOf punycode.ucs2
- * @name decode
- * @param {String} string The Unicode input string (UCS-2).
- * @returns {Array} The new array of code points.
- */
-function ucs2decode(string) {
-  var output = [],
-    counter = 0,
-    length = string.length,
-    value,
-    extra;
-  while (counter < length) {
-    value = string.charCodeAt(counter++);
-    if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
-      // high surrogate, and there is a next character
-      extra = string.charCodeAt(counter++);
-      if ((extra & 0xFC00) == 0xDC00) { // low surrogate
-        output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000);
-      } else {
-        // unmatched surrogate; only append this code unit, in case the next
-        // code unit is the high surrogate of a surrogate pair
-        output.push(value);
-        counter--;
-      }
-    } else {
-      output.push(value);
-    }
-  }
-  return output;
-}
-
-/**
- * Creates a string based on an array of numeric code points.
- * @see `punycode.ucs2.decode`
- * @memberOf punycode.ucs2
- * @name encode
- * @param {Array} codePoints The array of numeric code points.
- * @returns {String} The new Unicode string (UCS-2).
- */
-function ucs2encode(array) {
-  return map(array, function(value) {
-    var output = '';
-    if (value > 0xFFFF) {
-      value -= 0x10000;
-      output += stringFromCharCode(value >>> 10 & 0x3FF | 0xD800);
-      value = 0xDC00 | value & 0x3FF;
-    }
-    output += stringFromCharCode(value);
-    return output;
-  }).join('');
-}
-
-/**
- * Converts a basic code point into a digit/integer.
- * @see `digitToBasic()`
- * @private
- * @param {Number} codePoint The basic numeric code point value.
- * @returns {Number} The numeric value of a basic code point (for use in
- * representing integers) in the range `0` to `base - 1`, or `base` if
- * the code point does not represent a value.
- */
-function basicToDigit(codePoint) {
-  if (codePoint - 48 < 10) {
-    return codePoint - 22;
-  }
-  if (codePoint - 65 < 26) {
-    return codePoint - 65;
-  }
-  if (codePoint - 97 < 26) {
-    return codePoint - 97;
-  }
-  return base;
-}
-
-/**
- * Converts a digit/integer into a basic code point.
- * @see `basicToDigit()`
- * @private
- * @param {Number} digit The numeric value of a basic code point.
- * @returns {Number} The basic code point whose value (when used for
- * representing integers) is `digit`, which needs to be in the range
- * `0` to `base - 1`. If `flag` is non-zero, the uppercase form is
- * used; else, the lowercase form is used. The behavior is undefined
- * if `flag` is non-zero and `digit` has no uppercase form.
- */
-function digitToBasic(digit, flag) {
-  //  0..25 map to ASCII a..z or A..Z
-  // 26..35 map to ASCII 0..9
-  return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
-}
-
-/**
- * Bias adaptation function as per section 3.4 of RFC 3492.
- * https://tools.ietf.org/html/rfc3492#section-3.4
- * @private
- */
-function adapt(delta, numPoints, firstTime) {
-  var k = 0;
-  delta = firstTime ? floor(delta / damp) : delta >> 1;
-  delta += floor(delta / numPoints);
-  for ( /* no initialization */ ; delta > baseMinusTMin * tMax >> 1; k += base) {
-    delta = floor(delta / baseMinusTMin);
-  }
-  return floor(k + (baseMinusTMin + 1) * delta / (delta + skew));
-}
-
-/**
- * Converts a Punycode string of ASCII-only symbols to a string of Unicode
- * symbols.
- * @memberOf punycode
- * @param {String} input The Punycode string of ASCII-only symbols.
- * @returns {String} The resulting string of Unicode symbols.
- */
-
-
-/**
- * Converts a string of Unicode symbols (e.g. a domain name label) to a
- * Punycode string of ASCII-only symbols.
- * @memberOf punycode
- * @param {String} input The string of Unicode symbols.
- * @returns {String} The resulting Punycode string of ASCII-only symbols.
- */
-function encode(input) {
-  var n,
-    delta,
-    handledCPCount,
-    basicLength,
-    bias,
-    j,
-    m,
-    q,
-    k,
-    t,
-    currentValue,
-    output = [],
-    /** `inputLength` will hold the number of code points in `input`. */
-    inputLength,
-    /** Cached calculation results */
-    handledCPCountPlusOne,
-    baseMinusT,
-    qMinusT;
-
-  // Convert the input in UCS-2 to Unicode
-  input = ucs2decode(input);
-
-  // Cache the length
-  inputLength = input.length;
-
-  // Initialize the state
-  n = initialN;
-  delta = 0;
-  bias = initialBias;
-
-  // Handle the basic code points
-  for (j = 0; j < inputLength; ++j) {
-    currentValue = input[j];
-    if (currentValue < 0x80) {
-      output.push(stringFromCharCode(currentValue));
-    }
-  }
-
-  handledCPCount = basicLength = output.length;
-
-  // `handledCPCount` is the number of code points that have been handled;
-  // `basicLength` is the number of basic code points.
-
-  // Finish the basic string - if it is not empty - with a delimiter
-  if (basicLength) {
-    output.push(delimiter);
-  }
-
-  // Main encoding loop:
-  while (handledCPCount < inputLength) {
-
-    // All non-basic code points < n have been handled already. Find the next
-    // larger one:
-    for (m = maxInt, j = 0; j < inputLength; ++j) {
-      currentValue = input[j];
-      if (currentValue >= n && currentValue < m) {
-        m = currentValue;
-      }
-    }
-
-    // Increase `delta` enough to advance the decoder's <n,i> state to <m,0>,
-    // but guard against overflow
-    handledCPCountPlusOne = handledCPCount + 1;
-    if (m - n > floor((maxInt - delta) / handledCPCountPlusOne)) {
-      error$1('overflow');
-    }
-
-    delta += (m - n) * handledCPCountPlusOne;
-    n = m;
-
-    for (j = 0; j < inputLength; ++j) {
-      currentValue = input[j];
-
-      if (currentValue < n && ++delta > maxInt) {
-        error$1('overflow');
-      }
-
-      if (currentValue == n) {
-        // Represent delta as a generalized variable-length integer
-        for (q = delta, k = base; /* no condition */ ; k += base) {
-          t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
-          if (q < t) {
-            break;
-          }
-          qMinusT = q - t;
-          baseMinusT = base - t;
-          output.push(
-            stringFromCharCode(digitToBasic(t + qMinusT % baseMinusT, 0))
-          );
-          q = floor(qMinusT / baseMinusT);
-        }
-
-        output.push(stringFromCharCode(digitToBasic(q, 0)));
-        bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
-        delta = 0;
-        ++handledCPCount;
-      }
-    }
-
-    ++delta;
-    ++n;
-
-  }
-  return output.join('');
-}
-
-/**
- * Converts a Punycode string representing a domain name or an email address
- * to Unicode. Only the Punycoded parts of the input will be converted, i.e.
- * it doesn't matter if you call it on a string that has already been
- * converted to Unicode.
- * @memberOf punycode
- * @param {String} input The Punycoded domain name or email address to
- * convert to Unicode.
- * @returns {String} The Unicode representation of the given Punycode
- * string.
- */
-
-
-/**
- * Converts a Unicode string representing a domain name or an email address to
- * Punycode. Only the non-ASCII parts of the domain name will be converted,
- * i.e. it doesn't matter if you call it with a domain that's already in
- * ASCII.
- * @memberOf punycode
- * @param {String} input The domain name or email address to convert, as a
- * Unicode string.
- * @returns {String} The Punycode representation of the given domain name or
- * email address.
- */
-function toASCII(input) {
-  return mapDomain(input, function(string) {
-    return regexNonASCII.test(string) ?
-      'xn--' + encode(string) :
-      string;
-  });
-}
-
-/**
- * An object of methods to convert from JavaScript's internal character
- * representation (UCS-2) to Unicode code points, and back.
- * @see <https://mathiasbynens.be/notes/javascript-encoding>
- * @memberOf punycode
- * @type Object
- */
 
 var inherits;
 if (typeof Object.create === 'function'){
@@ -2867,7 +2867,7 @@ function formatValue(ctx, value, recurseTimes) {
   var base = '', array = false, braces = ['{', '}'];
 
   // Make Array say that they are Array
-  if (isArray$1(value)) {
+  if (isArray(value)) {
     array = true;
     braces = ['[', ']'];
   }
@@ -3048,7 +3048,7 @@ function reduceToSingleString(output, base, braces) {
 
 // NOTE: These type checking functions intentionally don't use `instanceof`
 // because it is fragile and can be easily faked with `Object.create()`.
-function isArray$1(ar) {
+function isArray(ar) {
   return Array.isArray(ar);
 }
 
@@ -3110,8 +3110,8 @@ function isPrimitive(arg) {
          typeof arg === 'undefined';
 }
 
-function isBuffer$1(maybeBuf) {
-  return isBuffer(maybeBuf);
+function isBuffer$$1(maybeBuf) {
+  return isBuffer$1(maybeBuf);
 }
 
 function objectToString(o) {
@@ -3176,7 +3176,7 @@ var require$$0 = {
   inherits: inherits$1,
   _extend: _extend,
   log: log,
-  isBuffer: isBuffer$1,
+  isBuffer: isBuffer$$1,
   isPrimitive: isPrimitive,
   isFunction: isFunction,
   isError: isError,
@@ -3190,7 +3190,7 @@ var require$$0 = {
   isNullOrUndefined: isNullOrUndefined,
   isNull: isNull,
   isBoolean: isBoolean,
-  isArray: isArray$1,
+  isArray: isArray,
   inspect: inspect$1,
   deprecate: deprecate,
   format: format$1,
@@ -5123,7 +5123,7 @@ Readable$1.prototype.read = function (n) {
 
 function chunkInvalid(state, chunk) {
   var er = null;
-  if (!isBuffer(chunk) && typeof chunk !== 'string' && chunk !== null && chunk !== undefined && !state.objectMode) {
+  if (!isBuffer$1(chunk) && typeof chunk !== 'string' && chunk !== null && chunk !== undefined && !state.objectMode) {
     er = new TypeError('Invalid non-string/buffer chunk');
   }
   return er;
@@ -6575,7 +6575,7 @@ function through (write, end, opts) {
 }
 });
 
-var through = (index && typeof index === 'object' && 'default' in index ? index['default'] : index);
+var through$1 = (index && typeof index === 'object' && 'default' in index ? index['default'] : index);
 
 var index$2 = __commonjs(function (module, exports) {
 var Stream$$1 = Stream;
@@ -6829,7 +6829,235 @@ module.exports = function () {
 };
 });
 
-var pipeline = (index$1 && typeof index$1 === 'object' && 'default' in index$1 ? index$1['default'] : index$1);
+var pipeline$1 = (index$1 && typeof index$1 === 'object' && 'default' in index$1 ? index$1['default'] : index$1);
+
+/** @fileOverview Low-level AES implementation.
+ *
+ * This file contains a low-level implementation of AES, optimized for
+ * size and for efficiency on several browsers.  It is based on
+ * OpenSSL's aes_core.c, a public-domain implementation by Vincent
+ * Rijmen, Antoon Bosselaers and Paulo Barreto.
+ *
+ * An older version of this implementation is available in the public
+ * domain, but this one is (c) Emily Stark, Mike Hamburg, Dan Boneh,
+ * Stanford University 2008-2010 and BSD-licensed for liability
+ * reasons.
+ *
+ * @author Emily Stark
+ * @author Mike Hamburg
+ * @author Dan Boneh
+ */
+
+var sjcl = { cipher: {} };
+
+var sjcl$1 = sjcl.cipher;
+
+/**
+ * Schedule out an AES key for both encryption and decryption.  This
+ * is a low-level class.  Use a cipher mode to do bulk encryption.
+ *
+ * @constructor
+ * @param {Array} key The key as an array of 4, 6 or 8 words.
+ *
+ * @class Advanced Encryption Standard (low-level interface)
+ */
+sjcl.cipher.aes = function (key) {
+  if (!this._tables[0][0][0]) {
+    this._precompute();
+  }
+
+  var i,
+      j,
+      tmp,
+      encKey,
+      decKey,
+      sbox = this._tables[0][4],
+      decTable = this._tables[1],
+      keyLen = key.length,
+      rcon = 1;
+
+  if (keyLen !== 4 && keyLen !== 6 && keyLen !== 8) {
+    throw new Error("invalid aes key size");
+  }
+
+  this._key = [encKey = key.slice(0), decKey = []];
+
+  // schedule encryption keys
+  for (i = keyLen; i < 4 * keyLen + 28; i++) {
+    tmp = encKey[i - 1];
+
+    // apply sbox
+    if (i % keyLen === 0 || keyLen === 8 && i % keyLen === 4) {
+      tmp = sbox[tmp >>> 24] << 24 ^ sbox[tmp >> 16 & 255] << 16 ^ sbox[tmp >> 8 & 255] << 8 ^ sbox[tmp & 255];
+
+      // shift rows and add rcon
+      if (i % keyLen === 0) {
+        tmp = tmp << 8 ^ tmp >>> 24 ^ rcon << 24;
+        rcon = rcon << 1 ^ (rcon >> 7) * 283;
+      }
+    }
+
+    encKey[i] = encKey[i - keyLen] ^ tmp;
+  }
+
+  // schedule decryption keys
+  for (j = 0; i; j++, i--) {
+    tmp = encKey[j & 3 ? i : i - 4];
+    if (i <= 4 || j < 4) {
+      decKey[j] = tmp;
+    } else {
+      decKey[j] = decTable[0][sbox[tmp >>> 24]] ^ decTable[1][sbox[tmp >> 16 & 255]] ^ decTable[2][sbox[tmp >> 8 & 255]] ^ decTable[3][sbox[tmp & 255]];
+    }
+  }
+};
+
+sjcl.cipher.aes.prototype = {
+  // public
+  /* Something like this might appear here eventually
+  name: "AES",
+  blockSize: 4,
+  keySizes: [4,6,8],
+  */
+
+  /**
+   * Encrypt an array of 4 big-endian words.
+   * @param {Array} data The plaintext.
+   * @return {Array} The ciphertext.
+   */
+  encrypt: function encrypt(data) {
+    return this._crypt(data, 0);
+  },
+
+  /**
+   * Decrypt an array of 4 big-endian words.
+   * @param {Array} data The ciphertext.
+   * @return {Array} The plaintext.
+   */
+  decrypt: function decrypt(data) {
+    return this._crypt(data, 1);
+  },
+
+  /**
+   * The expanded S-box and inverse S-box tables.  These will be computed
+   * on the client so that we don't have to send them down the wire.
+   *
+   * There are two tables, _tables[0] is for encryption and
+   * _tables[1] is for decryption.
+   *
+   * The first 4 sub-tables are the expanded S-box with MixColumns.  The
+   * last (_tables[01][4]) is the S-box itself.
+   *
+   * @private
+   */
+  _tables: [[[], [], [], [], []], [[], [], [], [], []]],
+
+  /**
+   * Expand the S-box tables.
+   *
+   * @private
+   */
+  _precompute: function _precompute() {
+    var encTable = this._tables[0],
+        decTable = this._tables[1],
+        sbox = encTable[4],
+        sboxInv = decTable[4],
+        i,
+        x,
+        xInv,
+        d = [],
+        th = [],
+        x2,
+        x4,
+        x8,
+        s,
+        tEnc,
+        tDec;
+
+    // Compute double and third tables
+    for (i = 0; i < 256; i++) {
+      th[(d[i] = i << 1 ^ (i >> 7) * 283) ^ i] = i;
+    }
+
+    for (x = xInv = 0; !sbox[x]; x ^= x2 || 1, xInv = th[xInv] || 1) {
+      // Compute sbox
+      s = xInv ^ xInv << 1 ^ xInv << 2 ^ xInv << 3 ^ xInv << 4;
+      s = s >> 8 ^ s & 255 ^ 99;
+      sbox[x] = s;
+      sboxInv[s] = x;
+
+      // Compute MixColumns
+      x8 = d[x4 = d[x2 = d[x]]];
+      tDec = x8 * 0x1010101 ^ x4 * 0x10001 ^ x2 * 0x101 ^ x * 0x1010100;
+      tEnc = d[s] * 0x101 ^ s * 0x1010100;
+
+      for (i = 0; i < 4; i++) {
+        encTable[i][x] = tEnc = tEnc << 24 ^ tEnc >>> 8;
+        decTable[i][s] = tDec = tDec << 24 ^ tDec >>> 8;
+      }
+    }
+
+    // Compactify.  Considerable speedup on Firefox.
+    for (i = 0; i < 5; i++) {
+      encTable[i] = encTable[i].slice(0);
+      decTable[i] = decTable[i].slice(0);
+    }
+  },
+
+  /**
+   * Encryption and decryption core.
+   * @param {Array} input Four words to be encrypted or decrypted.
+   * @param dir The direction, 0 for encrypt and 1 for decrypt.
+   * @return {Array} The four encrypted or decrypted words.
+   * @private
+   */
+  _crypt: function _crypt(input, dir) {
+    if (input.length !== 4) {
+      throw new Error("invalid aes block size");
+    }
+
+    var key = this._key[dir],
+
+    // state variables a,b,c,d are loaded with pre-whitened data
+    a = input[0] ^ key[0],
+        b = input[dir ? 3 : 1] ^ key[1],
+        c = input[2] ^ key[2],
+        d = input[dir ? 1 : 3] ^ key[3],
+        a2,
+        b2,
+        c2,
+        nInnerRounds = key.length / 4 - 2,
+        i,
+        kIndex = 4,
+        out = [0, 0, 0, 0],
+        table = this._tables[dir],
+
+
+    // load up the tables
+    t0 = table[0],
+        t1 = table[1],
+        t2 = table[2],
+        t3 = table[3],
+        sbox = table[4];
+
+    // Inner rounds.  Cribbed from OpenSSL.
+    for (i = 0; i < nInnerRounds; i++) {
+      a2 = t0[a >>> 24] ^ t1[b >> 16 & 255] ^ t2[c >> 8 & 255] ^ t3[d & 255] ^ key[kIndex];
+      b2 = t0[b >>> 24] ^ t1[c >> 16 & 255] ^ t2[d >> 8 & 255] ^ t3[a & 255] ^ key[kIndex + 1];
+      c2 = t0[c >>> 24] ^ t1[d >> 16 & 255] ^ t2[a >> 8 & 255] ^ t3[b & 255] ^ key[kIndex + 2];
+      d = t0[d >>> 24] ^ t1[a >> 16 & 255] ^ t2[b >> 8 & 255] ^ t3[c & 255] ^ key[kIndex + 3];
+      kIndex += 4;
+      a = a2;b = b2;c = c2;
+    }
+
+    // Last round.
+    for (i = 0; i < 4; i++) {
+      out[dir ? 3 & -i : i] = sbox[a >>> 24] << 24 ^ sbox[b >> 16 & 255] << 16 ^ sbox[c >> 8 & 255] << 8 ^ sbox[d & 255] ^ key[kIndex++];
+      a2 = a;a = b;b = c;c = d;d = a2;
+    }
+
+    return out;
+  }
+};
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -6960,236 +7188,6 @@ var set = function set(object, property, value, receiver) {
   return value;
 };
 
-var sjcl = __commonjs(function (module) {
-  /** @fileOverview Low-level AES implementation.
-   *
-   * This file contains a low-level implementation of AES, optimized for
-   * size and for efficiency on several browsers.  It is based on
-   * OpenSSL's aes_core.c, a public-domain implementation by Vincent
-   * Rijmen, Antoon Bosselaers and Paulo Barreto.
-   *
-   * An older version of this implementation is available in the public
-   * domain, but this one is (c) Emily Stark, Mike Hamburg, Dan Boneh,
-   * Stanford University 2008-2010 and BSD-licensed for liability
-   * reasons.
-   *
-   * @author Emily Stark
-   * @author Mike Hamburg
-   * @author Dan Boneh
-   */
-
-  var sjcl = { cipher: module.exports = {} };
-
-  /**
-   * Schedule out an AES key for both encryption and decryption.  This
-   * is a low-level class.  Use a cipher mode to do bulk encryption.
-   *
-   * @constructor
-   * @param {Array} key The key as an array of 4, 6 or 8 words.
-   *
-   * @class Advanced Encryption Standard (low-level interface)
-   */
-  sjcl.cipher.aes = function (key) {
-    if (!this._tables[0][0][0]) {
-      this._precompute();
-    }
-
-    var i,
-        j,
-        tmp,
-        encKey,
-        decKey,
-        sbox = this._tables[0][4],
-        decTable = this._tables[1],
-        keyLen = key.length,
-        rcon = 1;
-
-    if (keyLen !== 4 && keyLen !== 6 && keyLen !== 8) {
-      throw new sjcl.exception.invalid("invalid aes key size");
-    }
-
-    this._key = [encKey = key.slice(0), decKey = []];
-
-    // schedule encryption keys
-    for (i = keyLen; i < 4 * keyLen + 28; i++) {
-      tmp = encKey[i - 1];
-
-      // apply sbox
-      if (i % keyLen === 0 || keyLen === 8 && i % keyLen === 4) {
-        tmp = sbox[tmp >>> 24] << 24 ^ sbox[tmp >> 16 & 255] << 16 ^ sbox[tmp >> 8 & 255] << 8 ^ sbox[tmp & 255];
-
-        // shift rows and add rcon
-        if (i % keyLen === 0) {
-          tmp = tmp << 8 ^ tmp >>> 24 ^ rcon << 24;
-          rcon = rcon << 1 ^ (rcon >> 7) * 283;
-        }
-      }
-
-      encKey[i] = encKey[i - keyLen] ^ tmp;
-    }
-
-    // schedule decryption keys
-    for (j = 0; i; j++, i--) {
-      tmp = encKey[j & 3 ? i : i - 4];
-      if (i <= 4 || j < 4) {
-        decKey[j] = tmp;
-      } else {
-        decKey[j] = decTable[0][sbox[tmp >>> 24]] ^ decTable[1][sbox[tmp >> 16 & 255]] ^ decTable[2][sbox[tmp >> 8 & 255]] ^ decTable[3][sbox[tmp & 255]];
-      }
-    }
-  };
-
-  sjcl.cipher.aes.prototype = {
-    // public
-    /* Something like this might appear here eventually
-    name: "AES",
-    blockSize: 4,
-    keySizes: [4,6,8],
-    */
-
-    /**
-     * Encrypt an array of 4 big-endian words.
-     * @param {Array} data The plaintext.
-     * @return {Array} The ciphertext.
-     */
-    encrypt: function encrypt(data) {
-      return this._crypt(data, 0);
-    },
-
-    /**
-     * Decrypt an array of 4 big-endian words.
-     * @param {Array} data The ciphertext.
-     * @return {Array} The plaintext.
-     */
-    decrypt: function decrypt(data) {
-      return this._crypt(data, 1);
-    },
-
-    /**
-     * The expanded S-box and inverse S-box tables.  These will be computed
-     * on the client so that we don't have to send them down the wire.
-     *
-     * There are two tables, _tables[0] is for encryption and
-     * _tables[1] is for decryption.
-     *
-     * The first 4 sub-tables are the expanded S-box with MixColumns.  The
-     * last (_tables[01][4]) is the S-box itself.
-     *
-     * @private
-     */
-    _tables: [[[], [], [], [], []], [[], [], [], [], []]],
-
-    /**
-     * Expand the S-box tables.
-     *
-     * @private
-     */
-    _precompute: function _precompute() {
-      var encTable = this._tables[0],
-          decTable = this._tables[1],
-          sbox = encTable[4],
-          sboxInv = decTable[4],
-          i,
-          x,
-          xInv,
-          d = [],
-          th = [],
-          x2,
-          x4,
-          x8,
-          s,
-          tEnc,
-          tDec;
-
-      // Compute double and third tables
-      for (i = 0; i < 256; i++) {
-        th[(d[i] = i << 1 ^ (i >> 7) * 283) ^ i] = i;
-      }
-
-      for (x = xInv = 0; !sbox[x]; x ^= x2 || 1, xInv = th[xInv] || 1) {
-        // Compute sbox
-        s = xInv ^ xInv << 1 ^ xInv << 2 ^ xInv << 3 ^ xInv << 4;
-        s = s >> 8 ^ s & 255 ^ 99;
-        sbox[x] = s;
-        sboxInv[s] = x;
-
-        // Compute MixColumns
-        x8 = d[x4 = d[x2 = d[x]]];
-        tDec = x8 * 0x1010101 ^ x4 * 0x10001 ^ x2 * 0x101 ^ x * 0x1010100;
-        tEnc = d[s] * 0x101 ^ s * 0x1010100;
-
-        for (i = 0; i < 4; i++) {
-          encTable[i][x] = tEnc = tEnc << 24 ^ tEnc >>> 8;
-          decTable[i][s] = tDec = tDec << 24 ^ tDec >>> 8;
-        }
-      }
-
-      // Compactify.  Considerable speedup on Firefox.
-      for (i = 0; i < 5; i++) {
-        encTable[i] = encTable[i].slice(0);
-        decTable[i] = decTable[i].slice(0);
-      }
-    },
-
-    /**
-     * Encryption and decryption core.
-     * @param {Array} input Four words to be encrypted or decrypted.
-     * @param dir The direction, 0 for encrypt and 1 for decrypt.
-     * @return {Array} The four encrypted or decrypted words.
-     * @private
-     */
-    _crypt: function _crypt(input, dir) {
-      if (input.length !== 4) {
-        throw new sjcl.exception.invalid("invalid aes block size");
-      }
-
-      var key = this._key[dir],
-
-      // state variables a,b,c,d are loaded with pre-whitened data
-      a = input[0] ^ key[0],
-          b = input[dir ? 3 : 1] ^ key[1],
-          c = input[2] ^ key[2],
-          d = input[dir ? 1 : 3] ^ key[3],
-          a2,
-          b2,
-          c2,
-          nInnerRounds = key.length / 4 - 2,
-          i,
-          kIndex = 4,
-          out = [0, 0, 0, 0],
-          table = this._tables[dir],
-
-
-      // load up the tables
-      t0 = table[0],
-          t1 = table[1],
-          t2 = table[2],
-          t3 = table[3],
-          sbox = table[4];
-
-      // Inner rounds.  Cribbed from OpenSSL.
-      for (i = 0; i < nInnerRounds; i++) {
-        a2 = t0[a >>> 24] ^ t1[b >> 16 & 255] ^ t2[c >> 8 & 255] ^ t3[d & 255] ^ key[kIndex];
-        b2 = t0[b >>> 24] ^ t1[c >> 16 & 255] ^ t2[d >> 8 & 255] ^ t3[a & 255] ^ key[kIndex + 1];
-        c2 = t0[c >>> 24] ^ t1[d >> 16 & 255] ^ t2[a >> 8 & 255] ^ t3[b & 255] ^ key[kIndex + 2];
-        d = t0[d >>> 24] ^ t1[a >> 16 & 255] ^ t2[b >> 8 & 255] ^ t3[c & 255] ^ key[kIndex + 3];
-        kIndex += 4;
-        a = a2;b = b2;c = c2;
-      }
-
-      // Last round.
-      for (i = 0; i < 4; i++) {
-        out[dir ? 3 & -i : i] = sbox[a >>> 24] << 24 ^ sbox[b >> 16 & 255] << 16 ^ sbox[c >> 8 & 255] << 8 ^ sbox[d & 255] ^ key[kIndex++];
-        a2 = a;a = b;b = c;c = d;d = a2;
-      }
-
-      return out;
-    }
-  };
-});
-
-var sjcl$1 = sjcl && (typeof sjcl === "undefined" ? "undefined" : _typeof(sjcl)) === 'object' && 'default' in sjcl ? sjcl['default'] : sjcl;
-
 function formatKey(key) {
   return typeof key === 'string' ? d64(key) : key;
 }
@@ -7204,6 +7202,15 @@ function d64(s) {
   s = s.replace(/\-/g, '+').replace(/_/g, '/').replace(/,/g, '');
   return new Buffer(s, 'base64');
 }
+function getCipher(key) {
+  // 256 -> 128
+  var k = new Buffer(16);
+  for (var i = 0; i < 16; i++) {
+    k.writeUInt8(key.readUInt8(i) ^ key.readUInt8(i + 16, true), i);
+  }
+  return new AES(k);
+}
+
 // convert user-supplied password array
 function prepareKey(a) {
   var i, j, r;
@@ -7238,7 +7245,7 @@ var AES = function () {
   }
 
   createClass(AES, [{
-    key: 'encryptCBC',
+    key: "encryptCBC",
     value: function encryptCBC(buffer) {
       var iv = [0, 0, 0, 0];
       var d = Array(4);
@@ -7257,7 +7264,7 @@ var AES = function () {
       }
     }
   }, {
-    key: 'decryptCBC',
+    key: "decryptCBC",
     value: function decryptCBC(buffer) {
       var iv = [0, 0, 0, 0];
       var d = Array(4);
@@ -7280,7 +7287,7 @@ var AES = function () {
       }
     }
   }, {
-    key: 'stringhash',
+    key: "stringhash",
     value: function stringhash(buffer) {
       var h32 = [0, 0, 0, 0];
       for (var i = 0; i < buffer.length; i += 4) {
@@ -7294,7 +7301,7 @@ var AES = function () {
       return e64(b);
     }
   }, {
-    key: 'decryptKey',
+    key: "decryptKey",
     value: function decryptKey(key) {
       var d = [];
       for (var i = 0; i < key.length; i += 16) {
@@ -7313,7 +7320,7 @@ var AES = function () {
       return key;
     }
   }, {
-    key: 'encryptKey',
+    key: "encryptKey",
     value: function encryptKey(key) {
       var d = [];
       for (var i = 0; i < key.length; i += 16) {
@@ -7364,7 +7371,7 @@ var CTR = function (_EventEmitter) {
   }
 
   createClass(CTR, [{
-    key: 'condensedMac',
+    key: "condensedMac",
     value: function condensedMac() {
       if (this.mac) {
         this.macs.push(this.mac);
@@ -7382,7 +7389,7 @@ var CTR = function (_EventEmitter) {
       return mac;
     }
   }, {
-    key: '_process',
+    key: "_process",
     value: function _process(encrypt, buffer) {
       for (var i = 0; i < buffer.length; i += 16) {
         var d = [];
@@ -7445,6 +7452,73 @@ var CTR = function (_EventEmitter) {
   return CTR;
 }(EventEmitter);
 
+function megaEncrypt(key) {
+  key = formatKey(key);
+
+  if (!key) {
+    key = secureRandom(24);
+  }
+  if (!(key instanceof Buffer)) {
+    key = new Buffer(key);
+  }
+
+  var stream = through(write, end);
+
+  if (key.length !== 24) {
+    return nextTick(function () {
+      stream.emit('error', new Error('Wrong key length. Key must be 192bit.'));
+    });
+  }
+
+  var aes = new AES(key.slice(0, 16));
+  var ctr = new CTR(aes, [key.readInt32BE(16), key.readInt32BE(20)]);
+
+  function write(d) {
+    ctr.encrypt(d);
+    this.emit('data', d);
+  }
+
+  function end() {
+    var mac = ctr.condensedMac();
+    var newkey = new Buffer(32);
+    key.copy(newkey);
+    newkey.writeInt32BE(mac[0] ^ mac[1], 24);
+    newkey.writeInt32BE(mac[2] ^ mac[3], 28);
+    for (var i = 0; i < 16; i++) {
+      newkey.writeUInt8(newkey.readUInt8(i) ^ newkey.readUInt8(16 + i), i);
+    }
+    stream.key = newkey;
+    this.emit('end');
+  }
+
+  stream = pipeline(chunkSizeSafe(16), stream);
+  return stream;
+}
+
+function megaDecrypt(key) {
+  key = formatKey(key);
+
+  var stream = through(write, end);
+
+  var aes = getCipher(key);
+  var ctr = new CTR(aes, [key.readInt32BE(16), key.readInt32BE(20)]);
+
+  function write(d) {
+    ctr.decrypt(d);
+    this.emit('data', d);
+  }
+
+  function end() {
+    var mac = ctr.condensedMac();
+    if ((mac[0] ^ mac[1]) !== key.readInt32BE(24) || (mac[2] ^ mac[3]) !== key.readInt32BE(28)) {
+      return this.emit('error', new Error('MAC verification failed'));
+    }
+    this.emit('end');
+  }
+
+  return pipeline(chunkSizeSafe(16), stream);
+}
+
 function streamToCb(stream, cb) {
   var chunks = [];
   var complete;
@@ -7465,32 +7539,10 @@ function streamToCb(stream, cb) {
   });
 }
 
-function chunkSizeSafe(size) {
-  var last = void 0;
-  return through(function (d) {
-    if (last) d = Buffer.concat([last, d]);
-
-    var end = Math.floor(d.length / size) * size;
-
-    if (!end) {
-      last = last ? Buffer.concat([last, d]) : d;
-    } else if (d.length > end) {
-      last = d.slice(end);
-      this.emit('data', d.slice(0, end));
-    } else {
-      last = undefined;
-      this.emit('data', d);
-    }
-  }, function () {
-    if (last) this.emit('data', last);
-    this.emit('end');
-  });
-}
-
 function detectSize(cb) {
   var chunks = [];
   var size = 0;
-  return through(function (d) {
+  return through$1(function (d) {
     chunks.push(d);
     size += d.length;
   }, function () {
@@ -7502,7 +7554,7 @@ function detectSize(cb) {
 
 var require$$0$2 = {};
 
-var secureRandom = __commonjs(function (module, exports, global) {
+var secureRandom$1 = __commonjs(function (module, exports, global) {
 !function(globals){
 'use strict';
 
@@ -7583,7 +7635,7 @@ secureRandom.randomBuffer = function(byteCount) {
 }(__commonjs_global);
 });
 
-var secureRandom$1 = (secureRandom && typeof secureRandom === 'object' && 'default' in secureRandom ? secureRandom['default'] : secureRandom);
+var secureRandom$2 = (secureRandom$1 && typeof secureRandom$1 === 'object' && 'default' in secureRandom$1 ? secureRandom$1['default'] : secureRandom$1);
 
 var global$2 = typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : typeof global$2 !== 'undefined' ? self : {};
 
@@ -8111,480 +8163,414 @@ function b64_enc(data) {
   return enc;
 }
 
-var rsa = __commonjs(function (module, exports) {
-  /* RSA public key encryption/decryption
-   * The following functions are (c) 2000 by John M Hanna and are
-   * released under the terms of the Gnu Public License.
-   * You must freely redistribute them with their source -- see the
-   * GPL for details.
-   *  -- Latest version found at http://sourceforge.net/projects/shop-js
-   *
-   * Modifications and GnuPG multi precision integer (mpi) conversion added
-   * 2004 by Herbert Hanewinkel, www.haneWIN.de
-   */
+/* RSA public key encryption/decryption
+ * The following functions are (c) 2000 by John M Hanna and are
+ * released under the terms of the Gnu Public License.
+ * You must freely redistribute them with their source -- see the
+ * GPL for details.
+ *  -- Latest version found at http://sourceforge.net/projects/shop-js
+ *
+ * Modifications and GnuPG multi precision integer (mpi) conversion added
+ * 2004 by Herbert Hanewinkel, www.haneWIN.de
+ */
 
-  exports.RSAdecrypt = RSAdecrypt;
-  exports.mpi2b = mpi2b;
-  exports.b2s = b2s;
+// --- Arbitrary Precision Math ---
+// badd(a,b), bsub(a,b), bsqr(a), bmul(a,b)
+// bdiv(a,b), bmod(a,b), bexpmod(g,e,m), bmodexp(g,e,m)
 
-  // --- Arbitrary Precision Math ---
-  // badd(a,b), bsub(a,b), bsqr(a), bmul(a,b)
-  // bdiv(a,b), bmod(a,b), bexpmod(g,e,m), bmodexp(g,e,m)
+// bs is the shift, bm is the mask
+// set single precision bits to 28
+var bs = 28;
+var bx2 = 1 << bs;
+var bm = bx2 - 1;
+var bd = bs >> 1;
+var bdm = (1 << bd) - 1;
 
-  // bs is the shift, bm is the mask
-  // set single precision bits to 28
-  var bs = 28;
-  var bx2 = 1 << bs,
-      bm = bx2 - 1,
-      bx = bx2 >> 1,
-      bd = bs >> 1,
-      bdm = (1 << bd) - 1;
+var log2 = Math.log(2);
 
-  var log2 = Math.log(2);
+function zeros(n) {
+  var r = new Array(n);
 
-  function zeros(n) {
-    var r = new Array(n);
+  while (n-- > 0) {
+    r[n] = 0;
+  }return r;
+}
 
-    while (n-- > 0) {
-      r[n] = 0;
-    }return r;
+function zclip(r) {
+  var n = r.length;
+  if (r[n - 1]) return r;
+  while (n > 1 && r[n - 1] == 0) {
+    n--;
+  }return r.slice(0, n);
+}
+
+// returns bit length of integer x
+function nbits(x) {
+  var n = 1,
+      t;
+  if ((t = x >>> 16) != 0) {
+    x = t;n += 16;
+  }
+  if ((t = x >> 8) != 0) {
+    x = t;n += 8;
+  }
+  if ((t = x >> 4) != 0) {
+    x = t;n += 4;
+  }
+  if ((t = x >> 2) != 0) {
+    x = t;n += 2;
+  }
+  if ((t = x >> 1) != 0) {
+    x = t;n += 1;
+  }
+  return n;
+}
+
+function badd(a, b) {
+  var al = a.length;
+  var bl = b.length;
+
+  if (al < bl) return badd(b, a);
+
+  var r = new Array(al);
+  var c = 0,
+      n = 0;
+
+  for (; n < bl; n++) {
+    c += a[n] + b[n];
+    r[n] = c & bm;
+    c >>>= bs;
+  }
+  for (; n < al; n++) {
+    c += a[n];
+    r[n] = c & bm;
+    c >>>= bs;
+  }
+  if (c) r[n] = c;
+  return r;
+}
+
+function bsub(a, b) {
+  var al = a.length;
+  var bl = b.length;
+
+  if (bl > al) return [];
+  if (bl == al) {
+    if (b[bl - 1] > a[bl - 1]) return [];
+    if (bl == 1) return [a[0] - b[0]];
   }
 
-  function zclip(r) {
-    var n = r.length;
-    if (r[n - 1]) return r;
-    while (n > 1 && r[n - 1] == 0) {
-      n--;
-    }return r.slice(0, n);
+  var r = new Array(al);
+  var c = 0;
+
+  for (var n = 0; n < bl; n++) {
+    c += a[n] - b[n];
+    r[n] = c & bm;
+    c >>= bs;
+  }
+  for (; n < al; n++) {
+    c += a[n];
+    r[n] = c & bm;
+    c >>= bs;
+  }
+  if (c) return [];
+
+  return zclip(r);
+}
+
+function ip(w, n, x, y, c) {
+  var xl = x & bdm;
+  var xh = x >> bd;
+
+  var yl = y & bdm;
+  var yh = y >> bd;
+
+  var m = xh * yl + yh * xl;
+  var l = xl * yl + ((m & bdm) << bd) + w[n] + c;
+  w[n] = l & bm;
+  c = xh * yh + (m >> bd) + (l >> bs);
+  return c;
+}
+
+// Multiple-precision squaring, HAC Algorithm 14.16
+
+function bsqr(x) {
+  var t = x.length;
+  var n = 2 * t;
+  var r = zeros(n);
+  var c = 0;
+  var i, j;
+
+  for (i = 0; i < t; i++) {
+    c = ip(r, 2 * i, x[i], x[i], 0);
+    for (j = i + 1; j < t; j++) {
+      c = ip(r, i + j, 2 * x[j], x[i], c);
+    }
+    r[i + t] = c;
   }
 
-  // returns bit length of integer x
-  function nbits(x) {
-    var n = 1,
-        t;
-    if ((t = x >>> 16) != 0) {
-      x = t;n += 16;
+  return zclip(r);
+}
+
+// Multiple-precision multiplication, HAC Algorithm 14.12
+
+function bmul(x, y) {
+  var n = x.length;
+  var t = y.length;
+  var r = zeros(n + t - 1);
+  var c, i, j;
+
+  for (i = 0; i < t; i++) {
+    c = 0;
+    for (j = 0; j < n; j++) {
+      c = ip(r, i + j, x[j], y[i], c);
     }
-    if ((t = x >> 8) != 0) {
-      x = t;n += 8;
-    }
-    if ((t = x >> 4) != 0) {
-      x = t;n += 4;
-    }
-    if ((t = x >> 2) != 0) {
-      x = t;n += 2;
-    }
-    if ((t = x >> 1) != 0) {
-      x = t;n += 1;
-    }
-    return n;
+    r[i + n] = c;
   }
 
-  function badd(a, b) {
-    var al = a.length;
-    var bl = b.length;
+  return zclip(r);
+}
 
-    if (al < bl) return badd(b, a);
+function toppart(x, start, len) {
+  var n = 0;
+  while (start >= 0 && len-- > 0) {
+    n = n * bx2 + x[start--];
+  }return n;
+}
 
-    var r = new Array(al);
-    var c = 0,
-        n = 0;
+// Multiple-precision division, HAC Algorithm 14.20
 
-    for (; n < bl; n++) {
-      c += a[n] + b[n];
-      r[n] = c & bm;
-      c >>>= bs;
-    }
-    for (; n < al; n++) {
-      c += a[n];
-      r[n] = c & bm;
-      c >>>= bs;
-    }
-    if (c) r[n] = c;
-    return r;
-  }
+function bdiv(a, b) {
+  var n = a.length - 1;
+  var t = b.length - 1;
+  var nmt = n - t;
 
-  function bsub(a, b) {
-    var al = a.length;
-    var bl = b.length;
-
-    if (bl > al) return [];
-    if (bl == al) {
-      if (b[bl - 1] > a[bl - 1]) return [];
-      if (bl == 1) return [a[0] - b[0]];
-    }
-
-    var r = new Array(al);
-    var c = 0;
-
-    for (var n = 0; n < bl; n++) {
-      c += a[n] - b[n];
-      r[n] = c & bm;
-      c >>= bs;
-    }
-    for (; n < al; n++) {
-      c += a[n];
-      r[n] = c & bm;
-      c >>= bs;
-    }
-    if (c) return [];
-
-    return zclip(r);
-  }
-
-  function ip(w, n, x, y, c) {
-    var xl = x & bdm;
-    var xh = x >> bd;
-
-    var yl = y & bdm;
-    var yh = y >> bd;
-
-    var m = xh * yl + yh * xl;
-    var l = xl * yl + ((m & bdm) << bd) + w[n] + c;
-    w[n] = l & bm;
-    c = xh * yh + (m >> bd) + (l >> bs);
-    return c;
-  }
-
-  // Multiple-precision squaring, HAC Algorithm 14.16
-
-  function bsqr(x) {
-    var t = x.length;
-    var n = 2 * t;
-    var r = zeros(n);
-    var c = 0;
-    var i, j;
-
-    for (i = 0; i < t; i++) {
-      c = ip(r, 2 * i, x[i], x[i], 0);
-      for (j = i + 1; j < t; j++) {
-        c = ip(r, i + j, 2 * x[j], x[i], c);
-      }
-      r[i + t] = c;
-    }
-
-    return zclip(r);
-  }
-
-  // Multiple-precision multiplication, HAC Algorithm 14.12
-
-  function bmul(x, y) {
-    var n = x.length;
-    var t = y.length;
-    var r = zeros(n + t - 1);
-    var c, i, j;
-
-    for (i = 0; i < t; i++) {
-      c = 0;
-      for (j = 0; j < n; j++) {
-        c = ip(r, i + j, x[j], y[i], c);
-      }
-      r[i + n] = c;
-    }
-
-    return zclip(r);
-  }
-
-  function toppart(x, start, len) {
-    var n = 0;
-    while (start >= 0 && len-- > 0) {
-      n = n * bx2 + x[start--];
-    }return n;
-  }
-
-  // Multiple-precision division, HAC Algorithm 14.20
-
-  function bdiv(a, b) {
-    var n = a.length - 1;
-    var t = b.length - 1;
-    var nmt = n - t;
-
-    // trivial cases; a < b
-    if (n < t || n == t && (a[n] < b[n] || n > 0 && a[n] == b[n] && a[n - 1] < b[n - 1])) {
-      this.q = [0];this.mod = a;
-      return this;
-    }
-
-    // trivial cases; q < 4
-    if (n == t && toppart(a, t, 2) / toppart(b, t, 2) < 4) {
-      var x = a.concat();
-      var qq = 0;
-      var xx;
-      for (;;) {
-        xx = bsub(x, b);
-        if (xx.length == 0) break;
-        x = xx;qq++;
-      }
-      this.q = [qq];this.mod = x;
-      return this;
-    }
-
-    // normalize
-    var shift2 = Math.floor(Math.log(b[t]) / log2) + 1;
-    var shift = bs - shift2;
-
-    var x = a.concat();
-    var y = b.concat();
-
-    if (shift) {
-      for (i = t; i > 0; i--) {
-        y[i] = y[i] << shift & bm | y[i - 1] >> shift2;
-      }y[0] = y[0] << shift & bm;
-      if (x[n] & (bm << shift2 & bm)) {
-        x[++n] = 0;nmt++;
-      }
-      for (i = n; i > 0; i--) {
-        x[i] = x[i] << shift & bm | x[i - 1] >> shift2;
-      }x[0] = x[0] << shift & bm;
-    }
-
-    var i, j, x2;
-    var q = zeros(nmt + 1);
-    var y2 = zeros(nmt).concat(y);
-    for (;;) {
-      x2 = bsub(x, y2);
-      if (x2.length == 0) break;
-      q[nmt]++;
-      x = x2;
-    }
-
-    var yt = y[t],
-        top = toppart(y, t, 2);
-    for (i = n; i > t; i--) {
-      var m = i - t - 1;
-      if (i >= x.length) q[m] = 1;else if (x[i] == yt) q[m] = bm;else q[m] = Math.floor(toppart(x, i, 2) / yt);
-
-      var topx = toppart(x, i, 3);
-      while (q[m] * top > topx) {
-        q[m]--;
-      } //x-=q[m]*y*b^m
-      y2 = y2.slice(1);
-      x2 = bsub(x, bmul([q[m]], y2));
-      if (x2.length == 0) {
-        q[m]--;
-        x2 = bsub(x, bmul([q[m]], y2));
-      }
-      x = x2;
-    }
-    // de-normalize
-    if (shift) {
-      for (i = 0; i < x.length - 1; i++) {
-        x[i] = x[i] >> shift | x[i + 1] << shift2 & bm;
-      }x[x.length - 1] >>= shift;
-    }
-
-    this.q = zclip(q);
-    this.mod = zclip(x);
+  // trivial cases; a < b
+  if (n < t || n == t && (a[n] < b[n] || n > 0 && a[n] == b[n] && a[n - 1] < b[n - 1])) {
+    this.q = [0];this.mod = a;
     return this;
   }
 
-  function simplemod(i, m) // returns the mod where m < 2^bd
-  {
-    var c = 0,
-        v;
-    for (var n = i.length - 1; n >= 0; n--) {
-      v = i[n];
-      c = ((v >> bd) + (c << bd)) % m;
-      c = ((v & bdm) + (c << bd)) % m;
+  // trivial cases; q < 4
+  if (n == t && toppart(a, t, 2) / toppart(b, t, 2) < 4) {
+    var x = a.concat();
+    var qq = 0;
+    var xx;
+    for (;;) {
+      xx = bsub(x, b);
+      if (xx.length == 0) break;
+      x = xx;qq++;
     }
-    return c;
+    this.q = [qq];this.mod = x;
+    return this;
   }
 
-  function bmod(p, m) {
-    if (m.length == 1) {
-      if (p.length == 1) return [p[0] % m[0]];
-      if (m[0] < bdm) return [simplemod(p, m[0])];
-    }
+  // normalize
+  var shift2 = Math.floor(Math.log(b[t]) / log2) + 1;
+  var shift = bs - shift2;
 
-    var r = bdiv(p, m);
-    return r.mod;
+  var x = a.concat();
+  var y = b.concat();
+
+  if (shift) {
+    for (i = t; i > 0; i--) {
+      y[i] = y[i] << shift & bm | y[i - 1] >> shift2;
+    }y[0] = y[0] << shift & bm;
+    if (x[n] & (bm << shift2 & bm)) {
+      x[++n] = 0;nmt++;
+    }
+    for (i = n; i > 0; i--) {
+      x[i] = x[i] << shift & bm | x[i - 1] >> shift2;
+    }x[0] = x[0] << shift & bm;
   }
 
-  // Barrett's modular reduction, HAC Algorithm 14.42
-
-  function bmod2(x, m, mu) {
-    var xl = x.length - (m.length << 1);
-    if (xl > 0) return bmod2(x.slice(0, xl).concat(bmod2(x.slice(xl), m, mu)), m, mu);
-
-    var ml1 = m.length + 1,
-        ml2 = m.length - 1,
-        rr;
-    //var q1=x.slice(ml2)
-    //var q2=bmul(q1,mu)
-    var q3 = bmul(x.slice(ml2), mu).slice(ml1);
-    var r1 = x.slice(0, ml1);
-    var r2 = bmul(q3, m).slice(0, ml1);
-    var r = bsub(r1, r2);
-
-    if (r.length == 0) {
-      r1[ml1] = 1;
-      r = bsub(r1, r2);
-    }
-    for (var n = 0;; n++) {
-      rr = bsub(r, m);
-      if (rr.length == 0) break;
-      r = rr;
-      if (n >= 3) return bmod2(r, m, mu);
-    }
-    return r;
+  var i, j, x2;
+  var q = zeros(nmt + 1);
+  var y2 = zeros(nmt).concat(y);
+  for (;;) {
+    x2 = bsub(x, y2);
+    if (x2.length == 0) break;
+    q[nmt]++;
+    x = x2;
   }
 
-  // Modular exponentiation, HAC Algorithm 14.79
+  var yt = y[t],
+      top = toppart(y, t, 2);
+  for (i = n; i > t; i--) {
+    var m = i - t - 1;
+    if (i >= x.length) q[m] = 1;else if (x[i] == yt) q[m] = bm;else q[m] = Math.floor(toppart(x, i, 2) / yt);
 
-  function bexpmod(g, e, m) {
-    var a = g.concat();
-    var l = e.length - 1;
-    var n = nbits(e[l]) - 2;
-
-    for (; l >= 0; l--) {
-      for (; n >= 0; n -= 1) {
-        a = bmod(bsqr(a), m);
-        if (e[l] & 1 << n) a = bmod(bmul(a, g), m);
-      }
-      n = bs - 1;
+    var topx = toppart(x, i, 3);
+    while (q[m] * top > topx) {
+      q[m]--;
+    } //x-=q[m]*y*b^m
+    y2 = y2.slice(1);
+    x2 = bsub(x, bmul([q[m]], y2));
+    if (x2.length == 0) {
+      q[m]--;
+      x2 = bsub(x, bmul([q[m]], y2));
     }
-    return a;
+    x = x2;
+  }
+  // de-normalize
+  if (shift) {
+    for (i = 0; i < x.length - 1; i++) {
+      x[i] = x[i] >> shift | x[i + 1] << shift2 & bm;
+    }x[x.length - 1] >>= shift;
   }
 
-  // Modular exponentiation using Barrett reduction
+  this.q = zclip(q);
+  this.mod = zclip(x);
+  return this;
+}
 
-  function bmodexp(g, e, m) {
-    var a = g.concat();
-    var l = e.length - 1;
-    var n = m.length * 2;
-    var mu = zeros(n + 1);
-    mu[n] = 1;
-    mu = bdiv(mu, m).q;
+function simplemod(i, m) // returns the mod where m < 2^bd
+{
+  var c = 0,
+      v;
+  for (var n = i.length - 1; n >= 0; n--) {
+    v = i[n];
+    c = ((v >> bd) + (c << bd)) % m;
+    c = ((v & bdm) + (c << bd)) % m;
+  }
+  return c;
+}
 
-    n = nbits(e[l]) - 2;
+function bmod(p, m) {
+  if (m.length == 1) {
+    if (p.length == 1) return [p[0] % m[0]];
+    if (m[0] < bdm) return [simplemod(p, m[0])];
+  }
 
-    for (; l >= 0; l--) {
-      for (; n >= 0; n -= 1) {
-        a = bmod2(bsqr(a), m, mu);
-        if (e[l] & 1 << n) a = bmod2(bmul(a, g), m, mu);
-      }
-      n = bs - 1;
+  var r = bdiv(p, m);
+  return r.mod;
+}
+
+// Barrett's modular reduction, HAC Algorithm 14.42
+
+function bmod2(x, m, mu) {
+  var xl = x.length - (m.length << 1);
+  if (xl > 0) return bmod2(x.slice(0, xl).concat(bmod2(x.slice(xl), m, mu)), m, mu);
+
+  var ml1 = m.length + 1,
+      ml2 = m.length - 1,
+      rr;
+  //var q1=x.slice(ml2)
+  //var q2=bmul(q1,mu)
+  var q3 = bmul(x.slice(ml2), mu).slice(ml1);
+  var r1 = x.slice(0, ml1);
+  var r2 = bmul(q3, m).slice(0, ml1);
+  var r = bsub(r1, r2);
+
+  if (r.length == 0) {
+    r1[ml1] = 1;
+    r = bsub(r1, r2);
+  }
+  for (var n = 0;; n++) {
+    rr = bsub(r, m);
+    if (rr.length == 0) break;
+    r = rr;
+    if (n >= 3) return bmod2(r, m, mu);
+  }
+  return r;
+}
+
+// Modular exponentiation using Barrett reduction
+
+function bmodexp(g, e, m) {
+  var a = g.concat();
+  var l = e.length - 1;
+  var n = m.length * 2;
+  var mu = zeros(n + 1);
+  mu[n] = 1;
+  mu = bdiv(mu, m).q;
+
+  n = nbits(e[l]) - 2;
+
+  for (; l >= 0; l--) {
+    for (; n >= 0; n -= 1) {
+      a = bmod2(bsqr(a), m, mu);
+      if (e[l] & 1 << n) a = bmod2(bmul(a, g), m, mu);
     }
-    return a;
+    n = bs - 1;
   }
+  return a;
+}
 
-  // -----------------------------------------------------
-  // Compute s**e mod m for RSA public key operation
+// Compute m**d mod p*q for RSA private key operations.
 
-  function RSAencrypt(s, e, m) {
-    return bexpmod(s, e, m);
+function RSAdecrypt(m, d, p, q, u) {
+  var xp = bmodexp(bmod(m, p), bmod(d, bsub(p, [1])), p);
+  var xq = bmodexp(bmod(m, q), bmod(d, bsub(q, [1])), q);
+
+  var t = bsub(xq, xp);
+  if (t.length == 0) {
+    t = bsub(xp, xq);
+    t = bmod(bmul(t, u), q);
+    t = bsub(q, t);
+  } else {
+    t = bmod(bmul(t, u), q);
   }
+  return badd(bmul(t, p), xp);
+}
 
-  // Compute m**d mod p*q for RSA private key operations.
+// -----------------------------------------------------------------
+// conversion functions: num array <-> multi precision integer (mpi)
+// mpi: 2 octets with length in bits + octets in big endian order
 
-  function RSAdecrypt(m, d, p, q, u) {
-    var xp = bmodexp(bmod(m, p), bmod(d, bsub(p, [1])), p);
-    var xq = bmodexp(bmod(m, q), bmod(d, bsub(q, [1])), q);
+function mpi2b(s) {
+  var bn = 1,
+      r = [0],
+      rn = 0,
+      sb = 256;
+  var c,
+      sn = s.length;
+  if (sn < 2) return 0;
 
-    var t = bsub(xq, xp);
-    if (t.length == 0) {
-      t = bsub(xp, xq);
-      t = bmod(bmul(t, u), q);
-      t = bsub(q, t);
-    } else {
-      t = bmod(bmul(t, u), q);
+  var len = (sn - 2) * 8;
+  var bits = s.charCodeAt(0) * 256 + s.charCodeAt(1);
+  if (bits > len || bits < len - 8) return 0;
+
+  for (var n = 0; n < len; n++) {
+    if ((sb <<= 1) > 255) {
+      sb = 1;c = s.charCodeAt(--sn);
     }
-    return badd(bmul(t, p), xp);
-  }
-
-  // -----------------------------------------------------------------
-  // conversion functions: num array <-> multi precision integer (mpi)
-  // mpi: 2 octets with length in bits + octets in big endian order
-
-  function mpi2b(s) {
-    var bn = 1,
-        r = [0],
-        rn = 0,
-        sb = 256;
-    var c,
-        sn = s.length;
-    if (sn < 2) return 0;
-
-    var len = (sn - 2) * 8;
-    var bits = s.charCodeAt(0) * 256 + s.charCodeAt(1);
-    if (bits > len || bits < len - 8) return 0;
-
-    for (var n = 0; n < len; n++) {
-      if ((sb <<= 1) > 255) {
-        sb = 1;c = s.charCodeAt(--sn);
-      }
-      if (bn > bm) {
-        bn = 1;
-        r[++rn] = 0;
-      }
-      if (c & sb) r[rn] |= bn;
-      bn <<= 1;
+    if (bn > bm) {
+      bn = 1;
+      r[++rn] = 0;
     }
-    return r;
+    if (c & sb) r[rn] |= bn;
+    bn <<= 1;
   }
+  return r;
+}
 
-  function b2mpi(b) {
-    var bn = 1,
-        bc = 0,
-        r = [0],
-        rb = 1,
-        rn = 0;
-    var bits = b.length * bs;
-    var n,
-        rr = '';
+function b2s(b) {
+  var bn = 1,
+      bc = 0,
+      r = [0],
+      rb = 1,
+      rn = 0;
+  var bits = b.length * bs;
+  var n,
+      rr = '';
 
-    for (n = 0; n < bits; n++) {
-      if (b[bc] & bn) r[rn] |= rb;
-      if ((rb <<= 1) > 255) {
-        rb = 1;r[++rn] = 0;
-      }
-      if ((bn <<= 1) > bm) {
-        bn = 1;bc++;
-      }
+  for (n = 0; n < bits; n++) {
+    if (b[bc] & bn) r[rn] |= rb;
+    if ((rb <<= 1) > 255) {
+      rb = 1;r[++rn] = 0;
     }
-
-    while (rn && r[rn] == 0) {
-      rn--;
-    }bn = 256;
-    for (bits = 8; bits > 0; bits--) {
-      if (r[rn] & (bn >>= 1)) break;
-    }bits += rn * 8;
-
-    rr += String.fromCharCode(bits / 256) + String.fromCharCode(bits % 256);
-    if (bits) for (n = rn; n >= 0; n--) {
-      rr += String.fromCharCode(r[n]);
-    }return rr;
-  }
-
-  function b2s(b) {
-    var bn = 1,
-        bc = 0,
-        r = [0],
-        rb = 1,
-        rn = 0;
-    var bits = b.length * bs;
-    var n,
-        rr = '';
-
-    for (n = 0; n < bits; n++) {
-      if (b[bc] & bn) r[rn] |= rb;
-      if ((rb <<= 1) > 255) {
-        rb = 1;r[++rn] = 0;
-      }
-      if ((bn <<= 1) > bm) {
-        bn = 1;bc++;
-      }
+    if ((bn <<= 1) > bm) {
+      bn = 1;bc++;
     }
-
-    while (rn >= 0 && r[rn] == 0) {
-      rn--;
-    }for (n = 0; n <= rn; n++) {
-      rr = String.fromCharCode(r[n]) + rr;
-    }return rr;
   }
-});
 
-var rsa$1 = rsa && (typeof rsa === 'undefined' ? 'undefined' : _typeof(rsa)) === 'object' && 'default' in rsa ? rsa['default'] : rsa;
+  while (rn >= 0 && r[rn] == 0) {
+    rn--;
+  }for (n = 0; n <= rn; n++) {
+    rr = String.fromCharCode(r[n]) + rr;
+  }return rr;
+}
 
 var MAX_RETRIES = 4;
 var ERRORS = {
@@ -8631,6 +8617,10 @@ var API = function (_EventEmitter) {
       var qs = { id: (this.counterId++).toString() };
       if (this.sid) {
         qs.sid = this.sid;
+      }
+      if (_typeof(json.qs) === 'object') {
+        Object.assign(qs, json.qs);
+        delete json.qs;
       }
       request$1({
         uri: API.gateway + 'cs',
@@ -8873,7 +8863,7 @@ CombinedStream.isStreamLike = function(stream) {
     && (typeof stream !== 'string')
     && (typeof stream !== 'boolean')
     && (typeof stream !== 'number')
-    && (!isBuffer(stream));
+    && (!isBuffer$1(stream));
 };
 
 CombinedStream.prototype.append = function(stream) {
@@ -9042,7 +9032,8 @@ var File = function (_EventEmitter) {
     var _this = possibleConstructorReturn(this, (File.__proto__ || Object.getPrototypeOf(File)).call(this));
 
     _this.downloadId = opt.downloadId;
-    _this.key = formatKey(opt.key);
+    _this.key = opt.key ? formatKey(opt.key) : null;
+
     if (storage && opt.h) {
       _this.api = storage.api;
       _this.nodeId = opt.h;
@@ -9051,25 +9042,37 @@ var File = function (_EventEmitter) {
       _this.directory = !!_this.type;
 
       if (opt.k) {
-        var parts = opt.k.split(':');
-        _this.key = formatKey(parts[parts.length - 1]);
-        storage.aes.decryptKey(_this.key);
-        _this.size = opt.s || 0;
-        if (opt.a) {
-          _this._setAttributes(opt.a, function () {});
-        } else {
-          _this.name = '';
-        }
+        _this._decryptAttributes(storage.aes, opt);
       }
+    } else {
+      _this.type = opt.directory ? 1 : 0;
+      _this.directory = !!opt.directory;
     }
     return _this;
   }
 
   createClass(File, [{
+    key: "_decryptAttributes",
+    value: function _decryptAttributes(aes, opt) {
+      this.size = opt.s || 0;
+      this.timestamp = opt.ts || 0;
+      this.type = opt.t;
+      this.name = null;
+      if (!aes || !opt.a) return;
+      var parts = opt.k.split(':');
+      this.key = formatKey(parts[parts.length - 1]);
+      aes.decryptKey(this.key);
+      if (opt.a) {
+        this._setAttributes(opt.a);
+      }
+    }
+  }, {
     key: "_setAttributes",
-    value: function _setAttributes(at, cb) {
+    value: function _setAttributes(at) {
+      var cb = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function () {};
+
       at = d64(at);
-      File.getCipher(this.key).decryptCBC(at);
+      getCipher(this.key).decryptCBC(at);
 
       try {
         at = File.unpackAttributes(at);
@@ -9081,18 +9084,68 @@ var File = function (_EventEmitter) {
       this.name = at.n;
 
       cb(null, this);
+
+      return this;
     }
   }, {
     key: "loadAttributes",
     value: function loadAttributes(cb) {
-      var req = { a: 'g', p: this.downloadId }; // todo: nodeId version ('n')
-      var self = this;
+      var _this2 = this;
+
+      var req = this.directory ? { a: 'f', qs: { n: this.downloadId } } : { a: 'g', p: this.downloadId }; // todo: nodeId version ('n')
       api.request(req, function (err, response) {
         if (err) return cb(err);
 
-        self.size = response.s;
-        self._setAttributes(response.at, cb);
+        if (_this2.directory) {
+          var filesMap = new Map();
+          var folder = response.f[0];
+          var aes = _this2.key ? new AES(_this2.key) : null;
+          _this2.nodeId = folder.h;
+          _this2.timestamp = folder.ts;
+          filesMap.set(folder.h, _this2);
+
+          var _iteratorNormalCompletion = true;
+          var _didIteratorError = false;
+          var _iteratorError = undefined;
+
+          try {
+            for (var _iterator = response.f[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+              var file = _step.value;
+
+              if (file.t === 0) {
+                var parent = filesMap.get(file.p);
+                if (!parent.children) parent.children = [];
+
+                var fileObj = new File(file, _this2.storage);
+                fileObj._decryptAttributes(aes, file);
+                parent.children.push(fileObj);
+                file.parent = parent;
+              }
+            }
+          } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+          }
+
+          _this2._decryptAttributes(aes, folder);
+          cb(null, _this2);
+        } else {
+          _this2.size = response.s;
+          _this2._setAttributes(response.at, cb);
+        }
       });
+
+      return this;
     }
   }, {
     key: "download",
@@ -9102,6 +9155,10 @@ var File = function (_EventEmitter) {
         options = {};
       }
       var maxConnections = options.maxConnections || 4;
+      var initialChunkSize = options.initialChunkSize || 128 * 1024;
+      var chunkSizeIncrement = options.chunkSizeIncrement || 128 * 1024;
+      var maxChunkSize = options.maxChunkSize || 1024 * 1024;
+
       var req = { a: 'g', g: 1, ssl: 2 };
       if (this.nodeId) {
         req.n = this.nodeId;
@@ -9109,7 +9166,9 @@ var File = function (_EventEmitter) {
         req.p = this.downloadId;
       }
 
-      var stream = mega.decrypt(this.key);
+      if (this.directory) throw Error("Can't download: folder download isn't supported");
+      if (!this.key) throw Error("Can't download: key isn't defined");
+      var stream = megaDecrypt(this.key);
 
       var cs = this.api || api;
       cs.request(req, function (err, response) {
@@ -9120,7 +9179,7 @@ var File = function (_EventEmitter) {
 
         var activeStreams = 0;
         var currentOffset = 0;
-        var chunkSize = 128 * 1024;
+        var chunkSize = initialChunkSize;
         var combined = CombinedStream.create();
 
         function getChunk() {
@@ -9132,9 +9191,12 @@ var File = function (_EventEmitter) {
           combined.append(r, { contentLength: currentMax - currentOffset });
 
           currentOffset = currentMax;
-          chunkSize = Math.min(chunkSize + 128 * 1024, 1024 * 1024);
+          if (chunkSize < maxChunkSize) {
+            chunkSize = chunkSize + chunkSizeIncrement;
+          }
 
-          if (++activeStreams < maxConnections) {
+          activeStreams += 1;
+          if (activeStreams < maxConnections) {
             setTimeout(getChunk, 1000);
           }
         }
@@ -9161,10 +9223,14 @@ var File = function (_EventEmitter) {
         });
       }
       this.api.request({ a: 'd', n: this.nodeId }, cb);
+
+      return this;
     }
   }, {
     key: "link",
     value: function link(noKey, cb) {
+      var _this3 = this;
+
       if (arguments.length === 1 && typeof noKey === 'function') {
         cb = noKey;
         noKey = false;
@@ -9174,26 +9240,18 @@ var File = function (_EventEmitter) {
           cb(new Error('delete is only supported on files with node ID-s'));
         });
       }
-      var self = this;
       this.api.request({ a: 'l', n: this.nodeId }, function (err, id) {
         if (err) return cb(err);
         var url = "https://mega.nz/#!" + id;
-        if (!noKey) url += "!" + e64(self.key);
+        if (!noKey && _this3.key) url += "!" + e64(_this3.key);
         cb(null, url);
       });
+
+      return this;
     }
   }]);
   return File;
 }(EventEmitter);
-
-File.getCipher = function (key) {
-  // 256 -> 128
-  var k = new Buffer(16);
-  for (var i = 0; i < 16; i++) {
-    k.writeUInt8(key.readUInt8(i) ^ key.readUInt8(i + 16, true), i);
-  }
-  return new AES(k);
-};
 
 File.packAttributes = function (attributes) {
   var at = JSON.stringify(attributes);
@@ -9278,7 +9336,7 @@ var Storage /* extends EventEmitter */ = function () {
           aes.decryptKey(self.key);
           self.aes = new AES(self.key);
 
-          var t = rsa$1.mpi2b(formatKey(response.csid).toString('binary'));
+          var t = mpi2b(formatKey(response.csid).toString('binary'));
           var privk = self.aes.decryptKey(formatKey(response.privk)).toString('binary');
 
           var rsa_privk = Array(4);
@@ -9286,12 +9344,12 @@ var Storage /* extends EventEmitter */ = function () {
           // decompose private key
           for (var i = 0; i < 4; i++) {
             var l = (privk.charCodeAt(0) * 256 + privk.charCodeAt(1) + 7 >> 3) + 2;
-            rsa_privk[i] = rsa$1.mpi2b(privk.substr(0, l));
+            rsa_privk[i] = rsa.mpi2b(privk.substr(0, l));
             if (typeof rsa_privk[i] === 'number') break;
             privk = privk.substr(l);
           }
 
-          var sid = new Buffer(rsa$1.b2s(rsa$1.RSAdecrypt(t, rsa_privk[2], rsa_privk[0], rsa_privk[1], rsa_privk[3])).substr(0, 43), 'binary');
+          var sid = new Buffer(b2s(RSAdecrypt(t, rsa_privk[2], rsa_privk[0], rsa_privk[1], rsa_privk[3])).substr(0, 43), 'binary');
           sid = e64(sid);
 
           self.api.sid = self.sid = sid;
@@ -9415,7 +9473,7 @@ var Storage /* extends EventEmitter */ = function () {
       }
 
       if (!opt.target) opt.target = this.root;
-      if (!opt.key) opt.key = secureRandom$1(32);
+      if (!opt.key) opt.key = secureRandom$2(32);
 
       var key = opt.key;
       var at = File.packAttributes(opt.attributes);
@@ -9466,8 +9524,8 @@ var Storage /* extends EventEmitter */ = function () {
 
       var self = this;
       var encrypter = mega.encrypt();
-      var pause = through().pause();
-      var stream = pipeline(pause, encrypter);
+      var pause = through$1().pause();
+      var stream = pipeline$1(pause, encrypter);
 
       function returnError(e) {
         if (cb) cb(e);else stream.emit('error', e);
@@ -9498,7 +9556,7 @@ var Storage /* extends EventEmitter */ = function () {
       if (size) {
         upload(size);
       } else {
-        stream = pipeline(detectSize(upload), stream);
+        stream = pipeline$1(detectSize(upload), stream);
       }
 
       function defaultUpload(size) {
@@ -9590,84 +9648,29 @@ mega.Storage = Storage;
 mega.File = File;
 
 mega.file = function (opt) {
-  if (typeof opt === 'string') {
-    var url = urlParse(opt);
-
-    var split = url.hash.split('!');
-    if (url.hostname !== 'mega.nz' && url.hostname !== 'mega.co.nz' || !url.hash || split.length !== 3) {
-      throw Error('Wrong URL supplied');
-    }
-    opt = { downloadId: split[1], key: split[2] };
+  if ((typeof opt === 'undefined' ? 'undefined' : _typeof(opt)) === 'object') {
+    return new mega.File(opt);
   }
-  return new mega.File(opt);
+
+  var url = urlParse(opt);
+  var split = url.hash.split('!');
+
+  if (url.hostname !== 'mega.nz' && url.hostname !== 'mega.co.nz') throw Error('Wrong URL supplied: wrong hostname');
+  if (!url.hash) throw Error('Wrong URL supplied: no hash');
+  if (split.length <= 1) throw Error('Wrong URL supplied: too few arguments');
+  if (split.length >= 4) throw Error('Wrong URL supplied: too many arguments');
+  if (split[0] !== '#' && split[0] !== '#F') throw Error('Wrong URL supplied: not recognized');
+
+  return new mega.File({
+    downloadId: split[1],
+    key: split[2],
+    directory: split[0] === '#F'
+  });
 };
 
-mega.encrypt = function (key) {
-  key = formatKey(key);
-
-  if (!key) {
-    key = secureRandom$1(24);
-  }
-  if (!(key instanceof Buffer)) {
-    key = new Buffer(key);
-  }
-
-  var stream = through(write, end);
-
-  if (key.length !== 24) {
-    return nextTick(function () {
-      stream.emit('error', new Error('Wrong key length. Key must be 192bit.'));
-    });
-  }
-
-  var aes = new AES(key.slice(0, 16));
-  var ctr = new CTR(aes, [key.readInt32BE(16), key.readInt32BE(20)]);
-
-  function write(d) {
-    ctr.encrypt(d);
-    this.emit('data', d);
-  }
-
-  function end() {
-    var mac = ctr.condensedMac();
-    var newkey = new Buffer(32);
-    key.copy(newkey);
-    newkey.writeInt32BE(mac[0] ^ mac[1], 24);
-    newkey.writeInt32BE(mac[2] ^ mac[3], 28);
-    for (var i = 0; i < 16; i++) {
-      newkey.writeUInt8(newkey.readUInt8(i) ^ newkey.readUInt8(16 + i), i);
-    }
-    stream.key = newkey;
-    this.emit('end');
-  }
-
-  stream = pipeline(chunkSizeSafe(16), stream);
-  return stream;
-};
-
-mega.decrypt = function (key) {
-  key = formatKey(key);
-
-  var stream = through(write, end);
-
-  var aes = mega.File.getCipher(key);
-  var ctr = new CTR(aes, [key.readInt32BE(16), key.readInt32BE(20)]);
-
-  function write(d) {
-    ctr.decrypt(d);
-    this.emit('data', d);
-  }
-
-  function end() {
-    var mac = ctr.condensedMac();
-    if ((mac[0] ^ mac[1]) !== key.readInt32BE(24) || (mac[2] ^ mac[3]) !== key.readInt32BE(28)) {
-      return this.emit('error', new Error('MAC verification failed'));
-    }
-    this.emit('end');
-  }
-
-  return pipeline(chunkSizeSafe(16), stream);
-};
+// backyards compatibility
+mega.encrypt = megaEncrypt;
+mega.decrypt = megaDecrypt;
 
 return mega;
 
