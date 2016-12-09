@@ -12,7 +12,7 @@
 ## Installation
 
 ```shell
-npm install mega
+npm install qgustavor/mega
 ```
 
 ```javascript
@@ -34,7 +34,7 @@ mode of https://directme.ga.
 
 ## API
 
-### var storage = mega([options], [readyCallback])
+### var storage = mega([options], [callback])
 
 Create new connection instance to Mega.
 
@@ -59,7 +59,7 @@ If you don't specify email/password then temporary account will be created. Once
 * `inbox` - `File` object for Inbox
 * `mounts` - Array of all top level directories
 
-### storage.upload(options | name, [buffer], [cb])
+### storage.upload(options | name, [buffer], [callback])
 
 ```javascript
 fs.createReadStream('myfile.txt').pipe(storage.upload('myfile.txt'))
@@ -74,7 +74,7 @@ Upload a file to MEGA. You can pass in buffer data or just pipe data into it. Ca
 * `size` - File size. Note that because Mega's API needs final data length before uploading can start, streaming only fully works if you specify the size of your data. Otherwise it needs to first buffer your data to determine the size.
 * `target` - Target directory file object or node ID. Defaults to `storage.root`.
 
-### storage.mkdir(options | name, cb)
+### storage.mkdir(options | name, callback)
 
 ```javascript
 storage.mkdir('dirname', (err, file) => { ... })
@@ -99,7 +99,7 @@ These events fire on file changes when `keepalive` is used. The changes can be t
 * `delete` - File was deleted. Parameters: file.
 * `update` - File was changed(renamed). Parameters: file.
 
-### mega.file(url | opt)
+### mega.file(url | options)
 
 ```javascript
 var file = mega.file('https://mega.nz/#!...')
@@ -130,7 +130,7 @@ Can be a file or folder.
 
 ✝ Those values are null or undefined when an encryption key isn't specified.
 
-### file.download([cb])
+### file.download([options], [callback])
 
 Read file contents.
 
@@ -142,7 +142,15 @@ file.download((err, data) => {
 })
 ```
 
-### file.link([noKey], cb)
+This function downloads files using multiple parallel connections to speed up downloading.
+The number of parallel connections is defined by `maxConnections` (default: 4). In order
+to do that it downloads files in chunks, with a size starting with `initialChunkSize`
+(default: 128KB) and increasing by `chunkSizeIncrement` (default: 128KB) until it reaches a
+`maxChunkSize` (max 1MB).
+
+Those values can be overwriten by using the `options` object, with sizes specified in bytes.
+
+### file.link([noKey], callback)
 
 Make download link for a file.
 
@@ -152,7 +160,7 @@ file.link((err, url) => {
 })
 ```
 
-### file.delete(cb)
+### file.delete(callback)
 
 Delete file permanently.
 
@@ -162,20 +170,29 @@ file.delete((err) => {
 })
 ```
 
-### file.loadAttributes(cb)
+### file.loadAttributes(callback)
 
 Download and decrypt file attributes. Attributes normally contain file name (`'n'`) but is possible to put anything there, as long it can be encoded as JSON.
 
 Only makes sense when file is created from download link with `mega.file(url)`, otherwise attributes are already loaded/decrypted.
-
-This function can be also be used to load file information contained in shared folders. If this function isn't called the folder the `children`
-property will be undefined.
 
 ```javascript
 mega.file(url).loadAttributes((err, file) => {
   // file.name
   // file.size
   // file.attributes
+})
+```
+
+This function can be also be used to load file information contained in shared folders, as seem below:
+
+```javascript
+const folder = mega.file('https://mega.nz/#F!...').loadAttributes((err, folder) => {
+  if (err) throw err
+  // Folder name is `folder.name`
+  // Files are in the `folder.children` array
+  const file = folder.children[0]
+  file.download().pipe(fs.createWriteStream(file.name))
 })
 ```
 
@@ -195,16 +212,6 @@ Takes in encrypted file data and outputs decrypted data and vice versa. Also doe
 
 Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit are for the MAC. You can later read the full key from
 the `key` property of the stream.
-
-### Shared folder example:
-
-```javascript
-mega.file('https://mega.nz/#F!...').loadAttributes((err, folder) => {
-  if (err) throw err
-  const file = folder.children[0]
-  file.download().pipe(fs.createWriteStream(file.name))
-})
-```
 
 ## Fork info:
 
