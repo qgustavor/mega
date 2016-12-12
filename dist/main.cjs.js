@@ -13,7 +13,7 @@ var CombinedStream = _interopDefault(require('combined-stream'));
 
 function streamToCb(stream, cb) {
   var chunks = [];
-  var complete;
+  var complete = void 0;
   stream.on('data', function (d) {
     chunks.push(d);
   });
@@ -754,6 +754,20 @@ function megaDecrypt(key) {
   return pipeline(chunkSizeSafe(16), stream);
 }
 
+
+
+var crypto = Object.freeze({
+	formatKey: formatKey,
+	e64: e64,
+	d64: d64,
+	getCipher: getCipher,
+	prepareKey: prepareKey,
+	AES: AES,
+	CTR: CTR,
+	megaEncrypt: megaEncrypt,
+	megaDecrypt: megaDecrypt
+});
+
 /* RSA public key encryption/decryption
  * The following functions are (c) 2000 by John M Hanna and are
  * released under the terms of the Gnu Public License.
@@ -1345,7 +1359,7 @@ var File = function (_EventEmitter) {
       this.type = opt.t;
       this.name = null;
 
-      if (!aes || !opt.a) return;
+      if (!aes || !opt.k) return;
 
       var parts = opt.k.split(':');
       this.key = formatKey(parts[parts.length - 1]);
@@ -1557,10 +1571,10 @@ File.packAttributes = function (attributes) {
 };
 
 File.unpackAttributes = function (at) {
-  // remove empty bytes from end
-  var end = at.length;
-  while (!at.readUInt8(end - 1)) {
-    end--;
+  // read until the first null byte
+  var end = 0;
+  while (end < at.length && at.readUInt8(end)) {
+    end++;
   }at = at.slice(0, end).toString();
   if (at.substr(0, 6) !== 'MEGA{"') {
     throw new Error('Attributes could not be decrypted with provided key.');
@@ -1965,5 +1979,8 @@ mega.file = function (opt) {
 // backyards compatibility
 mega.encrypt = megaEncrypt;
 mega.decrypt = megaDecrypt;
+
+// for testing
+mega.crypto = crypto;
 
 module.exports = mega;
