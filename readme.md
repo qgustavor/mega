@@ -36,7 +36,7 @@ mode of https://directme.ga.
 
 ### var storage = mega([options], [callback])
 
-Create new connection instance to Mega.
+Create new connection instance to MEGA.
 
 **Supported options:**
 
@@ -71,7 +71,7 @@ Upload a file to MEGA. You can pass in buffer data or just pipe data into it. Ca
 
 * `name` - File name *required*
 * `attributes` - Object of file attributes.
-* `size` - File size. Note that because Mega's API needs final data length before uploading can start, streaming only fully works if you specify the size of your data. Otherwise it needs to first buffer your data to determine the size.
+* `size` - File size. Note that because MEGA's API needs final data length before uploading can start, streaming only fully works if you specify the size of your data. Otherwise it needs to first buffer your data to determine the size.
 * `target` - Target directory file object or node ID. Defaults to `storage.root`.
 
 ### storage.mkdir(options | name, callback)
