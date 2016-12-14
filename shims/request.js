@@ -1,5 +1,10 @@
+/* global self */
+
 import stream from 'stream'
-const global = typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : typeof global !== 'undefined' ? self : {};
+const global = typeof window !== 'undefined' ? window
+: typeof self !== 'undefined' ? self
+: typeof global !== 'undefined' ? this
+: {}
 
 // Browser Request
 //
@@ -16,7 +21,11 @@ const global = typeof window !== 'undefined' ? window : typeof self !== 'undefin
 // limitations under the License.
 
 request.log = {
-  'trace': noop, 'debug': noop, 'info': noop, 'warn': noop, 'error': noop
+  'trace': noop,
+  'debug': noop,
+  'info': noop,
+  'warn': noop,
+  'error': noop
 }
 
 const DEFAULT_TIMEOUT = 3 * 60 * 1000 // 3 minutes
@@ -30,7 +39,7 @@ function request (options, callback) {
     throw new Error('No options given')
   }
 
-  var options_onResponse = options.onResponse // Save this for later.
+  var optionsOnResponse = options.onResponse // Save this for later.
 
   if (typeof options === 'string') {
     options = {'uri': options}
@@ -38,7 +47,7 @@ function request (options, callback) {
     options = JSON.parse(JSON.stringify(options)) // Use a duplicate for mutating.
   }
 
-  options.onResponse = options_onResponse // And put it back.
+  options.onResponse = optionsOnResponse // And put it back.
 
   if (options.verbose) request.log = getLogger()
 
@@ -55,10 +64,10 @@ function request (options, callback) {
     throw Error('options.uri must be a string')
   }
 
-  var unsupported_options = ['proxy', '_redirectsFollowed', 'maxRedirects', 'followRedirect']
-  for (var i = 0; i < unsupported_options.length; i++) {
-    if (options[unsupported_options[i]]) {
-      throw new Error('options.' + unsupported_options[i] + ' is not supported')
+  var unsupportedOptions = ['proxy', '_redirectsFollowed', 'maxRedirects', 'followRedirect']
+  for (var i = 0; i < unsupportedOptions.length; i++) {
+    if (options[unsupportedOptions[i]]) {
+      throw new Error('options.' + unsupportedOptions[i] + ' is not supported')
     }
   }
 
@@ -160,38 +169,38 @@ function request (options, callback) {
 
   // HTTP basic authentication
   if (!options.headers.authorization && options.auth) {
-    options.headers.authorization = 'Basic ' + b64_enc(options.auth.username + ':' + options.auth.password)
+    options.headers.authorization = 'Basic ' + b64Enc(options.auth.username + ':' + options.auth.password)
   }
 
   // Only use fetch if it supports streams
   if (typeof fetch === 'function' && typeof ReadableByteStream === 'function') {
-    return run_fetch(options)
+    return runFetch(options)
   }
-  return run_xhr(options)
+  return runXhr(options)
 }
 
-var req_seq = 0
-function run_xhr (options) {
+var reqSeq = 0
+function runXhr (options) {
   var xhr = new global.XMLHttpRequest()
-  var timed_out = false
-  var is_cors = is_crossDomain(options.uri)
-  var supports_cors = ('withCredentials' in xhr)
+  var timedOut = false
+  var isCors = isCrossDomain(options.uri)
+  var supportsCors = ('withCredentials' in xhr)
   var offset = 0
 
-  req_seq += 1
-  xhr.seq_id = req_seq
-  xhr.id = req_seq + ': ' + options.method + ' ' + options.uri
+  reqSeq += 1
+  xhr.seq_id = reqSeq
+  xhr.id = reqSeq + ': ' + options.method + ' ' + options.uri
   xhr._id = xhr.id // I know I will type "_id" from habit all the time.
 
-  if (is_cors && !supports_cors) {
-    var cors_err = new Error('Browser does not support cross-origin request: ' + options.uri)
-    cors_err.cors = 'unsupported'
-    return options.callback(cors_err, xhr)
+  if (isCors && !supportsCors) {
+    var corsErr = new Error('Browser does not support cross-origin request: ' + options.uri)
+    corsErr.cors = 'unsupported'
+    return options.callback(corsErr, xhr)
   }
 
-  xhr.timeoutTimer = setTimeout(too_late, options.timeout)
-  function too_late () {
-    timed_out = true
+  xhr.timeoutTimer = setTimeout(tooLate, options.timeout)
+  function tooLate () {
+    timedOut = true
     var er = new Error('ETIMEDOUT')
     er.code = 'ETIMEDOUT'
     er.duration = options.timeout
@@ -203,10 +212,10 @@ function run_xhr (options) {
   // Some states can be skipped over, so remember what is still incomplete.
   var did = {'response': false, 'loading': false, 'end': false}
 
-  xhr.overrideMimeType('text\/plain; charset=x-user-defined')
-  xhr.onreadystatechange = on_state_change
+  xhr.overrideMimeType('text/plain; charset=x-user-defined')
+  xhr.onreadystatechange = onStateChange
   xhr.open(options.method, options.uri, true) // asynchronous
-  if (is_cors) {
+  if (isCors) {
     xhr.withCredentials = !!options.withCredentials
   }
   xhr.send(options.body)
@@ -215,30 +224,31 @@ function run_xhr (options) {
   xhrStream._read = noop
   return xhrStream
 
-  function on_state_change (event) {
-    if (timed_out) {
+  function onStateChange (event) {
+    if (timedOut) {
       return request.log.debug('Ignoring timed out state change', {'state': xhr.readyState, 'id': xhr.id})
     }
 
-    request.log.debug('State change', {'state': xhr.readyState, 'id': xhr.id, 'timed_out': timed_out})
+    request.log.debug('State change', {'state': xhr.readyState, 'id': xhr.id, 'timedOut': timedOut})
 
     if (xhr.readyState === global.XMLHttpRequest.OPENED) {
       request.log.debug('Request started', {'id': xhr.id})
-      for (var key in options.headers)
+      for (var key in options.headers) {
         xhr.setRequestHeader(key, options.headers[key])
+      }
     } else if (xhr.readyState === global.XMLHttpRequest.HEADERS_RECEIVED) {
-      on_response()
+      onResponse()
     } else if (xhr.readyState === global.XMLHttpRequest.LOADING) {
-      on_response()
-      on_loading()
+      onResponse()
+      onLoading()
     } else if (xhr.readyState === global.XMLHttpRequest.DONE) {
-      on_response()
-      on_loading()
-      on_end()
+      onResponse()
+      onLoading()
+      onEnd()
     }
   }
 
-  function on_response () {
+  function onResponse () {
     if (did.response) { return }
 
     did.response = true
@@ -247,23 +257,23 @@ function run_xhr (options) {
     xhr.statusCode = xhr.status // Node request compatibility
 
     // Detect failed CORS requests.
-    if (is_cors && xhr.statusCode === 0) {
-      var cors_err = new Error('CORS request rejected: ' + options.uri)
-      cors_err.cors = 'rejected'
+    if (isCors && xhr.statusCode === 0) {
+      var corsErr = new Error('CORS request rejected: ' + options.uri)
+      corsErr.cors = 'rejected'
 
       // Do not process this request further.
       did.loading = true
       did.end = true
 
-      xhrStream.emit('error', cors_err)
+      xhrStream.emit('error', corsErr)
 
-      return options.callback(cors_err, xhr)
+      return options.callback(corsErr, xhr)
     }
 
     options.onResponse(null, xhr)
   }
 
-  function on_loading () {
+  function onLoading () {
     if (xhr.response) {
       var chunk = xhr.responseText.substr(offset)
       offset += chunk.length
@@ -279,7 +289,7 @@ function run_xhr (options) {
     request.log.debug('Response body loading', {'id': xhr.id})
   }
 
-  function on_end () {
+  function onEnd () {
     if (did.end) { return }
 
     did.end = true
@@ -295,12 +305,12 @@ function run_xhr (options) {
   }
 } // request
 
-function run_fetch (options) {
+function runFetch (options) {
   var xhr = {}
 
-  req_seq += 1
-  xhr.seq_id = req_seq
-  xhr.id = req_seq + ': ' + options.method + ' ' + options.uri
+  reqSeq += 1
+  xhr.seq_id = reqSeq
+  xhr.id = reqSeq + ': ' + options.method + ' ' + options.uri
   xhr._id = xhr.id // I know I will type "_id" from habit all the time.
 
   var fetchOptions = {}
@@ -417,9 +427,9 @@ function getLogger () {
 }
 
 function formatted (obj, method) {
-  return formatted_logger
+  return formattedLogger
 
-  function formatted_logger (str, context) {
+  function formattedLogger (str, context) {
     if (typeof context === 'object') {
       str += ' ' + JSON.stringify(context)
     }
@@ -429,8 +439,8 @@ function formatted (obj, method) {
 }
 
 // Return whether a URL is a cross-domain request.
-function is_crossDomain (url) {
-  var rurl = /^([\w\+\.\-]+:)(?:\/\/([^\/?#:]*)(?::(\d+))?)?/
+function isCrossDomain (url) {
+  var rurl = /^([\w+.-]+:)(?:\/\/([^/?#:]*)(?::(\d+))?)?/
 
   // jQuery #8138, IE may throw an exception when accessing
   // a field from global.location if document.domain has been set
@@ -446,19 +456,18 @@ function is_crossDomain (url) {
   var parts = rurl.exec(url.toLowerCase())
 
   var result = !!(
-    parts &&
-    (parts[1] !== ajaxLocParts[1] ||
-    parts[2] !== ajaxLocParts[2] ||
-    (parts[3] || (parts[1] === 'http:' ? 80 : 443)) !== (ajaxLocParts[3] || (ajaxLocParts[1] === 'http:' ? 80 : 443))
-  )
+    parts && (
+      parts[1] !== ajaxLocParts[1] ||
+      parts[2] !== ajaxLocParts[2] ||
+      (parts[3] || (parts[1] === 'http:' ? 80 : 443)) !== (ajaxLocParts[3] || (ajaxLocParts[1] === 'http:' ? 80 : 443))
+    )
   )
 
-  // console.debug('is_crossDomain('+url+') -> ' + result)
   return result
 }
 
 // MIT License from http://phpjs.org/functions/base64_encode:358
-function b64_enc (data) {
+function b64Enc (data) {
   // Encodes string using MIME base64 algorithm
   var b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
   var o1
@@ -472,7 +481,7 @@ function b64_enc (data) {
   var i = 0
   var ac = 0
   var enc = ''
-  var tmp_arr = []
+  var tmpArr = []
 
   if (!data) {
     return data
@@ -494,10 +503,10 @@ function b64_enc (data) {
     h4 = bits & 0x3f
 
     // use hexets to index into b64, and append result to encoded string
-    tmp_arr[ac++] = b64.charAt(h1) + b64.charAt(h2) + b64.charAt(h3) + b64.charAt(h4)
+    tmpArr[ac++] = b64.charAt(h1) + b64.charAt(h2) + b64.charAt(h3) + b64.charAt(h4)
   } while (i < data.length)
 
-  enc = tmp_arr.join('')
+  enc = tmpArr.join('')
 
   switch (data.length % 3) {
     case 1:
