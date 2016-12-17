@@ -1,13 +1,11 @@
-var mega = require('../lib/mega')
-var argv = require('optimist')
+import mega from 'mega'
+import optimist from 'optimist'
+const argv = optimist
   .demand(1)
   .usage('USAGE: node example/mkdir [email] [password] name [parent-nodeid]')
   .argv
 
-var email = argv._[0]
-var password = argv._[1]
-var name = argv._[2]
-var target = argv._[3]
+let [ email, password, name, target ] = argv._
 
 if (argv._.length < 3) {
   email = password = undefined
@@ -15,14 +13,9 @@ if (argv._.length < 3) {
   target = argv._[1]
 }
 
-var storage = mega({email: email, password: password, keepalive: false})
+const storage = mega({ email, password, keepalive: false })
 
-storage.mkdir({
-  name: name,
-  target: target
-},
-  function (err, file) {
-    if (err) throw err
-    console.log('\nCreated', file.name)
-  }
-)
+storage.mkdir({ name, target }, (err, file) => {
+  if (err) throw err
+  console.log('\nCreated', file.name)
+})

@@ -1,22 +1,22 @@
-var fs = require('fs')
-var ProgressBar = require('progress')
-var argv = require('optimist')
+import mega from 'mega'
+import fs from 'fs'
+import ProgressBar from 'progress'
+import optimist from 'optimist'
+const argv = optimist
   .demand(1)
-  .usage('USAGE: node example/download http://mega.co.nz/#!link!key')
+  .usage('USAGE: node example/download http://mega.nz/#!link!key')
   .argv
 
-var mega = require('../lib/mega')
-
-mega.file(argv._[0]).loadAttributes(function (err, file) {
+mega.file(argv._[0]).loadAttributes((err, file) => {
   if (err) throw err
 
-  console.log('File:', file.name, file.size + 'B')
+  console.log('File:', file.name, `${file.size}B`)
 
-  var dl = file.download()
+  const dl = file.download()
   dl.pipe(fs.createWriteStream(file.name))
 
-  var bar
-  dl.on('progress', function (stats) {
+  let bar
+  dl.on('progress', stats => {
     if (!bar) {
       bar = new ProgressBar('Downloading [:bar] :percent :etas', {
         total: stats.bytesTotal,
@@ -26,7 +26,7 @@ mega.file(argv._[0]).loadAttributes(function (err, file) {
     bar.tick(stats.bytesLoaded - bar.curr)
   })
 
-  dl.on('end', function () {
+  dl.on('end', () => {
     bar.tick()
     console.log('\nSaved OK!')
   })
