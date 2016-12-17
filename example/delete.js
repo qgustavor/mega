@@ -8,17 +8,16 @@ var argv = require('optimist')
 
 var storage = mega({email: argv._[0], password: argv._[1], keepalive: false})
 
-storage.on('ready', function() {
+storage.on('ready', function () {
   if (storage.files[argv._[2]]) {
-    storage.files[argv._[2]].delete(function(err) {
+    storage.files[argv._[2]].delete(function (err) {
       if (err) {
-        throw(err)
+        throw (err)
       }
       console.log(storage.files[argv._[2]].name, 'deleted')
     })
-  }
-  else {
-    throw(new Error('No such node: ' + argv._[2]))
+  } else {
+    throw (new Error('No such node: ' + argv._[2]))
   }
 })
 

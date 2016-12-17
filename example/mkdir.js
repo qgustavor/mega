@@ -18,10 +18,10 @@ if (argv._.length < 3) {
 var storage = mega({email: email, password: password, keepalive: false})
 
 storage.mkdir({
-    name: name,
-    target: target
-  },
-  function(err, file) {
+  name: name,
+  target: target
+},
+  function (err, file) {
     if (err) throw err
     console.log('\nCreated', file.name)
   }
