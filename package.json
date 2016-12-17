@@ -21,7 +21,8 @@
   },
   "standard": {
     "ignore": [
-      "dist"
+      "dist",
+      "lib/crypto/rsa.js"
     ]
   },
   "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
