@@ -51,7 +51,7 @@ If you don't specify email/password then temporary account will be created. Once
 
 * `name` - Account owner name
 * `key` - Account master key
-* `rsaPrivateKey` - RSA private Key
+* ~~`rsaPrivateKey` - RSA private Key~~
 * `sid` - Current session ID
 * `files` - Hash of `File` objects by node ID-s.
 * `root` - `File` object for Cloud Drive main directory
