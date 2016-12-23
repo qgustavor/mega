@@ -1,6 +1,6 @@
 {
   "name": "mega",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Unofficial Node.js SDK for mega.nz",
   "main": "dist/main.cjs.js",
   "jsnext:main": "dist/main.es.js",
@@ -17,12 +17,13 @@
     "storage"
   ],
   "scripts": {
-    "test": "standard && node test"
+    "build": "node build",
+    "lint": "standard",
+    "test": "node test"
   },
   "standard": {
     "ignore": [
-      "dist",
-      "lib/crypto/rsa.js"
+      "dist"
     ]
   },
   "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
@@ -48,6 +49,7 @@
     "rollup-plugin-node-builtins": "^2.0.0",
     "rollup-plugin-node-globals": "^1.1.0",
     "rollup-plugin-node-resolve": "^2.0.0",
+    "rollup-plugin-replace": "^1.1.1",
     "standard": "^8.6.0"
   }
 }

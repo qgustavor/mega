@@ -1,10 +1,10 @@
 /* global self */
 
 import stream from 'stream'
-const global = typeof window !== 'undefined' ? window
-: typeof self !== 'undefined' ? self
-: typeof global !== 'undefined' ? this
-: {}
+
+// window for normal pages, self for web / service / shared workers
+// should crash if both two are undefined, as this script assumes a browser environment
+const global = typeof window !== 'undefined' ? window : self
 
 // Browser Request
 //

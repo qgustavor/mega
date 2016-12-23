@@ -4,6 +4,7 @@ var babel = require('rollup-plugin-babel')
 var commonjs = require('rollup-plugin-commonjs')
 var globals = require('rollup-plugin-node-globals')
 var builtins = require('rollup-plugin-node-builtins')
+var replace = require('rollup-plugin-replace')
 var alias = require('rollup-plugin-alias')
 var json = require('rollup-plugin-json')
 
@@ -25,7 +26,12 @@ var formats = {
   ]
 }
 
-console.error('Starting build...\nIt should end without any output between this line and the success line')
+console.error('Starting build...')
+
+const warnings = []
+const handleWarning = (warning) => {
+  warnings.push(warning)
+}
 
 Promise.all(Object.keys(formats).map(function (format) {
   var externalConfig = format === 'browser' ? [] : [
@@ -39,6 +45,7 @@ Promise.all(Object.keys(formats).map(function (format) {
   return rollup.rollup({
     entry: 'lib/mega.js',
     external: externalConfig,
+    onwarn: handleWarning,
     plugins: [
       commonjs({
         include: [
@@ -52,8 +59,13 @@ Promise.all(Object.keys(formats).map(function (format) {
       format === 'browser' && builtins(),
       format === 'browser' && globals(),
       format === 'browser' && alias({
-        request: path.resolve(__dirname, './shims/request.js')
+        request: path.resolve(__dirname, './browser/request.js')
       }),
+      format === 'browser' && replace({ values: {
+        // handle cases where rollup-plugin-replace fails
+        "from './crypto/rsa'": "from '../browser/rsa.js'",
+        "from './aes'": "from '../../browser/aes.js'"
+      }}),
       format === 'browser' && nodeResolve({
         jsnext: true,
         main: true,
@@ -76,11 +88,20 @@ Promise.all(Object.keys(formats).map(function (format) {
   })
 }))
 .then(function () {
+  if (warnings.length) {
+    console.log('Build completed with warnings')
+    console.log(Array.from(new Set(warnings)).join('\n'))
+    process.exit(1)
+
+    // not needed, but will avoid linter warnings if it don't recognizes process.exit
+    return
+  }
+
   console.log('Build completed with success')
 })
 .catch(function (error) {
   console.error(error.stack || error)
-  throw error
+  process.exit(1)
 })
 
 function writeFilePromise (...argv) {
