@@ -8,7 +8,6 @@
 - Crypto is mostly ported from browser code and isn't optimal. [Related issue](https://github.com/qgustavor/mega/issues/3).
 - If you use it for something make sure you agree with MEGA's [Terms of Service](https://mega.nz/#terms).
 
-
 ## Installation
 
 ```shell
@@ -16,15 +15,11 @@ npm install qgustavor/mega
 ```
 
 ```javascript
-var mega = require('mega')
+var mega = require('mega') // or
+import mega from 'mega' // or what you prefer
 ```
 
 See examples directory for quick start.
-
-## Missing functionality
-
-- Can open shared folders and files, but can't share those.
-- Missing file management: move, symlink etc.
 
 ## Browser support
 
@@ -34,9 +29,9 @@ mode of https://directme.ga.
 
 ## API
 
-### var storage = mega([options], [callback])
+### `storage = mega([options], [callback])`
 
-Create new connection instance to MEGA.
+Create a logged in connection instance to MEGA.
 
 **Supported options:**
 
@@ -59,7 +54,7 @@ If you don't specify email/password then temporary account will be created. Once
 * `inbox` - `File` object for Inbox
 * `mounts` - Array of all top level directories
 
-### storage.upload(options | name, [buffer], [callback])
+### `storage.upload(options | name, [buffer], [callback])`
 
 ```javascript
 fs.createReadStream('myfile.txt').pipe(storage.upload('myfile.txt'))
@@ -74,7 +69,7 @@ Upload a file to MEGA. You can pass in buffer data or just pipe data into it. Ca
 * `size` - File size. Note that because MEGA's API needs final data length before uploading can start, streaming only fully works if you specify the size of your data. Otherwise it needs to first buffer your data to determine the size.
 * `target` - Target directory file object or node ID. Defaults to `storage.root`.
 
-### storage.mkdir(options | name, callback)
+### `storage.mkdir(options | name, callback)`
 
 ```javascript
 storage.mkdir('dirname', (err, file) => { ... })
@@ -86,7 +81,7 @@ storage.mkdir('dirname', (err, file) => { ... })
 * `attributes` - Object of file attributes.
 * `target` - Parent directory file object or node ID. Defaults to `storage.root`.
 
-### storage.reload(cb)
+### `storage.reload(cb)`
 
 Reloads files tree. No need to call this if `autoload` is used.
 
@@ -99,15 +94,14 @@ These events fire on file changes when `keepalive` is used. The changes can be t
 * `delete` - File was deleted. Parameters: file.
 * `update` - File was changed(renamed). Parameters: file.
 
-### mega.file(url | options)
+### `mega.file(url | options)`
 
 ```javascript
 var file = mega.file('https://mega.nz/#!...')
 var folder = mega.file('https://mega.nz/#F!...')
 ```
 
-Returns file object based on download URL or an options object containing `downloadId` (string), `key` (optional, string or buffer)
-and `directory` (boolean, `true` if is a shared folder).
+Returns file object based on download URL or an options object containing `downloadId` (string), `key` (optional, string or buffer) and `directory` (boolean, `true` if is a shared folder).
 
 Please note: as MEGA security model allows access to file and folder metadata without needing encryption keys this library
 also don't requires it. Also, downloading files don't work if the encryption key isn't provided.
@@ -130,7 +124,7 @@ Can be a file or folder.
 
 ✝ Those values are null or undefined when an encryption key isn't specified.
 
-### file.download([options], [callback])
+### `file.download([options], [callback])`
 
 Read file contents.
 
@@ -150,7 +144,7 @@ to do that it downloads files in chunks, with a size starting with `initialChunk
 
 Those values can be overwriten by using the `options` object, with sizes specified in bytes.
 
-### file.link([noKey], callback)
+### `file.link([noKey], callback)`
 
 Make download link for a file.
 
@@ -160,7 +154,7 @@ file.link((err, url) => {
 })
 ```
 
-### file.delete(callback)
+### `file.delete(callback)`
 
 Delete file permanently.
 
@@ -170,7 +164,7 @@ file.delete((err) => {
 })
 ```
 
-### file.loadAttributes(callback)
+### `file.loadAttributes(callback)`
 
 Download and decrypt file attributes. Attributes normally contain file name (`'n'`) but is possible to put anything there, as long it can be encoded as JSON.
 
@@ -184,7 +178,7 @@ mega.file(url).loadAttributes((err, file) => {
 })
 ```
 
-This function can be also be used to load file information contained in shared folders, as seem below:
+This function can be also be used to load file information contained in shared folders, as seen below:
 
 ```javascript
 const folder = mega.file('https://mega.nz/#F!...').loadAttributes((err, folder) => {
@@ -204,14 +198,13 @@ Same events as for Storage objects. Only trigger for a specific file.
 * `delete` - File was deleted.
 * `update` - File was changed(renamed).
 
-### mega.encrypt([key]) / mega.decrypt(key)
+### `mega.encrypt([key])` / `mega.decrypt(key)`
 
-Lower level duplex streams. These could be used if you want to do network traffic and crypto on different time.
+Lower level duplex streams. Takes in encrypted file data and outputs decrypted data and vice
+versa. Also does MAC verification / generation.
 
-Takes in encrypted file data and outputs decrypted data and vice versa. Also does MAC verification / generation.
-
-Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit are for the MAC. You can later read the full key from
-the `key` property of the stream.
+Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit are for the
+MAC. You can later read the full key from the `key` property of the stream.
 
 ## Fork info:
 
