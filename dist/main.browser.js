@@ -9609,7 +9609,7 @@ var Storage = function (_EventEmitter) {
       var at = File.packAttributes(opt.attributes);
 
       getCipher(key).encryptCBC(at);
-      this.aes.encryptKey(key);
+      this.aes.encryptECB(key);
 
       this.api.request({
         a: 'p',
@@ -9693,7 +9693,7 @@ var Storage = function (_EventEmitter) {
             var at = File.packAttributes(opt.attributes);
             getCipher(key).encryptCBC(at);
 
-            _this4.aes.encryptKey(key);
+            _this4.aes.encryptECB(key);
 
             _this4.api.request({
               a: 'p',

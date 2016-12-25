@@ -2,6 +2,7 @@ import { parse } from 'url';
 import through from 'through';
 import pipeline from 'stream-combiner';
 import secureRandom from 'secure-random';
+import crypto from 'crypto';
 import { EventEmitter } from 'events';
 import _request from 'request';
 import querystring from 'querystring';
@@ -445,50 +446,65 @@ var AES$$1 = function () {
     var a32 = [];
     for (var i = 0; i < 4; i++) {
       a32[i] = key.readInt32BE(i * 4);
-    }this.aes = new AES$1(a32);
+    }
+    this.aes = new AES$1(a32);
+    this.key = key;
   }
 
   createClass(AES$$1, [{
     key: 'encryptCBC',
     value: function encryptCBC(buffer) {
-      var iv = [0, 0, 0, 0];
-      var d = Array(4);
-      var i = void 0;
-      var j = void 0;
+      var iv = Buffer.alloc(16, 0);
+      var decipher = crypto.createCipheriv('aes-128-cbc', this.key, iv);
+      decipher.setAutoPadding(false);
 
-      for (i = 0; i < buffer.length; i += 16) {
+      var result = Buffer.concat([decipher.update(buffer), decipher.final()]);
+      result.copy(buffer);
+      return result;
+
+      /*
+      let iv = [0, 0, 0, 0]
+      let d = Array(4)
+      let i
+      let j
+       for (i = 0; i < buffer.length; i += 16) {
         for (j = 0; j < 4; j++) {
-          d[j] = buffer.readUInt32BE(i + j * 4, false) ^ iv[j];
+          d[j] = buffer.readUInt32BE(i + j * 4, false) ^ iv[j]
         }
-        iv = this.aes.encrypt(d);
-
-        for (j = 0; j < 4; j++) {
-          buffer.writeInt32BE(iv[j], i + j * 4, false);
+        iv = this.aes.encrypt(d)
+         for (j = 0; j < 4; j++) {
+          buffer.writeInt32BE(iv[j], i + j * 4, false)
         }
       }
+      */
     }
   }, {
     key: 'decryptCBC',
     value: function decryptCBC(buffer) {
-      var iv = [0, 0, 0, 0];
-      var d = Array(4);
-      var t = Array(4);
-      var i = void 0;
-      var j = void 0;
+      var iv = Buffer.alloc(16, 0);
+      var decipher = crypto.createDecipheriv('aes-128-cbc', this.key, iv);
+      decipher.setAutoPadding(false);
 
-      for (i = 0; i < buffer.length; i += 16) {
+      var result = Buffer.concat([decipher.update(buffer), decipher.final()]);
+      result.copy(buffer);
+      return result;
+
+      /* let iv = [0, 0, 0, 0]
+      let d = Array(4)
+      let t = Array(4)
+      let i
+      let j
+       for (i = 0; i < buffer.length; i += 16) {
         for (j = 0; j < 4; j++) {
-          d[j] = buffer.readUInt32BE(i + j * 4, false);
+          d[j] = buffer.readUInt32BE(i + j * 4, false)
         }
-        t = d;
-
-        d = this.aes.decrypt(d);
-
-        for (j = 0; j < 4; j++) {
-          buffer.writeInt32BE(d[j] ^ iv[j], i + j * 4, false);
+        t = d
+         d = this.aes.decrypt(d)
+         for (j = 0; j < 4; j++) {
+          buffer.writeInt32BE(d[j] ^ iv[j], i + j * 4, false)
         }
-        iv = t;
-      }
+        iv = t
+      } */
     }
   }, {
     key: 'stringhash',
@@ -497,50 +513,68 @@ var AES$$1 = function () {
       for (var i = 0; i < buffer.length; i += 4) {
         h32[i / 4 & 3] ^= buffer.readInt32BE(i, true);
       }
-      for (var _i = 16384; _i--;) {
+
+      for (var _i = 16384; _i !== 0; _i--) {
         h32 = this.aes.encrypt(h32);
-      }var b = new Buffer(8);
+      }
+
+      var b = new Buffer(8);
       b.writeInt32BE(h32[0], 0, true);
       b.writeInt32BE(h32[2], 4, true);
       return b;
     }
   }, {
-    key: 'decryptKey',
-    value: function decryptKey(key) {
-      var d = [];
-      for (var i = 0; i < key.length; i += 16) {
-        d[0] = key.readInt32BE(i, false);
-        d[1] = key.readInt32BE(i + 4, false);
-        d[2] = key.readInt32BE(i + 8, false);
-        d[3] = key.readInt32BE(i + 12, false);
+    key: 'decryptECB',
+    value: function decryptECB(buffer) {
+      var iv = Buffer.alloc(16, 0);
+      var decipher = crypto.createDecipheriv('aes-128-ecb', this.key, iv);
+      decipher.setAutoPadding(false);
 
-        d = this.aes.decrypt(d);
+      var result = Buffer.concat([decipher.update(buffer), decipher.final()]);
+      result.copy(buffer);
+      return result;
 
-        key.writeInt32BE(d[0], i, false);
-        key.writeInt32BE(d[1], i + 4, false);
-        key.writeInt32BE(d[2], i + 8, false);
-        key.writeInt32BE(d[3], i + 12, false);
+      /*
+      let d = []
+      for (let i = 0; i < key.length; i += 16) {
+        d[0] = key.readInt32BE(i, false)
+        d[1] = key.readInt32BE(i + 4, false)
+        d[2] = key.readInt32BE(i + 8, false)
+        d[3] = key.readInt32BE(i + 12, false)
+         d = this.aes.decrypt(d)
+         key.writeInt32BE(d[0], i, false)
+        key.writeInt32BE(d[1], i + 4, false)
+        key.writeInt32BE(d[2], i + 8, false)
+        key.writeInt32BE(d[3], i + 12, false)
       }
-      return key;
+      return key
+      */
     }
   }, {
-    key: 'encryptKey',
-    value: function encryptKey(key) {
-      var d = [];
-      for (var i = 0; i < key.length; i += 16) {
-        d[0] = key.readInt32BE(i, false);
-        d[1] = key.readInt32BE(i + 4, false);
-        d[2] = key.readInt32BE(i + 8, false);
-        d[3] = key.readInt32BE(i + 12, false);
+    key: 'encryptECB',
+    value: function encryptECB(buffer) {
+      var iv = Buffer.alloc(16, 0);
+      var decipher = crypto.createCipheriv('aes-128-ecb', this.key, iv);
+      decipher.setAutoPadding(false);
 
-        d = this.aes.encrypt(d);
+      var result = Buffer.concat([decipher.update(buffer), decipher.final()]);
+      result.copy(buffer);
+      return result;
 
-        key.writeInt32BE(d[0], i, false);
-        key.writeInt32BE(d[1], i + 4, false);
-        key.writeInt32BE(d[2], i + 8, false);
-        key.writeInt32BE(d[3], i + 12, false);
+      /* let d = []
+      for (let i = 0; i < key.length; i += 16) {
+        d[0] = key.readInt32BE(i, false)
+        d[1] = key.readInt32BE(i + 4, false)
+        d[2] = key.readInt32BE(i + 8, false)
+        d[3] = key.readInt32BE(i + 12, false)
+         d = this.aes.encrypt(d)
+         key.writeInt32BE(d[0], i, false)
+        key.writeInt32BE(d[1], i + 4, false)
+        key.writeInt32BE(d[2], i + 8, false)
+        key.writeInt32BE(d[3], i + 12, false)
       }
-      return key;
+      return key
+      */
     }
   }]);
   return AES$$1;
@@ -772,7 +806,7 @@ function megaDecrypt(key) {
 
 
 
-var crypto = Object.freeze({
+var crypto$1 = Object.freeze({
 	AES: AES$$1,
 	CTR: CTR,
 	formatKey: formatKey,
@@ -1862,7 +1896,7 @@ var Storage = function (_EventEmitter) {
       var at = File.packAttributes(opt.attributes);
 
       getCipher(key).encryptCBC(at);
-      this.aes.encryptKey(key);
+      this.aes.encryptECB(key);
 
       this.api.request({
         a: 'p',
@@ -1946,7 +1980,7 @@ var Storage = function (_EventEmitter) {
             var at = File.packAttributes(opt.attributes);
             getCipher(key).encryptCBC(at);
 
-            _this4.aes.encryptKey(key);
+            _this4.aes.encryptECB(key);
 
             _this4.api.request({
               a: 'p',
@@ -2061,6 +2095,6 @@ mega.encrypt = megaEncrypt;
 mega.decrypt = megaDecrypt;
 
 // for testing
-mega.crypto = crypto;
+mega.crypto = crypto$1;
 
 export default mega;
