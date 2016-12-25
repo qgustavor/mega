@@ -65,7 +65,7 @@ class AES {
     return b
   }
 
-  decryptKey (key) {
+  decryptECB (key) {
     let d = []
     for (let i = 0; i < key.length; i += 16) {
       d[0] = key.readInt32BE(i, false)
@@ -83,7 +83,7 @@ class AES {
     return key
   }
 
-  encryptKey (key) {
+  encryptECB (key) {
     let d = []
     for (let i = 0; i < key.length; i += 16) {
       d[0] = key.readInt32BE(i, false)
