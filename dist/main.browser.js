@@ -7414,8 +7414,8 @@ var AES$$1 = function () {
       return b;
     }
   }, {
-    key: 'decryptKey',
-    value: function decryptKey(key) {
+    key: 'decryptECB',
+    value: function decryptECB(key) {
       var d = [];
       for (var i = 0; i < key.length; i += 16) {
         d[0] = key.readInt32BE(i, false);
@@ -7433,8 +7433,8 @@ var AES$$1 = function () {
       return key;
     }
   }, {
-    key: 'encryptKey',
-    value: function encryptKey(key) {
+    key: 'encryptECB',
+    value: function encryptECB(key) {
       var d = [];
       for (var i = 0; i < key.length; i += 16) {
         d[0] = key.readInt32BE(i, false);
