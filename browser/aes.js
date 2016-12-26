@@ -1,8 +1,30 @@
 import { AES as SjclAES } from './sjcl'
 import { EventEmitter } from 'events'
 
-export function simpleEncryptAES (key, plaintext) {
-  return new SjclAES(key).encrypt(plaintext)
+// convert user-supplied password array
+export function prepareKey (password) {
+  let i, j, r
+  let pkey = [0x93C467E3, 0x7DB0C7A4, 0xD1BE3F81, 0x0152CB56]
+
+  for (r = 65536; r--;) {
+    for (j = 0; j < password.length; j += 16) {
+      const key = [0, 0, 0, 0]
+
+      for (i = 0; i < 16; i += 4) {
+        if (i + j < password.length) {
+          key[i / 4] = password.readInt32BE(i + j, true)
+        }
+      }
+
+      pkey = new SjclAES(key).encrypt(pkey)
+    }
+  }
+
+  const key = new Buffer(16)
+  for (i = 0; i < 4; i++) {
+    key.writeInt32BE(pkey[i], i * 4, true)
+  }
+  return key
 }
 
 class AES {

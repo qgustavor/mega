@@ -7343,8 +7343,32 @@ var AES$1 = function () {
 
 AES$1.prototype._tables = [[[], [], [], [], []], [[], [], [], [], []]];
 
-function simpleEncryptAES(key, plaintext) {
-  return new AES$1(key).encrypt(plaintext);
+// convert user-supplied password array
+function prepareKey(password) {
+  var i = void 0,
+      j = void 0,
+      r = void 0;
+  var pkey = [0x93C467E3, 0x7DB0C7A4, 0xD1BE3F81, 0x0152CB56];
+
+  for (r = 65536; r--;) {
+    for (j = 0; j < password.length; j += 16) {
+      var _key = [0, 0, 0, 0];
+
+      for (i = 0; i < 16; i += 4) {
+        if (i + j < password.length) {
+          _key[i / 4] = password.readInt32BE(i + j, true);
+        }
+      }
+
+      pkey = new AES$1(_key).encrypt(pkey);
+    }
+  }
+
+  var key = new Buffer(16);
+  for (i = 0; i < 4; i++) {
+    key.writeInt32BE(pkey[i], i * 4, true);
+  }
+  return key;
 }
 
 var AES$$1 = function () {
@@ -7588,30 +7612,6 @@ function getCipher(key) {
   return new AES$$1(k);
 }
 
-// convert user-supplied password array
-function prepareKey(a) {
-  var i = void 0,
-      j = void 0,
-      r = void 0;
-  var pkey = [0x93C467E3, 0x7DB0C7A4, 0xD1BE3F81, 0x0152CB56];
-  for (r = 65536; r--;) {
-    for (j = 0; j < a.length; j += 16) {
-      key = [0, 0, 0, 0];
-
-      for (i = 0; i < 16; i += 4) {
-        if (i + j < a.length) {
-          key[i / 4] = a.readInt32BE(i + j, true);
-        }
-      }
-      pkey = simpleEncryptAES(key, pkey);
-    }
-  }
-  var key = new Buffer(16);
-  for (i = 0; i < 4; i++) {
-    key.writeInt32BE(pkey[i], i * 4, true);
-  }return key;
-}
-
 function megaEncrypt(key) {
   key = formatKey(key);
 
@@ -7678,20 +7678,6 @@ function megaDecrypt(key) {
 
   return pipeline(chunkSizeSafe(16), stream);
 }
-
-
-
-var crypto = Object.freeze({
-	AES: AES$$1,
-	CTR: CTR,
-	formatKey: formatKey,
-	e64: e64,
-	d64: d64,
-	getCipher: getCipher,
-	prepareKey: prepareKey,
-	megaEncrypt: megaEncrypt,
-	megaDecrypt: megaDecrypt
-});
 
 /* global self */
 
@@ -9188,7 +9174,7 @@ var File = function (_EventEmitter) {
 
       var parts = opt.k.split(':');
       this.key = formatKey(parts[parts.length - 1]);
-      aes.decryptKey(this.key);
+      aes.decryptECB(this.key);
       if (opt.a) {
         this._setAttributes(opt.a);
       }
@@ -9219,7 +9205,14 @@ var File = function (_EventEmitter) {
     value: function loadAttributes(cb) {
       var _this2 = this;
 
+      if (typeof cb !== 'function') {
+        cb = function cb(err) {
+          if (err) throw err;
+        };
+      }
+
       var req = this.directory ? { a: 'f', qs: { n: this.downloadId } } : { a: 'g', p: this.downloadId }; // todo: nodeId version ('n')
+
       api.request(req, function (err, response) {
         if (err) return cb(err);
 
@@ -9468,11 +9461,11 @@ var Storage = function (_EventEmitter) {
         _this.api.request({ a: 'us', user: options.email, uh: uh }, function (err, response) {
           if (err) return cb(err);
           _this.key = formatKey(response.k);
-          aes.decryptKey(_this.key);
+          aes.decryptECB(_this.key);
           _this.aes = new AES$$1(_this.key);
 
           var t = formatKey(response.csid);
-          var privk = _this.aes.decryptKey(formatKey(response.privk));
+          var privk = _this.aes.decryptECB(formatKey(response.privk));
           var rsaPrivk = cryptoDecodePrivKey(privk);
           if (!rsaPrivk) throw Error('invalid credentials');
 
@@ -9806,9 +9799,6 @@ mega.file = function (opt) {
 // backyards compatibility
 mega.encrypt = megaEncrypt;
 mega.decrypt = megaDecrypt;
-
-// for testing
-mega.crypto = crypto;
 
 return mega;
 
