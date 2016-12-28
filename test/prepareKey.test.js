@@ -3,9 +3,16 @@ import { testBuffer } from './test-utils.js'
 
 import { prepareKey } from '../lib/crypto'
 
-test('prepareKey', t => {
-  const derivedKey = prepareKey(testBuffer(16))
+test('prepareKey - small - 8 bytes', t => {
+  const derivedKey = prepareKey(testBuffer(8))
   const keyAsString = derivedKey.toString('hex')
 
-  t.is(keyAsString, '474149b3e98d67e24713b4f42c7ee75c')
+  t.is(keyAsString, 'c4589a459956887caf0b408635c3c03b')
+})
+
+test('prepareKey - long - 64 bytes', t => {
+  const derivedKey = prepareKey(testBuffer(64))
+  const keyAsString = derivedKey.toString('hex')
+
+  t.is(keyAsString, '83bd84689f057f9ed9834b3ecb81d80e')
 })

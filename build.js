@@ -1,18 +1,20 @@
 var rollup = require('rollup')
-var nodeResolve = require('rollup-plugin-node-resolve')
+var alias = require('rollup-plugin-alias')
 var babel = require('rollup-plugin-babel')
+var builtins = require('rollup-plugin-node-builtins')
 var commonjs = require('rollup-plugin-commonjs')
 var globals = require('rollup-plugin-node-globals')
-var builtins = require('rollup-plugin-node-builtins')
-var replace = require('rollup-plugin-replace')
-var alias = require('rollup-plugin-alias')
 var json = require('rollup-plugin-json')
+var nodeResolve = require('rollup-plugin-node-resolve')
+var replace = require('rollup-plugin-replace')
+var compile = require('google-closure-compiler-js').compile
 
 var fs = require('fs')
 var path = require('path')
 
 // as there is just one supported argument the line below is dead simple
 var sourceMapEnabled = process.argv.includes('--generate-sourcemap')
+var minify = process.argv.includes('--minify')
 
 var formats = {
   browser: [{
@@ -83,6 +85,13 @@ Promise.all(Object.keys(formats).map(function (format) {
         sourceMap: sourceMapEnabled && 'inline'
       }, options))
 
+      if (minify && format === 'browser') {
+        result.code = compile({
+          rewritePolyfills: false,
+          jsCode: [{src: result.code}]
+        }).compiledCode
+      }
+
       return writeFilePromise('dist/main.' + options.name + '.js', result.code)
     }))
   })
@@ -92,9 +101,6 @@ Promise.all(Object.keys(formats).map(function (format) {
     console.log('Build completed with warnings')
     console.log(Array.from(new Set(warnings)).join('\n'))
     process.exit(1)
-
-    // not needed, but will avoid linter warnings if it don't recognizes process.exit
-    return
   }
 
   console.log('Build completed with success')

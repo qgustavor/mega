@@ -415,10 +415,10 @@ function b2s (b) {
  */
 function cryptoDecodePrivKey (privk) {
   const pubkey = []
-  const l = ((privk[0] * 256 + privk[1] + 7) >> 3) + 2
 
   // decompose private key
   for (let i = 0; i < 4; i++) {
+    const l = ((privk[0] * 256 + privk[1] + 7) >> 3) + 2
     pubkey[i] = mpi2b(privk.toString('binary').substr(0, l))
     if (typeof pubkey[i] === 'number') {
       if (i !== 4 || privk.length >= 16) return false

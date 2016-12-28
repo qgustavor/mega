@@ -1,12 +1,12 @@
-import { parse } from 'url';
 import through from 'through';
 import pipeline from 'stream-combiner';
 import secureRandom from 'secure-random';
 import crypto from 'crypto';
-import { EventEmitter } from 'events';
 import _request from 'request';
+import { EventEmitter } from 'events';
 import querystring from 'querystring';
 import CombinedStream from 'combined-stream';
+import { parse } from 'url';
 
 function streamToCb(stream, cb) {
   var chunks = [];
@@ -192,249 +192,6 @@ var set = function set(object, property, value, receiver) {
   return value;
 };
 
-/** @fileOverview Low-level AES implementation.
- *
- * This file contains a low-level implementation of AES, optimized for
- * size and for efficiency on several browsers.  It is based on
- * OpenSSL's aes_core.c, a public-domain implementation by Vincent
- * Rijmen, Antoon Bosselaers and Paulo Barreto.
- *
- * An older version of this implementation is available in the public
- * domain, but this one is (c) Emily Stark, Mike Hamburg, Dan Boneh,
- * Stanford University 2008-2010 and BSD-licensed for liability
- * reasons.
- *
- * @author Emily Stark
- * @author Mike Hamburg
- * @author Dan Boneh
- */
-
-/**
- * Schedule out an AES key for both encryption and decryption.  This
- * is a low-level class.  Use a cipher mode to do bulk encryption.
- *
- * @constructor
- * @param {Array} key The key as an array of 4, 6 or 8 words.
- *
- * @class Advanced Encryption Standard (low-level interface)
- */
-var AES$1 = function () {
-  function AES(key) {
-    classCallCheck(this, AES);
-
-    if (!this._tables[0][0][0]) {
-      this._precompute();
-    }
-
-    var i = void 0;
-    var j = void 0;
-    var tmp = void 0;
-    var encKey = void 0;
-    var decKey = void 0;
-    var sbox = this._tables[0][4];
-    var decTable = this._tables[1];
-    var keyLen = key.length;
-    var rcon = 1;
-
-    if (keyLen !== 4 && keyLen !== 6 && keyLen !== 8) {
-      throw new Error('invalid aes key size');
-    }
-
-    this._key = [encKey = key.slice(0), decKey = []];
-
-    // schedule encryption keys
-    for (i = keyLen; i < 4 * keyLen + 28; i++) {
-      tmp = encKey[i - 1];
-
-      // apply sbox
-      if (i % keyLen === 0 || keyLen === 8 && i % keyLen === 4) {
-        tmp = sbox[tmp >>> 24] << 24 ^ sbox[tmp >> 16 & 255] << 16 ^ sbox[tmp >> 8 & 255] << 8 ^ sbox[tmp & 255];
-
-        // shift rows and add rcon
-        if (i % keyLen === 0) {
-          tmp = tmp << 8 ^ tmp >>> 24 ^ rcon << 24;
-          rcon = rcon << 1 ^ (rcon >> 7) * 283;
-        }
-      }
-
-      encKey[i] = encKey[i - keyLen] ^ tmp;
-    }
-
-    // schedule decryption keys
-    for (j = 0; i; j++, i--) {
-      tmp = encKey[j & 3 ? i : i - 4];
-      if (i <= 4 || j < 4) {
-        decKey[j] = tmp;
-      } else {
-        decKey[j] = decTable[0][sbox[tmp >>> 24]] ^ decTable[1][sbox[tmp >> 16 & 255]] ^ decTable[2][sbox[tmp >> 8 & 255]] ^ decTable[3][sbox[tmp & 255]];
-      }
-    }
-  }
-
-  // public
-  /* Something like this might appear here eventually
-  name: "AES",
-  blockSize: 4,
-  keySizes: [4,6,8],
-  */
-
-  /**
-   * Encrypt an array of 4 big-endian words.
-   * @param {Array} data The plaintext.
-   * @return {Array} The ciphertext.
-   */
-
-
-  createClass(AES, [{
-    key: 'encrypt',
-    value: function encrypt(data) {
-      return this._crypt(data, 0);
-    }
-
-    /**
-     * Decrypt an array of 4 big-endian words.
-     * @param {Array} data The ciphertext.
-     * @return {Array} The plaintext.
-     */
-
-  }, {
-    key: 'decrypt',
-    value: function decrypt(data) {
-      return this._crypt(data, 1);
-    }
-
-    /**
-     * Expand the S-box tables.
-     *
-     * @private
-     */
-
-  }, {
-    key: '_precompute',
-    value: function _precompute() {
-      var encTable = this._tables[0];
-      var decTable = this._tables[1];
-      var sbox = encTable[4];
-      var sboxInv = decTable[4];
-      var i = void 0;
-      var x = void 0;
-      var xInv = void 0;
-      var d = [];
-      var th = [];
-      var x2 = void 0;
-      var x4 = void 0;
-      var x8 = void 0;
-      var s = void 0;
-      var tEnc = void 0;
-      var tDec = void 0;
-
-      // Compute double and third tables
-      for (i = 0; i < 256; i++) {
-        th[(d[i] = i << 1 ^ (i >> 7) * 283) ^ i] = i;
-      }
-
-      for (x = xInv = 0; !sbox[x]; x ^= x2 || 1, xInv = th[xInv] || 1) {
-        // Compute sbox
-        s = xInv ^ xInv << 1 ^ xInv << 2 ^ xInv << 3 ^ xInv << 4;
-        s = s >> 8 ^ s & 255 ^ 99;
-        sbox[x] = s;
-        sboxInv[s] = x;
-
-        // Compute MixColumns
-        x8 = d[x4 = d[x2 = d[x]]];
-        tDec = x8 * 0x1010101 ^ x4 * 0x10001 ^ x2 * 0x101 ^ x * 0x1010100;
-        tEnc = d[s] * 0x101 ^ s * 0x1010100;
-
-        for (i = 0; i < 4; i++) {
-          encTable[i][x] = tEnc = tEnc << 24 ^ tEnc >>> 8;
-          decTable[i][s] = tDec = tDec << 24 ^ tDec >>> 8;
-        }
-      }
-
-      // Compactify.  Considerable speedup on Firefox.
-      for (i = 0; i < 5; i++) {
-        encTable[i] = encTable[i].slice(0);
-        decTable[i] = decTable[i].slice(0);
-      }
-    }
-
-    /**
-     * Encryption and decryption core.
-     * @param {Array} input Four words to be encrypted or decrypted.
-     * @param dir The direction, 0 for encrypt and 1 for decrypt.
-     * @return {Array} The four encrypted or decrypted words.
-     * @private
-     */
-
-  }, {
-    key: '_crypt',
-    value: function _crypt(input, dir) {
-      if (input.length !== 4) {
-        throw new Error('invalid aes block size');
-      }
-
-      var // state variables a,b,c,d are loaded with pre-whitened data
-      key = this._key[dir];
-
-      var a = input[0] ^ key[0];
-      var b = input[dir ? 3 : 1] ^ key[1];
-      var c = input[2] ^ key[2];
-      var d = input[dir ? 1 : 3] ^ key[3];
-      var a2 = void 0;
-      var b2 = void 0;
-      var c2 = void 0;
-      var nInnerRounds = key.length / 4 - 2;
-      var i = void 0;
-      var kIndex = 4;
-      var out = [0, 0, 0, 0];
-
-      var // load up the tables
-      table = this._tables[dir];
-
-      var t0 = table[0];
-      var t1 = table[1];
-      var t2 = table[2];
-      var t3 = table[3];
-      var sbox = table[4];
-
-      // Inner rounds.  Cribbed from OpenSSL.
-      for (i = 0; i < nInnerRounds; i++) {
-        a2 = t0[a >>> 24] ^ t1[b >> 16 & 255] ^ t2[c >> 8 & 255] ^ t3[d & 255] ^ key[kIndex];
-        b2 = t0[b >>> 24] ^ t1[c >> 16 & 255] ^ t2[d >> 8 & 255] ^ t3[a & 255] ^ key[kIndex + 1];
-        c2 = t0[c >>> 24] ^ t1[d >> 16 & 255] ^ t2[a >> 8 & 255] ^ t3[b & 255] ^ key[kIndex + 2];
-        d = t0[d >>> 24] ^ t1[a >> 16 & 255] ^ t2[b >> 8 & 255] ^ t3[c & 255] ^ key[kIndex + 3];
-        kIndex += 4;
-        a = a2;b = b2;c = c2;
-      }
-
-      // Last round.
-      for (i = 0; i < 4; i++) {
-        out[dir ? 3 & -i : i] = sbox[a >>> 24] << 24 ^ sbox[b >> 16 & 255] << 16 ^ sbox[c >> 8 & 255] << 8 ^ sbox[d & 255] ^ key[kIndex++];
-        a2 = a;a = b;b = c;c = d;d = a2;
-      }
-
-      return out;
-    }
-  }]);
-  return AES;
-}();
-
-/**
- * The expanded S-box and inverse S-box tables.  These will be computed
- * on the client so that we don't have to send them down the wire.
- *
- * There are two tables, _tables[0] is for encryption and
- * _tables[1] is for decryption.
- *
- * The first 4 sub-tables are the expanded S-box with MixColumns.  The
- * last (_tables[01][4]) is the S-box itself.
- *
- * @private
- */
-
-
-AES$1.prototype._tables = [[[], [], [], [], []], [[], [], [], [], []]];
-
 // convert user-supplied password array
 function prepareKey(password) {
   var i = void 0,
@@ -444,43 +201,29 @@ function prepareKey(password) {
 
   for (r = 65536; r--;) {
     for (j = 0; j < password.length; j += 16) {
-      var key = [0, 0, 0, 0];
+      var key = Buffer.alloc(16);
 
       for (i = 0; i < 16; i += 4) {
         if (i + j < password.length) {
-          key[i / 4] = password.readInt32BE(i + j, true);
+          password.copy(key, i, i + j, i + j + 4);
         }
       }
 
-      // todo: remove the buffer to array to buffer conversion
-      var keyBuffer = new Buffer(16);
-      for (i = 0; i < 4; i++) {
-        keyBuffer.writeInt32BE(key[i], i * 4, true);
-      }
-
-      var cipher = crypto.createCipheriv('aes-128-ecb', keyBuffer, Buffer.alloc(0));
-      cipher.setAutoPadding(false);
-
-      pkey = cipher.update(pkey);
+      pkey = crypto.createCipheriv('aes-128-ecb', key, Buffer.alloc(0)).setAutoPadding(false).update(pkey);
     }
   }
 
   return pkey;
 }
 
-var AES$$1 = function () {
-  function AES$$1(key) {
-    classCallCheck(this, AES$$1);
+var AES = function () {
+  function AES(key) {
+    classCallCheck(this, AES);
 
-    var a32 = [];
-    for (var i = 0; i < 4; i++) {
-      a32[i] = key.readInt32BE(i * 4);
-    }
-    this.aes = new AES$1(a32);
     this.key = key;
   }
 
-  createClass(AES$$1, [{
+  createClass(AES, [{
     key: 'encryptCBC',
     value: function encryptCBC(buffer) {
       var iv = Buffer.alloc(16, 0);
@@ -510,66 +253,77 @@ var AES$$1 = function () {
         h32[i / 4 & 3] ^= buffer.readInt32BE(i, true);
       }
 
-      for (var _i = 16384; _i !== 0; _i--) {
-        h32 = this.aes.encrypt(h32);
+      var hash = new Buffer(16);
+      for (var _i = 0; _i < 4; _i++) {
+        hash.writeInt32BE(h32[_i], _i * 4, true);
       }
 
-      var b = new Buffer(8);
-      b.writeInt32BE(h32[0], 0, true);
-      b.writeInt32BE(h32[2], 4, true);
-      return b;
-    }
-  }, {
-    key: 'decryptECB',
-    value: function decryptECB(buffer) {
-      var decipher = crypto.createDecipheriv('aes-128-ecb', this.key, Buffer.alloc(0));
-      decipher.setAutoPadding(false);
-
-      var result = decipher.update(buffer);
-      result.copy(buffer);
+      var cipher = crypto.createCipheriv('aes-128-ecb', this.key, Buffer.alloc(0));
+      for (var _i2 = 16384; _i2--;) {
+        hash = cipher.update(hash);
+      }var result = new Buffer(8);
+      hash.copy(result, 0, 0, 4);
+      hash.copy(result, 4, 8, 12);
       return result;
     }
   }, {
     key: 'encryptECB',
     value: function encryptECB(buffer) {
-      var cipher = crypto.createCipheriv('aes-128-ecb', this.key, Buffer.alloc(0));
-      cipher.setAutoPadding(false);
+      var cipher = crypto.createCipheriv('aes-128-ecb', this.key, Buffer.alloc(0)).setAutoPadding(false);
 
       var result = cipher.update(buffer);
       result.copy(buffer);
       return result;
     }
+  }, {
+    key: 'decryptECB',
+    value: function decryptECB(buffer) {
+      var decipher = crypto.createDecipheriv('aes-128-ecb', this.key, Buffer.alloc(0)).setAutoPadding(false);
+
+      var result = decipher.update(buffer);
+      result.copy(buffer);
+      return result;
+    }
   }]);
-  return AES$$1;
+  return AES;
 }();
 
-var CTR = function (_EventEmitter) {
-  inherits(CTR, _EventEmitter);
-
+var CTR = function () {
   function CTR(aes, nonce) {
+    var _this = this;
+
     classCallCheck(this, CTR);
 
-    var _this = possibleConstructorReturn(this, (CTR.__proto__ || Object.getPrototypeOf(CTR)).call(this));
+    this.key = aes.key;
+    this.nonce = nonce.slice(0, 8);
 
-    _this.aes = aes.aes;
-    _this.key = aes.key;
-    _this.nonce = nonce;
+    var iv = Buffer.alloc(16);
+    this.nonce.copy(iv, 0);
 
-    _this.posNext = _this.increment = 131072; // 2**17
-    _this.pos = 0;
+    // create ciphers on demand
+    this.encrypt = function (buffer) {
+      _this.encryptCipher = crypto.createCipheriv('aes-128-ctr', _this.key, iv);
+      _this.encrypt = _this._encrypt;
+      return _this.encrypt(buffer);
+    };
 
-    _this.encrypt = _this._process.bind(_this, true);
-    _this.decrypt = _this._process.bind(_this, false);
+    this.decrypt = function (buffer) {
+      _this.decryptCipher = crypto.createDecipheriv('aes-128-ctr', _this.key, iv);
+      _this.decrypt = _this._decrypt;
+      return _this.decrypt(buffer);
+    };
 
-    _this.ctr = [_this.nonce[0], _this.nonce[1], 0, 0];
-    _this.mac = [_this.ctr[0], _this.ctr[1], _this.ctr[0], _this.ctr[1]];
+    // MEGA's MAC implementation is... strange
+    this.macCipher = crypto.createCipheriv('aes-128-ecb', this.key, Buffer.alloc(0));
 
-    _this.macs = [];
+    this.posNext = this.increment = 131072; // 2**17
+    this.pos = 0;
 
-    _this.on('mac', function (m) {
-      _this.macs.push(m);
-    });
-    return _this;
+    this.macs = [];
+
+    this.mac = Buffer.alloc(16);
+    this.nonce.copy(this.mac, 0);
+    this.nonce.copy(this.mac, 8);
   }
 
   createClass(CTR, [{
@@ -579,80 +333,84 @@ var CTR = function (_EventEmitter) {
         this.macs.push(this.mac);
         this.mac = undefined;
       }
-      var i = void 0;
-      var j = void 0;
-      var mac = [0, 0, 0, 0];
 
-      for (i = 0; i < this.macs.length; i++) {
-        for (j = 0; j < 4; j++) {
-          mac[j] ^= this.macs[i][j];
-        }mac = this.aes.encrypt(mac);
+      var mac = Buffer.alloc(16, 0);
+
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = this.macs[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var item = _step.value;
+
+          for (var j = 0; j < 16; j++) {
+            mac[j] ^= item[j];
+          }mac = this.macCipher.update(mac);
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
       }
-      return mac;
+
+      var macBuffer = new Buffer(8);
+      macBuffer.writeInt32BE(mac.readInt32BE(0) ^ mac.readInt32BE(4), 0);
+      macBuffer.writeInt32BE(mac.readInt32BE(8) ^ mac.readInt32BE(12), 4);
+      return macBuffer;
     }
   }, {
-    key: '_process',
-    value: function _process(encrypt, buffer) {
+    key: '_encrypt',
+    value: function _encrypt(buffer) {
       for (var i = 0; i < buffer.length; i += 16) {
-        var d = [];
-        var enc = void 0;
+        for (var j = 0; j < 16; j++) {
+          this.mac[j] ^= buffer[i + j];
+        }this.mac = this.macCipher.update(this.mac);
+        this.checkMacBounding();
+      }
 
-        if (encrypt) {
-          d[0] = buffer.readInt32BE(i, true);
-          d[1] = buffer.readInt32BE(i + 4, true);
-          d[2] = buffer.readInt32BE(i + 8, true);
-          d[3] = buffer.readInt32BE(i + 12, true);
+      return this.encryptCipher.update(buffer).copy(buffer);
+    }
+  }, {
+    key: '_decrypt',
+    value: function _decrypt(buffer) {
+      this.decryptCipher.update(buffer).copy(buffer);
 
-          // compute MAC
-          this.mac[0] ^= d[0];
-          this.mac[1] ^= d[1];
-          this.mac[2] ^= d[2];
-          this.mac[3] ^= d[3];
-          this.mac = this.aes.encrypt(this.mac);
+      for (var i = 0; i < buffer.length; i += 16) {
+        for (var j = 0; j < 16; j++) {
+          this.mac[j] ^= buffer[i + j];
+        }this.mac = this.macCipher.update(this.mac);
+        this.checkMacBounding();
+      }
+      return buffer;
+    }
+  }, {
+    key: 'checkMacBounding',
+    value: function checkMacBounding() {
+      this.pos += 16;
+      if (this.pos >= this.posNext) {
+        this.macs.push(Buffer.from(this.mac));
+        this.nonce.copy(this.mac, 0);
+        this.nonce.copy(this.mac, 8);
 
-          // encrypt using CTR
-          enc = this.aes.encrypt(this.ctr);
-          buffer.writeInt32BE(d[0] ^ enc[0], i, true);
-          buffer.writeInt32BE(d[1] ^ enc[1], i + 4, true);
-          buffer.writeInt32BE(d[2] ^ enc[2], i + 8, true);
-          buffer.writeInt32BE(d[3] ^ enc[3], i + 12, true);
-        } else {
-          enc = this.aes.encrypt(this.ctr);
-
-          d[0] = buffer.readInt32BE(i, true) ^ enc[0];
-          d[1] = buffer.readInt32BE(i + 4, true) ^ enc[1];
-          d[2] = buffer.readInt32BE(i + 8, true) ^ enc[2];
-          d[3] = buffer.readInt32BE(i + 12, true) ^ enc[3];
-
-          buffer.writeInt32BE(d[0], i, true);
-          buffer.writeInt32BE(d[1], i + 4, true);
-          buffer.writeInt32BE(d[2], i + 8, true);
-          buffer.writeInt32BE(d[3], i + 12, true);
-
-          this.mac[0] ^= buffer.readInt32BE(i, true);
-          this.mac[1] ^= buffer.readInt32BE(i + 4, true);
-          this.mac[2] ^= buffer.readInt32BE(i + 8, true);
-          this.mac[3] ^= buffer.readInt32BE(i + 12, true);
-
-          this.mac = this.aes.encrypt(this.mac);
+        if (this.increment < 1048576) {
+          this.increment += 131072;
         }
-
-        if (!++this.ctr[3]) this.ctr[2]++;
-
-        this.pos += 16;
-        if (this.pos >= this.posNext) {
-          this.emit('mac', this.mac);
-          this.ctr[2] = this.pos / 0x1000000000 >>> 0;
-          this.ctr[3] = this.pos / 0x10 >>> 0;
-          this.mac = [this.ctr[0], this.ctr[1], this.ctr[0], this.ctr[1]];
-          if (this.increment < 1048576) this.increment += 131072;
-          this.posNext += this.increment;
-        }
+        this.posNext += this.increment;
       }
     }
   }]);
   return CTR;
-}(EventEmitter);
+}();
 
 function formatKey(key) {
   return typeof key === 'string' ? d64(key) : key;
@@ -674,7 +432,7 @@ function getCipher(key) {
   for (var i = 0; i < 16; i++) {
     k.writeUInt8(key.readUInt8(i) ^ key.readUInt8(i + 16, true), i);
   }
-  return new AES$$1(k);
+  return new AES(k);
 }
 
 function megaEncrypt(key) {
@@ -695,8 +453,8 @@ function megaEncrypt(key) {
     });
   }
 
-  var aes = new AES$$1(key.slice(0, 16));
-  var ctr = new CTR(aes, [key.readInt32BE(16), key.readInt32BE(20)]);
+  var aes = new AES(key.slice(0, 16));
+  var ctr = new CTR(aes, key.slice(16));
 
   function write(d) {
     ctr.encrypt(d);
@@ -707,11 +465,12 @@ function megaEncrypt(key) {
     var mac = ctr.condensedMac();
     var newkey = new Buffer(32);
     key.copy(newkey);
-    newkey.writeInt32BE(mac[0] ^ mac[1], 24);
-    newkey.writeInt32BE(mac[2] ^ mac[3], 28);
+    mac.copy(newkey, 24);
+
     for (var i = 0; i < 16; i++) {
       newkey.writeUInt8(newkey.readUInt8(i) ^ newkey.readUInt8(16 + i), i);
     }
+
     stream.key = newkey;
     this.emit('end');
   }
@@ -726,7 +485,7 @@ function megaDecrypt(key) {
   var stream = through(write, end);
 
   var aes = getCipher(key);
-  var ctr = new CTR(aes, [key.readInt32BE(16), key.readInt32BE(20)]);
+  var ctr = new CTR(aes, key.slice(16));
 
   function write(d) {
     ctr.decrypt(d);
@@ -735,7 +494,7 @@ function megaDecrypt(key) {
 
   function end() {
     var mac = ctr.condensedMac();
-    if ((mac[0] ^ mac[1]) !== key.readInt32BE(24) || (mac[2] ^ mac[3]) !== key.readInt32BE(28)) {
+    if (!mac.equals(key.slice(24))) {
       return this.emit('error', new Error('MAC verification failed'));
     }
     this.emit('end');
@@ -1186,10 +945,10 @@ function b2s(b) {
  */
 function cryptoDecodePrivKey(privk) {
   var pubkey = [];
-  var l = (privk[0] * 256 + privk[1] + 7 >> 3) + 2;
 
   // decompose private key
   for (var i = 0; i < 4; i++) {
+    var l = (privk[0] * 256 + privk[1] + 7 >> 3) + 2;
     pubkey[i] = mpi2b(privk.toString('binary').substr(0, l));
     if (typeof pubkey[i] === 'number') {
       if (i !== 4 || privk.length >= 16) return false;
@@ -1446,7 +1205,7 @@ var File = function (_EventEmitter) {
         if (_this2.directory) {
           var filesMap = new Map();
           var folder = response.f[0];
-          var aes = _this2.key ? new AES$$1(_this2.key) : null;
+          var aes = _this2.key ? new AES(_this2.key) : null;
           _this2.nodeId = folder.h;
           _this2.timestamp = folder.ts;
           filesMap.set(folder.h, _this2);
@@ -1606,6 +1365,28 @@ var File = function (_EventEmitter) {
   return File;
 }(EventEmitter);
 
+File.fromURL = function (opt) {
+  if ((typeof opt === 'undefined' ? 'undefined' : _typeof(opt)) === 'object') {
+    // todo: warn to use File directly
+    return new File(opt);
+  }
+
+  var url$$1 = parse(opt);
+  if (url$$1.hostname !== 'mega.nz' && url$$1.hostname !== 'mega.co.nz') throw Error('Wrong URL supplied: wrong hostname');
+  if (!url$$1.hash) throw Error('Wrong URL supplied: no hash');
+
+  var split = url$$1.hash.split('!');
+  if (split.length <= 1) throw Error('Wrong URL supplied: too few arguments');
+  if (split.length >= 4) throw Error('Wrong URL supplied: too many arguments');
+  if (split[0] !== '#' && split[0] !== '#F') throw Error('Wrong URL supplied: not recognized');
+
+  return new File({
+    downloadId: split[1],
+    key: split[2],
+    directory: split[0] === '#F'
+  });
+};
+
 File.packAttributes = function (attributes) {
   var at = JSON.stringify(attributes);
   at = new Buffer('MEGA' + at);
@@ -1682,14 +1463,14 @@ var Storage = function (_EventEmitter) {
       (function () {
         _this.email = options.email;
         var pw = prepareKey(new Buffer(options.password));
-        var aes = new AES$$1(pw);
+        var aes = new AES(pw);
         var uh = e64(aes.stringhash(new Buffer(options.email)));
 
         _this.api.request({ a: 'us', user: options.email, uh: uh }, function (err, response) {
           if (err) return cb(err);
           _this.key = formatKey(response.k);
           aes.decryptECB(_this.key);
-          _this.aes = new AES$$1(_this.key);
+          _this.aes = new AES(_this.key);
 
           var t = formatKey(response.csid);
           var privk = _this.aes.decryptECB(formatKey(response.privk));
@@ -1990,40 +1771,16 @@ Storage.NODE_TYPE_DRIVE = 2;
 Storage.NODE_TYPE_INBOX = 3;
 Storage.NODE_TYPE_RUBBISH_BIN = 4;
 
-function mega() {
-  for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-    args[_key] = arguments[_key];
-  }
+// just for backyards compatibility: is better requiring
+// File and Storage directly as built sizes will be smaller
 
-  return new (Function.prototype.bind.apply(mega.Storage, [null].concat(args)))();
+function mega(options, cb) {
+  return new Storage(options, cb);
 }
 
 mega.Storage = Storage;
-
 mega.File = File;
-
-mega.file = function (opt) {
-  if ((typeof opt === 'undefined' ? 'undefined' : _typeof(opt)) === 'object') {
-    return new mega.File(opt);
-  }
-
-  var url$$1 = parse(opt);
-  if (url$$1.hostname !== 'mega.nz' && url$$1.hostname !== 'mega.co.nz') throw Error('Wrong URL supplied: wrong hostname');
-  if (!url$$1.hash) throw Error('Wrong URL supplied: no hash');
-
-  var split = url$$1.hash.split('!');
-  if (split.length <= 1) throw Error('Wrong URL supplied: too few arguments');
-  if (split.length >= 4) throw Error('Wrong URL supplied: too many arguments');
-  if (split[0] !== '#' && split[0] !== '#F') throw Error('Wrong URL supplied: not recognized');
-
-  return new mega.File({
-    downloadId: split[1],
-    key: split[2],
-    directory: split[0] === '#F'
-  });
-};
-
-// backyards compatibility
+mega.file = File.fromURL;
 mega.encrypt = megaEncrypt;
 mega.decrypt = megaDecrypt;
 
