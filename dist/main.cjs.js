@@ -6,8 +6,8 @@ var through = _interopDefault(require('through'));
 var pipeline = _interopDefault(require('stream-combiner'));
 var secureRandom = _interopDefault(require('secure-random'));
 var crypto = _interopDefault(require('crypto'));
-var _request = _interopDefault(require('request'));
 var events = require('events');
+var request = _interopDefault(require('request'));
 var querystring = _interopDefault(require('querystring'));
 var CombinedStream = _interopDefault(require('combined-stream'));
 var url = require('url');
@@ -507,6 +507,19 @@ function megaDecrypt(key) {
   return pipeline(chunkSizeSafe(16), stream);
 }
 
+function constantTimeCompare(bufferA, bufferB) {
+  if (bufferA.length !== bufferB.length) return false;
+
+  var len = bufferA.length;
+  var sum = 0;
+
+  for (var i = 0; i < len; i++) {
+    sum += bufferA[i] ^ bufferB[i];
+  }
+
+  return !!sum;
+}
+
 /* RSA public key encryption/decryption
  * The following functions are (c) 2000 by John M Hanna and are
  * released under the terms of the Gnu Public License.
@@ -1000,6 +1013,8 @@ var ERRORS = {
   18: 'ETEMPUNAVAIL (-18): Resource temporarily not available, please try again later'
 };
 
+var DEFAULT_GATEWAY = 'https://g.api.mega.co.nz/';
+
 var API = function (_EventEmitter) {
   inherits(API, _EventEmitter);
 
@@ -1010,6 +1025,8 @@ var API = function (_EventEmitter) {
 
     _this.keepalive = keepalive;
     _this.counterId = Math.random().toString().substr(2, 10);
+    _this.gateway = DEFAULT_GATEWAY;
+    _this.requestModule = request;
     return _this;
   }
 
@@ -1024,12 +1041,14 @@ var API = function (_EventEmitter) {
       if (this.sid) {
         qs.sid = this.sid;
       }
-      if (_typeof(json.qs) === 'object') {
-        Object.assign(qs, json.qs);
-        delete json.qs;
+
+      if (_typeof(json._querystring) === 'object') {
+        Object.assign(qs, json._querystring);
+        delete json._querystring;
       }
-      _request({
-        uri: API.gateway + 'cs',
+
+      this.requestModule({
+        uri: this.gateway + 'cs',
         qs: qs,
         method: 'POST',
         json: [json]
@@ -1065,8 +1084,8 @@ var API = function (_EventEmitter) {
 
       var retryno = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
 
-      this.sn = _request({
-        uri: API.gateway + 'sc',
+      this.sn = this.requestModule({
+        uri: this.gateway + 'sc',
         qs: { sn: sn, sid: this.sid },
         method: 'POST',
         json: true,
@@ -1101,7 +1120,7 @@ var API = function (_EventEmitter) {
     value: function wait(url$$1, sn) {
       var _this4 = this;
 
-      this.sn = _request({
+      this.sn = this.requestModule({
         uri: url$$1,
         method: 'POST'
       }, function (err, req, body) {
@@ -1120,41 +1139,27 @@ var API = function (_EventEmitter) {
   return API;
 }(events.EventEmitter);
 
-API.gateway = 'https://g.api.mega.co.nz/';
-
-var api = new API(false);
+var notLoggedApi = new API(false);
 
 var File = function (_EventEmitter) {
   inherits(File, _EventEmitter);
 
-  function File(opt, storage) {
+  function File(opt) {
     classCallCheck(this, File);
 
     var _this = possibleConstructorReturn(this, (File.__proto__ || Object.getPrototypeOf(File)).call(this));
 
     _this.downloadId = opt.downloadId;
     _this.key = opt.key ? formatKey(opt.key) : null;
-
-    if (storage && opt.h) {
-      _this.api = storage.api;
-      _this.nodeId = opt.h;
-      _this.timestamp = opt.ts;
-      _this.type = opt.t;
-      _this.directory = !!_this.type;
-
-      if (opt.k) {
-        _this._decryptAttributes(storage.aes, opt);
-      }
-    } else {
-      _this.type = opt.directory ? 1 : 0;
-      _this.directory = !!opt.directory;
-    }
+    _this.type = opt.directory ? 1 : 0;
+    _this.directory = !!opt.directory;
+    _this.api = notLoggedApi;
     return _this;
   }
 
   createClass(File, [{
-    key: '_decryptAttributes',
-    value: function _decryptAttributes(aes, opt) {
+    key: 'loadMetadata',
+    value: function loadMetadata(aes, opt) {
       this.size = opt.s || 0;
       this.timestamp = opt.ts || 0;
       this.type = opt.t;
@@ -1166,12 +1171,12 @@ var File = function (_EventEmitter) {
       this.key = formatKey(parts[parts.length - 1]);
       aes.decryptECB(this.key);
       if (opt.a) {
-        this._setAttributes(opt.a);
+        this.decryptAttributes(opt.a);
       }
     }
   }, {
-    key: '_setAttributes',
-    value: function _setAttributes(at) {
+    key: 'decryptAttributes',
+    value: function decryptAttributes(at) {
       var cb = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function () {};
 
       at = d64(at);
@@ -1183,12 +1188,17 @@ var File = function (_EventEmitter) {
         return cb(e);
       }
 
+      this.parseAttributes(at);
+      cb(null, this);
+      return this;
+    }
+  }, {
+    key: 'parseAttributes',
+    value: function parseAttributes(at) {
       this.attributes = at;
       this.name = at.n;
-
-      cb(null, this);
-
-      return this;
+      this.label = File.LABEL_NAMES[at.lbl || 0];
+      this.favorited = !!at.fav;
     }
   }, {
     key: 'loadAttributes',
@@ -1203,7 +1213,7 @@ var File = function (_EventEmitter) {
 
       var req = this.directory ? { a: 'f', qs: { n: this.downloadId } } : { a: 'g', p: this.downloadId }; // todo: nodeId version ('n')
 
-      api.request(req, function (err, response) {
+      this.api.request(req, function (err, response) {
         if (err) return cb(err);
 
         if (_this2.directory) {
@@ -1227,7 +1237,7 @@ var File = function (_EventEmitter) {
                 if (!parent.children) parent.children = [];
 
                 var fileObj = new File(file, _this2.storage);
-                fileObj._decryptAttributes(aes, file);
+                fileObj.loadMetadata(aes, file);
                 // is it the best way to handle this?
                 fileObj.downloadId = [_this2.downloadId, file.h];
                 parent.children.push(fileObj);
@@ -1249,11 +1259,11 @@ var File = function (_EventEmitter) {
             }
           }
 
-          _this2._decryptAttributes(aes, folder);
+          _this2.loadMetadata(aes, folder);
           cb(null, _this2);
         } else {
           _this2.size = response.s;
-          _this2._setAttributes(response.at, cb);
+          _this2.decryptAttributes(response.at, cb);
         }
       });
 
@@ -1276,7 +1286,7 @@ var File = function (_EventEmitter) {
       if (this.nodeId) {
         req.n = this.nodeId;
       } else if (Array.isArray(this.downloadId)) {
-        req.qs = { n: this.downloadId[0] };
+        req._querystring = { n: this.downloadId[0] };
         req.n = this.downloadId[1];
       } else {
         req.p = this.downloadId;
@@ -1286,7 +1296,9 @@ var File = function (_EventEmitter) {
       if (!this.key) throw Error("Can't download: key isn't defined");
       var stream = megaDecrypt(this.key);
 
-      var cs = this.api || api;
+      var cs = this.api || notLoggedApi;
+      var requestModule = options.requestModule || this.api.requestModule;
+
       cs.request(req, function (err, response) {
         if (err) return stream.emit('error', err);
         if (typeof response.g !== 'string' || response.g.substr(0, 4) !== 'http') {
@@ -1301,7 +1313,7 @@ var File = function (_EventEmitter) {
         function getChunk() {
           var currentMax = Math.min(response.s, currentOffset + chunkSize);
           if (currentMax <= currentOffset) return;
-          var r = _request(response.g + '/' + currentOffset + '-' + (currentMax - 1));
+          var r = requestModule(response.g + '/' + currentOffset + '-' + (currentMax - 1));
 
           r.on('end', getChunk);
           combined.append(r, { contentLength: currentMax - currentOffset });
@@ -1330,44 +1342,11 @@ var File = function (_EventEmitter) {
       if (cb) streamToCb(stream, cb);
       return stream;
     }
-  }, {
-    key: 'delete',
-    value: function _delete(cb) {
-      if (!this.nodeId) {
-        return process.nextTick(function () {
-          cb(new Error('delete is only supported on files with node ID-s'));
-        });
-      }
-      this.api.request({ a: 'd', n: this.nodeId }, cb);
-
-      return this;
-    }
-  }, {
-    key: 'link',
-    value: function link(noKey, cb) {
-      var _this3 = this;
-
-      if (arguments.length === 1 && typeof noKey === 'function') {
-        cb = noKey;
-        noKey = false;
-      }
-      if (!this.nodeId) {
-        return process.nextTick(function () {
-          cb(new Error('delete is only supported on files with node ID-s'));
-        });
-      }
-      this.api.request({ a: 'l', n: this.nodeId }, function (err, id) {
-        if (err) return cb(err);
-        var url$$1 = 'https://mega.nz/#!' + id;
-        if (!noKey && _this3.key) url$$1 += '!' + e64(_this3.key);
-        cb(null, url$$1);
-      });
-
-      return this;
-    }
   }]);
   return File;
 }(events.EventEmitter);
+
+File.LABEL_NAMES = ['', 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'grey'];
 
 File.fromURL = function (opt) {
   if ((typeof opt === 'undefined' ? 'undefined' : _typeof(opt)) === 'object') {
@@ -1413,183 +1392,43 @@ File.unpackAttributes = function (at) {
   return JSON.parse(at.substr(4).replace(/\0|[^}]*$/g, ''));
 };
 
-var Storage = function (_EventEmitter) {
-  inherits(Storage, _EventEmitter);
+// the metadata can be mutated, not the content
 
-  function Storage(options, cb) {
-    classCallCheck(this, Storage);
+var MutableFile = function (_File) {
+  inherits(MutableFile, _File);
 
-    var _this = possibleConstructorReturn(this, (Storage.__proto__ || Object.getPrototypeOf(Storage)).call(this));
+  function MutableFile(opt, storage) {
+    classCallCheck(this, MutableFile);
 
-    if (arguments.length === 1 && typeof options === 'function') {
-      cb = options;
-      options = {};
+    var _this = possibleConstructorReturn(this, (MutableFile.__proto__ || Object.getPrototypeOf(MutableFile)).call(this, opt));
+
+    _this.storage = storage;
+    _this.api = storage.api;
+    _this.nodeId = opt.h;
+    _this.timestamp = opt.ts;
+    _this.type = opt.t;
+    _this.directory = !!_this.type;
+
+    if (opt.k) {
+      _this.loadMetadata(storage.aes, opt);
     }
-
-    if (!cb) {
-      cb = function cb(err) {
-        // Would be nicer to emit error event?
-        if (err) throw err;
-      };
-    }
-
-    // Defaults
-    options.keepalive = options.keepalive === undefined ? true : !!options.keepalive;
-    options.autoload = options.autoload === undefined ? true : !!options.autoload;
-
-    _this.api = new API(options.keepalive);
-    _this.files = {};
-
-    var ready = function ready() {
-      _this.status = 'ready';
-      cb(null, _this);
-      _this.emit('ready', _this);
-    };
-
-    var loadUser = function loadUser(cb) {
-      _this.api.request({ a: 'ug' }, function (err, response) {
-        if (err) return cb(err);
-        _this.name = response.name;
-        _this.user = response.u;
-
-        if (options.autoload) {
-          _this.reload(function (err) {
-            if (err) return cb(err);
-            ready();
-          }, true);
-        } else {
-          ready();
-        }
-      });
-    };
-
-    if (options.email) {
-      (function () {
-        _this.email = options.email;
-        var pw = prepareKey(new Buffer(options.password));
-        var aes = new AES(pw);
-        var uh = e64(aes.stringhash(new Buffer(options.email)));
-
-        _this.api.request({ a: 'us', user: options.email, uh: uh }, function (err, response) {
-          if (err) return cb(err);
-          _this.key = formatKey(response.k);
-          aes.decryptECB(_this.key);
-          _this.aes = new AES(_this.key);
-
-          var t = formatKey(response.csid);
-          var privk = _this.aes.decryptECB(formatKey(response.privk));
-          var rsaPrivk = cryptoDecodePrivKey(privk);
-          if (!rsaPrivk) throw Error('invalid credentials');
-
-          var sid = e64(cryptoRsaDecrypt(t, rsaPrivk).slice(0, 43));
-
-          _this.api.sid = _this.sid = sid;
-          _this.RSAPrivateKey = rsaPrivk;
-
-          loadUser(cb);
-        });
-      })();
-    } else {
-      throw Error('no credentials');
-    }
-
-    _this.status = 'connecting';
     return _this;
   }
 
-  createClass(Storage, [{
-    key: 'reload',
-    value: function reload(cb, force) {
-      var _this2 = this;
-
-      if (this.status === 'connecting' && !force) {
-        return this.once('ready', this.reload.bind(this, cb));
-      }
-      this.mounts = [];
-      this.api.request({ a: 'f', c: 1 }, function (err, response) {
-        if (err) return cb(err);
-        response.f.forEach(_this2._importFile.bind(_this2));
-        cb(null, _this2.mounts);
-      });
-
-      this.api.on('sc', function (arr) {
-        var deleted = {};
-        arr.forEach(function (o) {
-          if (o.a === 'u') {
-            var file = _this2.files[o.n];
-            if (file) {
-              file.timestamp = o.ts;
-              file._setAttributes(o.at, function () {});
-              file.emit('update');
-              _this2.emit('update', file);
-            }
-          } else if (o.a === 'd') {
-            deleted[o.n] = true; // Don't know yet if move or delete.
-          } else if (o.a === 't') {
-            o.t.f.forEach(function (f) {
-              var file = _this2.files[f.h];
-              if (file) {
-                delete deleted[f.h];
-                var oldparent = file.parent;
-                if (oldparent.nodeId === f.p) return;
-                // todo: move to setParent() to avoid duplicate.
-                oldparent.children.splice(oldparent.children.indexOf(file), 1);
-                file.parent = _this2.files[f.p];
-                if (!file.parent.children) file.parent.children = [];
-                file.parent.children.push(file);
-                file.emit('move', oldparent);
-                _this2.emit('move', file, oldparent);
-              } else {
-                _this2.emit('add', _this2._importFile(f));
-              }
-            });
-          }
-        });
-
-        Object.keys(deleted).forEach(function (n) {
-          var file = _this2.files[n];
-          var parent = file.parent;
-          parent.children.splice(parent.children.indexOf(file), 1);
-          _this2.emit('delete', file);
-          file.emit('delete');
-        });
-      });
+  createClass(MutableFile, [{
+    key: 'loadAttributes',
+    value: function loadAttributes() {
+      throw Error('This is not needed for files loaded from logged in sessions');
     }
-  }, {
-    key: '_importFile',
-    value: function _importFile(f) {
-      // todo: no support for updates
-      if (!this.files[f.h]) {
-        var fo = this.files[f.h] = new File(f, this);
-        if (f.t === Storage.NODE_TYPE_DRIVE) {
-          this.root = fo;
-          fo.name = 'Cloud Drive';
-        }
-        if (f.t === Storage.NODE_TYPE_RUBBISH_BIN) {
-          this.trash = fo;
-          fo.name = 'Rubbish Bin';
-        }
-        if (f.t === Storage.NODE_TYPE_INBOX) {
-          this.inbox = fo;
-          fo.name = 'Inbox';
-        }
-        if (f.t > 1) {
-          this.mounts.push(fo);
-        }
-        if (f.p) {
-          var parent = this.files[f.p];
-          if (!parent.children) parent.children = [];
-          parent.children.push(fo);
-          fo.parent = parent;
-        }
-      }
-      return this.files[f.h];
-    }
+
+    // todo: handle sharing, it can create new shares
+
   }, {
     key: 'mkdir',
     value: function mkdir(opt, cb) {
-      var _this3 = this;
+      var _this2 = this;
 
+      if (!this.directory) throw Error("node isn't a directory");
       if (typeof opt === 'string') {
         opt = { name: opt };
       }
@@ -1598,23 +1437,18 @@ var Storage = function (_EventEmitter) {
 
       if (!opt.attributes.n) {
         return process.nextTick(function () {
-          cb(new Error('File name is required.'));
+          cb(Error('File name is required.'));
         });
       }
 
-      // Wait for ready event.
-      if (this.status === 'connecting') {
-        return this.on('ready', this.mkdir.bind(this, opt, cb));
-      }
-
-      if (!opt.target) opt.target = this.root;
-      if (!opt.key) opt.key = secureRandom(32);
+      if (!opt.target) opt.target = this;
+      if (!opt.key) opt.key = new Buffer(secureRandom(32));
 
       var key = opt.key;
       var at = File.packAttributes(opt.attributes);
 
       getCipher(key).encryptCBC(at);
-      this.aes.encryptECB(key);
+      this.storage.aes.encryptECB(key);
 
       this.api.request({
         a: 'p',
@@ -1627,8 +1461,8 @@ var Storage = function (_EventEmitter) {
         }]
       }, function (err, response) {
         if (err) return returnError(err);
-        var file = _this3._importFile(response.f[0]);
-        _this3.emit('add', file);
+        var file = _this2.storage._importFile(response.f[0]);
+        _this2.storage.emit('add', file);
 
         if (cb) {
           cb(null, file);
@@ -1639,14 +1473,19 @@ var Storage = function (_EventEmitter) {
         if (cb) cb(e);
       }
     }
+
+    // todo: handle sharing, it can create new shares
+
   }, {
     key: 'upload',
     value: function upload(opt, buffer, cb) {
-      var _this4 = this;
+      var _this3 = this;
 
+      if (!this.directory) throw Error('node is not a directory');
       if (arguments.length === 2 && typeof buffer === 'function') {
-        cb = buffer;
-        buffer = null;
+        var _ref = [buffer, null];
+        cb = _ref[0];
+        buffer = _ref[1];
       }
 
       if (typeof opt === 'string') {
@@ -1660,7 +1499,7 @@ var Storage = function (_EventEmitter) {
         throw new Error('File name is required.');
       }
 
-      var encrypter = mega.encrypt();
+      var encrypter = megaEncrypt(opt.key);
       var pause = through().pause();
       var stream = pipeline(pause, encrypter);
 
@@ -1681,12 +1520,12 @@ var Storage = function (_EventEmitter) {
       }
 
       var upload = function upload(size) {
-        if (!opt.target) opt.target = _this4.root;
+        if (!opt.target) opt.target = _this3;
 
-        _this4.api.request({ a: 'u', ssl: 0, ms: '-1', s: size, r: 0, e: 0 }, function (err, resp) {
+        _this3.api.request({ a: 'u', ssl: 0, ms: '-1', s: size, r: 0, e: 0 }, function (err, resp) {
           if (err) return returnError(err);
 
-          var httpreq = _request({
+          var httpreq = _this3.api.requestModule({
             uri: resp.p,
             headers: { 'Content-Length': size },
             method: 'POST'
@@ -1698,9 +1537,9 @@ var Storage = function (_EventEmitter) {
             var at = File.packAttributes(opt.attributes);
             getCipher(key).encryptCBC(at);
 
-            _this4.aes.encryptECB(key);
+            _this3.storage.aes.encryptECB(key);
 
-            _this4.api.request({
+            _this3.api.request({
               a: 'p',
               t: opt.target.nodeId ? opt.target.nodeId : opt.target,
               n: [{
@@ -1711,9 +1550,8 @@ var Storage = function (_EventEmitter) {
               }]
             }, function (err, response) {
               if (err) return returnError(err);
-              var file = _this4._importFile(response.f[0]);
-              _this4.emit('add', file);
-
+              var file = _this3.storage._importFile(response.f[0]);
+              _this3.storage.emit('add', file);
               stream.emit('complete', file);
 
               if (cb) {
@@ -1738,18 +1576,6 @@ var Storage = function (_EventEmitter) {
         });
       };
 
-      // Wait for ready event.
-      if (this.status === 'connecting') {
-        (function () {
-          var _upload = upload;
-          upload = function upload(s) {
-            _this4.on('ready', function () {
-              _upload(s);
-            });
-          };
-        })();
-      }
-
       if (size) {
         upload(size);
       } else {
@@ -1757,6 +1583,509 @@ var Storage = function (_EventEmitter) {
       }
 
       return stream;
+    }
+
+    // todo: handle sharing, it can remove shares
+
+  }, {
+    key: 'delete',
+    value: function _delete(permanent, cb) {
+      if (typeof permanent === 'function') {
+        cb = permanent;
+        permanent = false;
+      }
+
+      if (permanent) {
+        this.api.request({ a: 'd', n: this.nodeId }, cb);
+      } else {
+        this.moveTo(this.storage.trash, cb);
+      }
+
+      return this;
+    }
+
+    // todo: handle sharing, it can create or remove shares
+
+  }, {
+    key: 'moveTo',
+    value: function moveTo(target, cb) {
+      if (target instanceof File) {
+        target = target.nodeId;
+      } else if (typeof target !== 'string') {
+        throw Error('target must be a folder or a nodeId');
+      }
+
+      this.api.request({ a: 'm', n: this.nodeId, t: target }, cb);
+
+      // todo: reload storage
+
+      return this;
+    }
+  }, {
+    key: 'setAttributes',
+    value: function setAttributes(attributes, cb) {
+      var _this4 = this;
+
+      Object.assign(this.attributes, attributes);
+
+      var newAttributes = File.packAttributes(this.attributes);
+      getCipher(this.key).encryptCBC(newAttributes);
+
+      this.api.request({ a: 'a', n: this.nodeId, at: e64(newAttributes) }, function () {
+        _this4.parseAttributes(_this4.attributes);
+        if (cb) cb();
+      });
+
+      return this;
+    }
+  }, {
+    key: 'rename',
+    value: function rename(filename, cb) {
+      this.setAttributes({
+        n: filename
+      }, cb);
+
+      return this;
+    }
+  }, {
+    key: 'setLabel',
+    value: function setLabel(label, cb) {
+      if (typeof label === 'string') label = File.LABEL_NAMES.indexOf(label);
+      if (typeof label !== 'number' || Math.floor(label) !== label || label < 0 || label > 7) {
+        throw Error('label must be a integer between 0 and 7 or a valid label name');
+      }
+
+      this.setAttributes({
+        lbl: label
+      }, cb);
+
+      return this;
+    }
+  }, {
+    key: 'setFavorite',
+    value: function setFavorite(isFavorite, cb) {
+      this.setAttributes({
+        fav: isFavorite ? 1 : 0
+      }, cb);
+
+      return this;
+    }
+  }, {
+    key: 'link',
+    value: function link(options, cb) {
+      var _this5 = this;
+
+      if (arguments.length === 1 && typeof options === 'function') {
+        cb = options;
+        options = {
+          noKey: false
+        };
+      }
+
+      if (typeof options === 'boolean') {
+        options = {
+          noKey: options
+        };
+      }
+
+      var folderKey = options.__folderKey;
+      if (this.directory && !folderKey) {
+        this.shareFolder(options, cb);
+        return this;
+      }
+
+      this.api.request({ a: 'l', n: this.nodeId }, function (err, id) {
+        if (err) return cb(err);
+
+        var url$$1 = 'https://mega.nz/#' + (folderKey ? 'F' : '') + '!' + id;
+        if (!options.noKey && _this5.key) url$$1 += '!' + e64(folderKey || _this5.key);
+
+        cb(null, url$$1);
+      });
+
+      return this;
+    }
+  }, {
+    key: 'shareFolder',
+    value: function shareFolder(options, cb) {
+      var _this6 = this;
+
+      if (!this.directory) throw Error("node isn't a folder");
+
+      var handler = this.nodeId;
+      var storedShareKey = this.storage.shareKeys[handler];
+      if (storedShareKey) {
+        this.link(Object.assign({
+          __folderKey: storedShareKey
+        }, options), cb);
+
+        return this;
+      }
+
+      var shareKey = formatKey(options.key);
+
+      if (!shareKey) {
+        shareKey = secureRandom(16);
+      }
+
+      if (!(shareKey instanceof Buffer)) {
+        shareKey = new Buffer(shareKey);
+      }
+
+      if (shareKey.length !== 16) {
+        process.nextTick(function () {
+          cb(Error('share key must be 16 byte / 22 characters'));
+        });
+        return;
+      }
+
+      this.storage.shareKeys[handler] = shareKey;
+
+      var authKey = new Buffer(handler + handler);
+      this.storage.aes.encryptECB(authKey);
+
+      var request$$1 = {
+        a: 's2',
+        n: handler,
+        s: [{ u: 'EXP', r: 0 }],
+        ok: e64(this.storage.aes.encryptECB(new Buffer(shareKey))),
+        ha: e64(authKey),
+        cr: makeCryptoRequest(this.storage, this)
+      };
+
+      this.api.request(request$$1, function () {
+        _this6.link(Object.assign({
+          __folderKey: shareKey
+        }, options), cb);
+      });
+
+      return this;
+    }
+  }, {
+    key: 'unshareFolder',
+    value: function unshareFolder(options, cb) {
+      var request$$1 = {
+        a: 's2',
+        n: this.nodeId,
+        s: [{ u: 'EXP', r: '' }]
+      };
+
+      delete this.storage.shareKeys[this.nodeId];
+
+      this.api.request(request$$1, function () {
+        if (cb) cb();
+      });
+
+      return this;
+    }
+  }]);
+  return MutableFile;
+}(File);
+
+// source: https://github.com/meganz/webclient/blob/918222d5e4521c8777b1c8da528f79e0110c1798/js/crypto.js#L3728
+// generate crypto request response for the given nodes/shares matrix
+
+
+function makeCryptoRequest(storage, sources) {
+  var shareKeys = storage.shareKeys;
+
+  if (!Array.isArray(sources)) {
+    sources = selfAndChildren(sources);
+  }
+
+  var shares = sources.map(function (source) {
+    return getShares(shareKeys, source);
+  }).reduce(function (arr, el) {
+    return arr.concat(el);
+  }).filter(function (el, index, arr) {
+    return index === arr.indexOf(el);
+  });
+
+  var cryptoRequest = [shares, sources.map(function (node) {
+    return node.nodeId;
+  }), []];
+
+  // TODO: optimize - keep track of pre-existing/sent keys, only send new ones
+  for (var i = shares.length; i--;) {
+    var aes = new AES(shareKeys[shares[i]]);
+
+    for (var j = sources.length; j--;) {
+      var fileKey = sources[j].key;
+
+      if (fileKey && (fileKey.length === 32 || fileKey.length === 16)) {
+        cryptoRequest[2].push(i, j, e64(aes.encryptECB(fileKey)));
+      }
+    }
+  }
+
+  return cryptoRequest;
+}
+
+function selfAndChildren(node) {
+  return [node].concat((node.children || []).map(selfAndChildren).reduce(function (arr, el) {
+    return arr.concat(el);
+  }, []));
+}
+
+function getShares(shareKeys, node) {
+  var handle = node.nodeId;
+  var parent = node.parent;
+  var shares = [];
+
+  if (shareKeys[handle]) {
+    shares.push(handle);
+  }
+
+  return parent ? shares.concat(getShares(shareKeys, parent)) : shares;
+}
+
+var Storage = function (_EventEmitter) {
+  inherits(Storage, _EventEmitter);
+
+  function Storage(options, cb) {
+    classCallCheck(this, Storage);
+
+    var _this = possibleConstructorReturn(this, (Storage.__proto__ || Object.getPrototypeOf(Storage)).call(this));
+
+    if (arguments.length === 1 && typeof options === 'function') {
+      cb = options;
+      options = {};
+    }
+
+    if (!cb) {
+      cb = function cb(err) {
+        // Would be nicer to emit error event?
+        if (err) throw err;
+      };
+    }
+
+    // Defaults
+    options.keepalive = options.keepalive === undefined ? true : !!options.keepalive;
+    options.autoload = options.autoload === undefined ? true : !!options.autoload;
+    options.autologin = options.autologin === undefined ? true : !!options.autologin;
+
+    _this.api = new API(options.keepalive);
+    _this.files = {};
+    _this.options = options;
+
+    if (!options.email) {
+      throw Error("starting a session without credentials isn't supported");
+    }
+
+    if (options.autologin) {
+      _this.login(cb);
+    } else {
+      cb(null, _this);
+    }
+
+    _this.status = 'closed';
+    return _this;
+  }
+
+  createClass(Storage, [{
+    key: 'login',
+    value: function login(cb) {
+      var _this2 = this;
+
+      var ready = function ready() {
+        _this2.status = 'ready';
+        cb(null, _this2);
+        _this2.emit('ready', _this2);
+      };
+
+      var loadUser = function loadUser(cb) {
+        _this2.api.request({ a: 'ug' }, function (err, response) {
+          if (err) return cb(err);
+          _this2.name = response.name;
+          _this2.user = response.u;
+
+          if (_this2.options.autoload) {
+            _this2.reload(true, function (err) {
+              if (err) return cb(err);
+              ready();
+            });
+          } else {
+            ready();
+          }
+        });
+      };
+
+      this.email = this.options.email;
+      var pw = prepareKey(new Buffer(this.options.password));
+
+      // after generating the AES key the password isn't needed anymore
+      delete this.options.password;
+
+      var aes = new AES(pw);
+      var uh = e64(aes.stringhash(new Buffer(this.email)));
+
+      this.api.request({ a: 'us', user: this.email, uh: uh }, function (err, response) {
+        if (err) return cb(err);
+        _this2.key = formatKey(response.k);
+        aes.decryptECB(_this2.key);
+        _this2.aes = new AES(_this2.key);
+
+        var t = formatKey(response.csid);
+        var privk = _this2.aes.decryptECB(formatKey(response.privk));
+        var rsaPrivk = cryptoDecodePrivKey(privk);
+        if (!rsaPrivk) throw Error('invalid credentials');
+
+        var sid = e64(cryptoRsaDecrypt(t, rsaPrivk).slice(0, 43));
+
+        _this2.api.sid = _this2.sid = sid;
+        _this2.RSAPrivateKey = rsaPrivk;
+
+        loadUser(cb);
+      });
+
+      this.status = 'connecting';
+    }
+  }, {
+    key: 'reload',
+    value: function reload(force, cb) {
+      var _this3 = this;
+
+      if (typeof force === 'function') {
+        
+        var _ref = [cb, force];
+        force = _ref[0];
+        cb = _ref[1];
+      }if (this.status === 'connecting' && !force) {
+        return this.once('ready', this.reload.bind(this, force, cb));
+      }
+      this.mounts = [];
+      this.api.request({ a: 'f', c: 1 }, function (err, response) {
+        if (err) return cb(err);
+
+        _this3.shareKeys = response.ok.reduce(function (shares, share) {
+          var handler = share.h;
+
+          // MEGA handles share authenticity by checking the value below
+          var auth = _this3.aes.encryptECB(new Buffer(handler + handler));
+
+          // original implementation doesn't compare in constant time, but...
+          if (constantTimeCompare(formatKey(share.ha), auth)) {
+            shares[handler] = _this3.aes.decryptECB(formatKey(share.k));
+          }
+
+          // If verification fails the share was tampered... by MEGA servers.
+          // Well, never trust the server, the code says...
+
+          return shares;
+        }, {});
+
+        response.f.forEach(function (file) {
+          return _this3._importFile(file);
+        });
+        cb(null, _this3.mounts);
+      });
+
+      this.api.on('sc', function (arr) {
+        var deleted = {};
+        arr.forEach(function (o) {
+          if (o.a === 'u') {
+            var file = _this3.files[o.n];
+            if (file) {
+              file.timestamp = o.ts;
+              file.decryptAttributes(o.at, function () {});
+              file.emit('update');
+              _this3.emit('update', file);
+            }
+          } else if (o.a === 'd') {
+            deleted[o.n] = true; // Don't know yet if move or delete.
+          } else if (o.a === 't') {
+            o.t.f.forEach(function (f) {
+              var file = _this3.files[f.h];
+              if (file) {
+                delete deleted[f.h];
+                var oldparent = file.parent;
+                if (oldparent.nodeId === f.p) return;
+                // todo: move to setParent() to avoid duplicate.
+                oldparent.children.splice(oldparent.children.indexOf(file), 1);
+                file.parent = _this3.files[f.p];
+                if (!file.parent.children) file.parent.children = [];
+                file.parent.children.push(file);
+                file.emit('move', oldparent);
+                _this3.emit('move', file, oldparent);
+              } else {
+                _this3.emit('add', _this3._importFile(f));
+              }
+            });
+          }
+        });
+
+        Object.keys(deleted).forEach(function (n) {
+          var file = _this3.files[n];
+          var parent = file.parent;
+          parent.children.splice(parent.children.indexOf(file), 1);
+          _this3.emit('delete', file);
+          file.emit('delete');
+        });
+      });
+    }
+  }, {
+    key: '_importFile',
+    value: function _importFile(f) {
+      // todo: no support for updates
+      if (!this.files[f.h]) {
+        var fo = this.files[f.h] = new MutableFile(f, this);
+        if (f.t === Storage.NODE_TYPE_DRIVE) {
+          this.root = fo;
+          fo.name = 'Cloud Drive';
+        }
+        if (f.t === Storage.NODE_TYPE_RUBBISH_BIN) {
+          this.trash = fo;
+          fo.name = 'Rubbish Bin';
+        }
+        if (f.t === Storage.NODE_TYPE_INBOX) {
+          this.inbox = fo;
+          fo.name = 'Inbox';
+        }
+        if (f.t > 1) {
+          this.mounts.push(fo);
+        }
+        if (f.p) {
+          var parent = this.files[f.p];
+          if (!parent.children) parent.children = [];
+          parent.children.push(fo);
+          fo.parent = parent;
+        }
+      }
+      return this.files[f.h];
+    }
+
+    // alternative to this.root.mkdir
+
+  }, {
+    key: 'mkdir',
+    value: function mkdir(opt, cb) {
+      var _this4 = this;
+
+      // Wait for ready event.
+      if (this.status !== 'ready') {
+        this.on('ready', function () {
+          return _this4.root.mkdir(opt, cb);
+        });
+        return;
+      }
+      return this.root.mkdir(opt, cb);
+    }
+
+    // alternative to this.root.upload
+
+  }, {
+    key: 'upload',
+    value: function upload(opt, buffer, cb) {
+      var _this5 = this;
+
+      // Wait for ready event.
+      if (this.status !== 'ready') {
+        this.on('ready', function () {
+          return _this5.root.upload(opt, buffer, cb);
+        });
+        return;
+      }
+      return this.root.upload(opt, buffer, cb);
     }
   }, {
     key: 'close',
