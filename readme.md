@@ -5,7 +5,7 @@
 - This is all unofficial, based on [developer guide](https://mega.nz/#developers) and site source.
 - Official SDK will probably be released in the future. You may want to wait for it here: https://github.com/meganz/
 - Only part of the API is implemented.
-- Crypto is mostly ported from browser code and isn't optimal. [Related issue](https://github.com/qgustavor/mega/issues/3).
+- Crypto is mostly ported from browser code. In Node AES operations are done using native crypto while in browser the old pure JavaScript implementation is used. The RSA operations aren't optimized.
 - If you use it for something make sure you agree with MEGA's [Terms of Service](https://mega.nz/#terms).
 
 ## Installation
@@ -16,16 +16,14 @@ npm install qgustavor/mega
 
 ```javascript
 var mega = require('mega') // or
-import mega from 'mega' // or what you prefer
+import mega from 'mega' // or what you use in your module loader
 ```
 
 See examples directory for quick start.
 
 ## Browser support
 
-This module works in the browser via browserify, webpack, rollup and similar module bundlers. For some of those build maybe some configuration for
-node globals and native packages is needed. There is also a browser specific build in `/dist` folder. This version is the one used in the fallback
-mode of https://directme.ga.
+This module works in the browser via browserify, webpack, rollup and similar module bundlers. For some of those build maybe some configuration for node globals and native packages is needed. There is also a browser specific build in `/dist` folder. This version is the one used in the fallback mode of https://directme.ga.
 
 ## API
 
@@ -103,8 +101,7 @@ var folder = mega.file('https://mega.nz/#F!...')
 
 Returns file object based on download URL or an options object containing `downloadId` (string), `key` (optional, string or buffer) and `directory` (boolean, `true` if is a shared folder).
 
-Please note: as MEGA security model allows access to file and folder metadata without needing encryption keys this library
-also don't requires it. Also, downloading files don't work if the encryption key isn't provided.
+Please note: as MEGA security model allows access to file and folder metadata without needing encryption keys this library also don't requires it. Also, downloading files don't work if the encryption key isn't provided.
 
 ### File
 
@@ -136,11 +133,7 @@ file.download((err, data) => {
 })
 ```
 
-This function downloads files using multiple parallel connections to speed up downloading.
-The number of parallel connections is defined by `maxConnections` (default: 4). In order
-to do that it downloads files in chunks, with a size starting with `initialChunkSize`
-(default: 128KB) and increasing by `chunkSizeIncrement` (default: 128KB) until it reaches a
-`maxChunkSize` (max 1MB).
+This function downloads files using multiple parallel connections to speed up downloading. The number of parallel connections is defined by `maxConnections` (default: 4). In order to do that it downloads files in chunks, with a size starting with `initialChunkSize` (default: 128KB) and increasing by `chunkSizeIncrement` (default: 128KB) until it reaches a `maxChunkSize` (max 1MB).
 
 Those values can be overwriten by using the `options` object, with sizes specified in bytes.
 
@@ -200,33 +193,20 @@ Same events as for Storage objects. Only trigger for a specific file.
 
 ### `mega.encrypt([key])` / `mega.decrypt(key)`
 
-Lower level duplex streams. Takes in encrypted file data and outputs decrypted data and vice
-versa. Also does MAC verification / generation.
+Lower level duplex streams. Takes in encrypted file data and outputs decrypted data and vice versa. Also does MAC verification / generation.
 
-Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit are for the
-MAC. You can later read the full key from the `key` property of the stream.
+Note that if you specify key for `encrypt()` it needs to be 192bit. Other 64bit are for the MAC. You can later read the full key from the `key` property of the stream.
 
 ## Fork info:
 
 This fork intents to:
 
-* Make the original package work in browsers again, because, even following
-[the instructions from the original library](https://github.com/tonistiigi/mega#browser-support),
-it stopped working because some dependencies used `__proto__`, which is non-standard and isn't
-supported in many browsers, and the updated versions of those libraries broke backyards compatibility;
+* Make the original package work in browsers again, because, even following [the instructions from the original library](https://github.com/tonistiigi/mega#browser-support), it stopped working because some dependencies used `__proto__`, which is non-standard and isn't supported in many browsers, and the updated versions of those libraries broke backyards compatibility;
 * Reduce dependencies and replace big dependencies with smaller ones;
 * Rewrite code using the new JavaScript syntax, allowing to use rollup;
 * Make tests work again after the changes above;
 * Continue the original library development implementing new features and improving performance.
 
-Request package can't be browserified well using rollup, so it was replaced with a shim based in
-[browser-request](https://www.npmjs.com/package/browser-request) and
-[xhr-stream](https://www.npmjs.com/package/xhr-stream), which additional changes in order to make
-it work inside Service Workers, which in current Chrome Canary don't support XMLHttpRequest, just
-fetch. Crypto dependency was replaced with [secure-random](https://www.npmjs.com/package/secure-random)
-as node crypto was only used for key generation.
+Request package can't be browserified well using rollup, so it was replaced with a shim based in [browser-request](https://www.npmjs.com/package/browser-request) and [xhr-stream](https://www.npmjs.com/package/xhr-stream), which additional changes in order to make it work inside Service Workers, which in current Chrome Canary don't support XMLHttpRequest, just fetch. Crypto dependency was replaced with [secure-random](https://www.npmjs.com/package/secure-random) as node crypto was only used for key generation.
 
-*Please note:* as this library is a work in progress sometimes things may break, most because we still
-don't created any real test cases. Please don't use any undocumented functions as those can be removed
-or replaced any time (example: `File.getCiphers` was moved to `crypto.getCiphers` because don't makes
-sense a cryptographic function belonging to the file constructor).
+*Please note:* as this library is a work in progress sometimes things may break, most because we still don't created any real test cases. Please don't use any undocumented functions as those can be removed or replaced any time (example: `File.getCiphers` was moved to `crypto.getCiphers` because don't makes sense a cryptographic function belonging to the file constructor).
