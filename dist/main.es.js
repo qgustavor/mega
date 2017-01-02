@@ -53,10 +53,12 @@ function chunkSizeSafe(size) {
 function detectSize(cb) {
   var chunks = [];
   var size = 0;
+
   return through(function (d) {
     chunks.push(d);
     size += d.length;
   }, function () {
+    // function IS needed
     cb(size);
     chunks.forEach(this.emit.bind(this, 'data'));
     this.emit('end');
@@ -227,8 +229,7 @@ var AES = function () {
     key: 'encryptCBC',
     value: function encryptCBC(buffer) {
       var iv = Buffer.alloc(16, 0);
-      var cipher = crypto.createCipheriv('aes-128-cbc', this.key, iv);
-      cipher.setAutoPadding(false);
+      var cipher = crypto.createCipheriv('aes-128-cbc', this.key, iv).setAutoPadding(false);
 
       var result = Buffer.concat([cipher.update(buffer), cipher.final()]);
       result.copy(buffer);
@@ -238,8 +239,7 @@ var AES = function () {
     key: 'decryptCBC',
     value: function decryptCBC(buffer) {
       var iv = Buffer.alloc(16, 0);
-      var decipher = crypto.createDecipheriv('aes-128-cbc', this.key, iv);
-      decipher.setAutoPadding(false);
+      var decipher = crypto.createDecipheriv('aes-128-cbc', this.key, iv).setAutoPadding(false);
 
       var result = Buffer.concat([decipher.update(buffer), decipher.final()]);
       result.copy(buffer);
@@ -435,7 +435,8 @@ function getCipher(key) {
   return new AES(k);
 }
 
-function megaEncrypt(key) {
+function megaEncrypt(key, options) {
+  if (!options) options = {};
   key = formatKey(key);
 
   if (!key) {
@@ -479,7 +480,8 @@ function megaEncrypt(key) {
   return stream;
 }
 
-function megaDecrypt(key) {
+function megaDecrypt(key, options) {
+  if (!options) options = {};
   key = formatKey(key);
 
   var stream = through(write, end);
@@ -494,7 +496,7 @@ function megaDecrypt(key) {
 
   function end() {
     var mac = ctr.condensedMac();
-    if (!mac.equals(key.slice(24))) {
+    if (!mac.equals(key.slice(24)) && !options.ignoreMac) {
       return this.emit('error', new Error('MAC verification failed'));
     }
     this.emit('end');
@@ -507,13 +509,13 @@ function constantTimeCompare(bufferA, bufferB) {
   if (bufferA.length !== bufferB.length) return false;
 
   var len = bufferA.length;
-  var sum = 0;
+  var result = 0;
 
   for (var i = 0; i < len; i++) {
-    sum += bufferA[i] ^ bufferB[i];
+    result |= bufferA[i] ^ bufferB[i];
   }
 
-  return !!sum;
+  return result === 0;
 }
 
 /* RSA public key encryption/decryption
@@ -1440,6 +1442,12 @@ var MutableFile = function (_File) {
       if (!opt.target) opt.target = this;
       if (!opt.key) opt.key = new Buffer(secureRandom(32));
 
+      if (opt.key.length !== 32) {
+        return process.nextTick(function () {
+          cb(Error('Wrong key length. Key must be 256bit'));
+        });
+      }
+
       var key = opt.key;
       var at = File.packAttributes(opt.attributes);
 
@@ -1474,14 +1482,14 @@ var MutableFile = function (_File) {
 
   }, {
     key: 'upload',
-    value: function upload(opt, buffer, cb) {
+    value: function upload(opt, source, cb) {
       var _this3 = this;
 
       if (!this.directory) throw Error('node is not a directory');
-      if (arguments.length === 2 && typeof buffer === 'function') {
-        var _ref = [buffer, null];
+      if (arguments.length === 2 && typeof source === 'function') {
+        var _ref = [source, null];
         cb = _ref[0];
-        buffer = _ref[1];
+        source = _ref[1];
       }
 
       if (typeof opt === 'string') {
@@ -1492,12 +1500,73 @@ var MutableFile = function (_File) {
       if (opt.name) opt.attributes.n = opt.name;
 
       if (!opt.attributes.n) {
-        throw new Error('File name is required.');
+        throw Error('File name is required.');
       }
 
-      var encrypter = megaEncrypt(opt.key);
-      var pause = through().pause();
-      var stream = pipeline(pause, encrypter);
+      if (!opt.target) opt.target = this;
+
+      var key = formatKey(opt.key);
+      if (!key) key = secureRandom(24);
+      if (!(key instanceof Buffer)) key = new Buffer(key);
+      if (key.length !== 24) {
+        throw Error('Wrong key length. Key must be 192bit');
+      }
+      opt.key = key;
+
+      var finalKey = void 0;
+
+      var hashes = [];
+      var checkCallbacks = function checkCallbacks(err, type, hash, encrypter) {
+        if (err) return returnError(err);
+        hashes[type] = hash;
+        if (type === 0) finalKey = encrypter.key;
+
+        if (opt.thumbnailImage && !hashes[1]) return;
+        if (opt.previewImage && !hashes[2]) return;
+        if (!hashes[0]) return;
+
+        var at = File.packAttributes(opt.attributes);
+        getCipher(finalKey).encryptCBC(at);
+
+        _this3.storage.aes.encryptECB(finalKey);
+
+        var fileObject = {
+          h: hashes[0].toString(),
+          t: 0,
+          a: e64(at),
+          k: e64(finalKey)
+        };
+
+        if (hashes.length !== 1) {
+          fileObject.fa = hashes.slice(1).map(function (hash, index) {
+            return index + '*' + e64(hash);
+          }).filter(function (e) {
+            return e;
+          }).join('/');
+        }
+
+        _this3.api.request({
+          a: 'p',
+          t: opt.target.nodeId ? opt.target.nodeId : opt.target,
+          n: [fileObject]
+        }, function (err, response) {
+          if (err) return returnError(err);
+          var file = _this3.storage._importFile(response.f[0]);
+          _this3.storage.emit('add', file);
+          stream.emit('complete', file);
+
+          if (cb) cb(null, file);
+        });
+      };
+
+      if (opt.thumbnailImage) {
+        this._uploadAttribute(opt, opt.thumbnailImage, 1, checkCallbacks);
+      }
+      if (opt.previewImage) {
+        this._uploadAttribute(opt, opt.previewImage, 2, checkCallbacks);
+      }
+
+      var stream = this._uploadAndReturnHash(opt, source, 0, checkCallbacks);
 
       var returnError = function returnError(e) {
         if (cb) {
@@ -1507,78 +1576,110 @@ var MutableFile = function (_File) {
         }
       };
 
+      return stream;
+    }
+  }, {
+    key: '_uploadAndReturnHash',
+    value: function _uploadAndReturnHash(opt, source, type, cb) {
+      var _this4 = this;
+
+      var encrypter = megaEncrypt(opt.key);
+      var pause = through().pause();
+      var stream = pipeline(pause, encrypter);
+
       // Size is needed before upload. Kills the streaming otherwise.
       var size = opt.size;
-      if (buffer) {
-        size = buffer.length;
-        stream.write(buffer);
+
+      // handle buffer
+      if (source && typeof source.pipe !== 'function') {
+        size = source.length;
+        stream.write(source);
         stream.end();
       }
 
-      var upload = function upload(size) {
-        if (!opt.target) opt.target = _this3;
-
-        _this3.api.request({ a: 'u', ssl: 0, ms: '-1', s: size, r: 0, e: 0 }, function (err, resp) {
-          if (err) return returnError(err);
-
-          var httpreq = _this3.api.requestModule({
-            uri: resp.p,
-            headers: { 'Content-Length': size },
-            method: 'POST'
-          });
-
-          streamToCb(httpreq, function (err, hash) {
-            if (err) return returnError(err);
-            var key = encrypter.key;
-            var at = File.packAttributes(opt.attributes);
-            getCipher(key).encryptCBC(at);
-
-            _this3.storage.aes.encryptECB(key);
-
-            _this3.api.request({
-              a: 'p',
-              t: opt.target.nodeId ? opt.target.nodeId : opt.target,
-              n: [{
-                h: hash.toString(),
-                t: 0,
-                a: e64(at),
-                k: e64(key)
-              }]
-            }, function (err, response) {
-              if (err) return returnError(err);
-              var file = _this3.storage._importFile(response.f[0]);
-              _this3.storage.emit('add', file);
-              stream.emit('complete', file);
-
-              if (cb) {
-                cb(null, file);
-              }
-            });
-          });
-
-          var sizeCheck = 0;
-          encrypter.on('data', function (d) {
-            sizeCheck += d.length;
-            stream.emit('progress', { bytesLoaded: sizeCheck, bytesTotal: size });
-          });
-          encrypter.on('end', function () {
-            if (size && sizeCheck !== size) {
-              return stream.emit('error', new Error('Specified data size does not match.'));
-            }
-          });
-
-          encrypter.pipe(httpreq);
-          pause.resume();
-        });
-      };
-
       if (size) {
-        upload(size);
+        this._uploadWithSize(stream, size, encrypter, pause, type, cb);
       } else {
-        stream = pipeline(detectSize(upload), stream);
+        stream = pipeline(detectSize(function (size) {
+          _this4._uploadWithSize(stream, size, encrypter, pause, type, cb);
+        }), stream);
+      }
+
+      // handle stream
+      if (source && typeof source.pipe === 'function') {
+        source.pipe(stream);
       }
 
       return stream;
+    }
+  }, {
+    key: '_uploadAttribute',
+    value: function _uploadAttribute(opt, source, type, cb) {
+      var _this5 = this;
+
+      var gotBuffer = function gotBuffer(err, buffer) {
+        if (err) return cb(err);
+
+        var len = buffer.length;
+        var rest = Math.ceil(len / 16) * 16 - len;
+
+        if (rest !== 0) {
+          buffer = Buffer.concat([buffer, Buffer.alloc(rest)]);
+        }
+
+        new AES(opt.key.slice(0, 16)).encryptCBC(buffer);
+
+        var pause = through().pause();
+        var stream = pipeline(pause);
+        stream.write(buffer);
+        stream.end();
+
+        _this5._uploadWithSize(stream, buffer.length, stream, pause, type, cb);
+      };
+
+      // handle buffer
+      if (source instanceof Buffer) {
+        gotBuffer(null, source);
+        return;
+      }
+
+      streamToCb(source, gotBuffer);
+    }
+  }, {
+    key: '_uploadWithSize',
+    value: function _uploadWithSize(stream, size, source, pause, type, cb) {
+      var _this6 = this;
+
+      var request$$1 = type === 0 ? { a: 'u', ssl: 0, s: size, ms: '-1', r: 0, e: 0 } : { a: 'ufa', ssl: 0, s: size };
+
+      this.api.request(request$$1, function (err, resp) {
+        if (err) return cb(err);
+
+        var httpreq = _this6.api.requestModule({
+          uri: resp.p + (type === 0 ? '' : '/' + (type - 1)),
+          headers: { 'Content-Length': size },
+          method: 'POST'
+        });
+
+        streamToCb(httpreq, function (err, hash) {
+          cb(err, type, hash, source);
+        });
+
+        var sizeCheck = 0;
+        source.on('data', function (d) {
+          sizeCheck += d.length;
+          stream.emit('progress', { bytesLoaded: sizeCheck, bytesTotal: size });
+        });
+
+        source.on('end', function () {
+          if (size && sizeCheck !== size) {
+            return stream.emit('error', Error('Specified data size does not match: ' + size + ' !== ' + sizeCheck));
+          }
+        });
+
+        source.pipe(httpreq);
+        pause.resume();
+      });
     }
 
     // todo: handle sharing, it can remove shares
@@ -1620,7 +1721,7 @@ var MutableFile = function (_File) {
   }, {
     key: 'setAttributes',
     value: function setAttributes(attributes, cb) {
-      var _this4 = this;
+      var _this7 = this;
 
       Object.assign(this.attributes, attributes);
 
@@ -1628,7 +1729,7 @@ var MutableFile = function (_File) {
       getCipher(this.key).encryptCBC(newAttributes);
 
       this.api.request({ a: 'a', n: this.nodeId, at: e64(newAttributes) }, function () {
-        _this4.parseAttributes(_this4.attributes);
+        _this7.parseAttributes(_this7.attributes);
         if (cb) cb();
       });
 
@@ -1669,7 +1770,7 @@ var MutableFile = function (_File) {
   }, {
     key: 'link',
     value: function link(options, cb) {
-      var _this5 = this;
+      var _this8 = this;
 
       if (arguments.length === 1 && typeof options === 'function') {
         cb = options;
@@ -1694,7 +1795,7 @@ var MutableFile = function (_File) {
         if (err) return cb(err);
 
         var url$$1 = 'https://mega.nz/#' + (folderKey ? 'F' : '') + '!' + id;
-        if (!options.noKey && _this5.key) url$$1 += '!' + e64(folderKey || _this5.key);
+        if (!options.noKey && _this8.key) url$$1 += '!' + e64(folderKey || _this8.key);
 
         cb(null, url$$1);
       });
@@ -1704,7 +1805,7 @@ var MutableFile = function (_File) {
   }, {
     key: 'shareFolder',
     value: function shareFolder(options, cb) {
-      var _this6 = this;
+      var _this9 = this;
 
       if (!this.directory) throw Error("node isn't a folder");
 
@@ -1750,7 +1851,7 @@ var MutableFile = function (_File) {
       };
 
       this.api.request(request$$1, function () {
-        _this6.link(Object.assign({
+        _this9.link(Object.assign({
           __folderKey: shareKey
         }, options), cb);
       });
