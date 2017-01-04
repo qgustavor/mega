@@ -15,7 +15,7 @@ const mega = require('mega') // or
 import mega from 'mega' // or what you use in your module loader
 ```
 
-**For API documentation and examples check documentation: https://qgustavor.github.io/mega/**
+**For API documentation and examples check documentation: https://github.com/qgustavor/mega/wiki**
 
 ## Browser support
 
