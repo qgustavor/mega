@@ -1213,7 +1213,7 @@ var File = function (_EventEmitter) {
         };
       }
 
-      var req = this.directory ? { a: 'f', qs: { n: this.downloadId } } : { a: 'g', p: this.downloadId }; // todo: nodeId version ('n')
+      var req = this.directory ? { a: 'f', _querystring: { n: this.downloadId } } : { a: 'g', p: this.downloadId }; // todo: nodeId version ('n')
 
       this.api.request(req, function (err, response) {
         if (err) return cb(err);
