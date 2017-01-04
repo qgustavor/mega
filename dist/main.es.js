@@ -497,7 +497,7 @@ function megaDecrypt(key, options) {
   function end() {
     var mac = ctr.condensedMac();
     if (!mac.equals(key.slice(24)) && !options.ignoreMac) {
-      return this.emit('error', new Error('MAC verification failed'));
+      return this.emit('error', Error('MAC verification failed'));
     }
     this.emit('end');
   }
@@ -1053,7 +1053,7 @@ var API = function (_EventEmitter) {
       }, function (err, req, resp) {
         if (err) return cb(err);
 
-        if (!resp) return cb(new Error('Empty response'));
+        if (!resp) return cb(Error('Empty response'));
 
         // Some error codes are returned as num, some as array with number.
         if (resp.length) resp = resp[0];
@@ -1066,7 +1066,7 @@ var API = function (_EventEmitter) {
               }, Math.pow(2, retryno + 1) * 1e3);
             }
           }
-          err = new Error(ERRORS[-resp]);
+          err = Error(ERRORS[-resp]);
         } else {
           if (_this2.keepalive && resp && resp.sn) {
             _this2.pull(resp.sn);
@@ -1099,7 +1099,7 @@ var API = function (_EventEmitter) {
               }, Math.pow(2, retryno + 1) * 1e3);
             }
           }
-          err = new Error(ERRORS[-resp]);
+          err = Error(ERRORS[-resp]);
         }
         if (err) throw err;
 
@@ -1368,15 +1368,6 @@ File.fromURL = function (opt) {
   });
 };
 
-File.packAttributes = function (attributes) {
-  var at = JSON.stringify(attributes);
-  at = new Buffer('MEGA' + at);
-  var ret = new Buffer(Math.ceil(at.length / 16) * 16);
-  ret.fill(0);
-  at.copy(ret);
-  return ret;
-};
-
 File.unpackAttributes = function (at) {
   // read until the first null byte
   var end = 0;
@@ -1384,7 +1375,7 @@ File.unpackAttributes = function (at) {
     end++;
   }at = at.slice(0, end).toString();
   if (at.substr(0, 6) !== 'MEGA{"') {
-    throw new Error('Attributes could not be decrypted with provided key.');
+    throw Error('Attributes could not be decrypted with provided key.');
   }
 
   return JSON.parse(at.substr(4).replace(/\0|[^}]*$/g, ''));
@@ -1449,7 +1440,7 @@ var MutableFile = function (_File) {
       }
 
       var key = opt.key;
-      var at = File.packAttributes(opt.attributes);
+      var at = MutableFile.packAttributes(opt.attributes);
 
       getCipher(key).encryptCBC(at);
       this.storage.aes.encryptECB(key);
@@ -1525,7 +1516,7 @@ var MutableFile = function (_File) {
         if (opt.previewImage && !hashes[2]) return;
         if (!hashes[0]) return;
 
-        var at = File.packAttributes(opt.attributes);
+        var at = MutableFile.packAttributes(opt.attributes);
         getCipher(finalKey).encryptCBC(at);
 
         _this3.storage.aes.encryptECB(finalKey);
@@ -1725,7 +1716,7 @@ var MutableFile = function (_File) {
 
       Object.assign(this.attributes, attributes);
 
-      var newAttributes = File.packAttributes(this.attributes);
+      var newAttributes = MutableFile.packAttributes(this.attributes);
       getCipher(this.key).encryptCBC(newAttributes);
 
       this.api.request({ a: 'a', n: this.nodeId, at: e64(newAttributes) }, function () {
@@ -1879,10 +1870,16 @@ var MutableFile = function (_File) {
   return MutableFile;
 }(File);
 
+MutableFile.packAttributes = function (attributes) {
+  var at = JSON.stringify(attributes);
+  at = new Buffer('MEGA' + at);
+  var ret = Buffer.alloc(Math.ceil(at.length / 16) * 16);
+  at.copy(ret);
+  return ret;
+};
+
 // source: https://github.com/meganz/webclient/blob/918222d5e4521c8777b1c8da528f79e0110c1798/js/crypto.js#L3728
 // generate crypto request response for the given nodes/shares matrix
-
-
 function makeCryptoRequest(storage, sources) {
   var shareKeys = storage.shareKeys;
 
