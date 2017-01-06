@@ -10,12 +10,12 @@ Unofficial JavaScript SDK for MEGA
 ## Installation
 
 ```shell
-npm install qgustavor/mega
+npm install megajs
 ```
 
 ```javascript
-const mega = require('mega') // or
-import mega from 'mega' // or
+const mega = require('megajs') // or
+import mega from 'megajs' // or
 // load it using <script> and use exported `mega` global directly
 ```
 
