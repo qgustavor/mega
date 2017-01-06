@@ -1,3 +1,7 @@
+# MEGAJS
+
+Unofficial JavaScript SDK for MEGA
+
 * This is based on [tonistiigi's mega library](https://github.com/tonistiigi/mega).
 * This is all unofficial, based on [developer guide](https://mega.nz/#developers) and site source.
 * Make sure you agree with MEGA's [Terms of Service](https://mega.nz/#terms) before using it.
