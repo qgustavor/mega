@@ -1,51 +1,64 @@
-var rollup = require('rollup')
-var alias = require('rollup-plugin-alias')
-var babel = require('rollup-plugin-babel')
-var builtins = require('rollup-plugin-node-builtins')
-var commonjs = require('rollup-plugin-commonjs')
-var globals = require('rollup-plugin-node-globals')
-var json = require('rollup-plugin-json')
-var nodeResolve = require('rollup-plugin-node-resolve')
-var replace = require('rollup-plugin-replace')
-var compile = require('google-closure-compiler-js').compile
+const rollup = require('rollup')
+const babel = require('rollup-plugin-babel')
+const builtins = require('rollup-plugin-node-builtins')
+const commonjs = require('rollup-plugin-commonjs')
+const globals = require('rollup-plugin-node-globals')
+const json = require('rollup-plugin-json')
+const nodeResolve = require('rollup-plugin-node-resolve')
+const replace = require('rollup-plugin-replace')
+const compile = require('google-closure-compiler-js').compile
 
-var fs = require('fs')
-var path = require('path')
+const fs = require('fs')
 
-// as there is just one supported argument the line below is dead simple
-var sourceMapEnabled = process.argv.includes('--generate-sourcemap')
-var minify = process.argv.includes('--minify')
+// to aid debugging
+const sourceMapEnabled = process.argv.includes('--generate-sourcemap')
 
-var formats = {
-  browser: [{
-    name: 'browser',
-    moduleName: 'mega',
-    format: 'umd'
-  }],
-  node: [
-    { name: 'cjs', format: 'cjs' },
-    { name: 'es', format: 'es' }
-  ]
-}
-
-console.error('Starting build...')
+const formats = [{
+  // to be loaded with <script>
+  bundleExternals: true,
+  bundlePolyfills: true,
+  minifyResult: true,
+  entryPoint: 'lib/mega.js',
+  bundleConfig: { name: 'browser-umd', format: 'umd', moduleName: 'mega' }
+}, {
+  // to be loaded with ES Module compatible loader
+  bundleExternals: false,
+  bundlePolyfills: true,
+  minifyResult: false,
+  entryPoint: 'lib/mega-es.js',
+  bundleConfig: { name: 'browser-es', format: 'es' }
+}, {
+  // to allow the old commonjs usage
+  bundleExternals: false,
+  bundlePolyfills: false,
+  minifyResult: false,
+  entryPoint: 'lib/mega.js',
+  bundleConfig: { name: 'node-cjs', format: 'cjs' }
+}, {
+  // to be loaded with ES Module compatible loader
+  bundleExternals: false,
+  bundlePolyfills: false,
+  minifyResult: false,
+  entryPoint: 'lib/mega-es.js',
+  bundleConfig: { name: 'node-es', format: 'es' }
+}]
 
 const warnings = []
 const handleWarning = (warning) => {
   warnings.push(warning)
 }
 
-Promise.all(Object.keys(formats).map(function (format) {
-  var externalConfig = format === 'browser' ? [] : [
+const doBundle = (format) => {
+  const externalConfig = format.bundleExternals ? [] : [
     'zlib', 'https', 'http', 'crypto', 'fs', 'tls',
     'net', 'string_decoder', 'assert', 'punycode',
     'dns', 'dgram', 'request', 'combined-stream',
     'url', 'through', 'stream-combiner', 'events',
-    'secure-random', 'querystring'
+    'secure-random', 'querystring', 'stream'
   ]
 
   return rollup.rollup({
-    entry: 'lib/mega.js',
+    entry: format.entryPoint,
     external: externalConfig,
     onwarn: handleWarning,
     plugins: [
@@ -58,45 +71,50 @@ Promise.all(Object.keys(formats).map(function (format) {
           'lib/**'
         ]
       }),
-      format === 'browser' && builtins(),
-      format === 'browser' && globals(),
-      format === 'browser' && alias({
-        request: path.resolve(__dirname, './browser/request.js')
-      }),
-      format === 'browser' && replace({ values: {
-        // handle cases where rollup-plugin-replace fails
+      format.bundleExternals && builtins(),
+      format.bundleExternals && globals(),
+      format.bundlePolyfills && replace({ values: {
+        "from 'request'": "from '../browser/request.js'",
         "from './crypto/rsa'": "from '../browser/rsa.js'",
         "from './aes'": "from '../../browser/aes.js'"
       }}),
-      format === 'browser' && nodeResolve({
+      format.bundleExternals && nodeResolve({
         jsnext: true,
         main: true,
-        browser: format === 'browser',
-        preferBuiltins: format !== 'browser'
+        browser: true
       }),
       json(),
       babel({
         exclude: 'node_modules/**'
       })
     ]
-  }).then(function (bundle) {
-    return Promise.all(formats[format].map(function (options) {
-      var result = bundle.generate(Object.assign({
-        sourceMap: sourceMapEnabled && 'inline'
-      }, options))
+  }).then((bundle) => {
+    const options = format.bundleConfig
+    const result = bundle.generate(Object.assign({
+      sourceMap: sourceMapEnabled && 'inline'
+    }, options))
 
-      if (minify && format === 'browser') {
-        result.code = compile({
-          rewritePolyfills: false,
-          jsCode: [{src: result.code}]
-        }).compiledCode
-      }
+    if (format.minifyResult) {
+      result.code = compile({
+        rewritePolyfills: false,
+        jsCode: [{src: result.code}]
+      }).compiledCode
+    }
 
-      return writeFilePromise('dist/main.' + options.name + '.js', result.code)
-    }))
+    return writeFilePromise('dist/main.' + options.name + '.js', result.code)
   })
-}))
-.then(function () {
+}
+
+console.error('Starting build...')
+console.error('Building 0 of %d', formats.length)
+
+formats.reduce((last, format, index) => last.then(() => {
+  // return the previous line (A), then to the first character (G), clean the line (2K) and print state
+  console.log('\x1b[A\x1b[G\x1b[2KBuilding %d of %d', index + 1, formats.length)
+
+  return doBundle(format)
+}), Promise.resolve())
+.then(() => {
   if (warnings.length) {
     console.log('Build completed with warnings')
     console.log(Array.from(new Set(warnings)).join('\n'))
@@ -105,14 +123,14 @@ Promise.all(Object.keys(formats).map(function (format) {
 
   console.log('Build completed with success')
 })
-.catch(function (error) {
+.catch((error) => {
   console.error(error.stack || error)
   process.exit(1)
 })
 
 function writeFilePromise (...argv) {
-  return new Promise(function (resolve, reject) {
-    fs.writeFile(...argv, function (err) {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(...argv, (err) => {
       if (err) {
         reject(err)
       } else {

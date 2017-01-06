@@ -1,10 +1,10 @@
 {
-  "name": "mega",
-  "version": "0.7.2",
-  "description": "Unofficial Node.js SDK for mega.nz",
-  "main": "dist/main.cjs.js",
-  "module": "dist/main.es.js",
-  "browser": "dist/main.browser.js",
+  "name": "megajs",
+  "version": "0.8.0",
+  "description": "Unofficial JavaScript SDK for MEGA",
+  "main": "dist/main.node-cjs.js",
+  "module": "dist/main.node-es.js",
+  "browser": "dist/main.browser-umd.js",
   "files": [
     "dist"
   ],
@@ -57,8 +57,8 @@
     "babel-preset-latest": "^6.16.0",
     "babel-register": "^6.18.0",
     "google-closure-compiler-js": "^20161201.0.0",
+    "nock": "^9.0.2",
     "rollup": "^0.36.4",
-    "rollup-plugin-alias": "^1.2.0",
     "rollup-plugin-babel": "^2.3.9",
     "rollup-plugin-commonjs": "^2.2.1",
     "rollup-plugin-json": "^2.0.2",
