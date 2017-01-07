@@ -38,7 +38,9 @@ This module works in the browser: the "main.browser-umd.js" is a build using the
 
 ## Warning: unstable!
 
-As this library is a work in progress sometimes things may break, most because the code don't have a good coverage. Please don't use any undocumented functions as those can be removed or replaced any time. Example: `File.getCiphers` was moved to `crypto.getCiphers` because don't makes sense a cryptographic function belonging to the file constructor.
+As this library is a work in progress sometimes things may break, most because the code don't have a good coverage.
+
+Breaking changes are avoided when possible, but then **don't use any function that's not documented** as those can be removed or replaced any time.
 
 ## Fork objectives:
 
