@@ -19,7 +19,7 @@ import mega from 'megajs' // or
 // load it using <script> and use exported `mega` global directly
 ```
 
-**For API documentation and examples check documentation: https://github.com/qgustavor/mega/wiki**
+**API documentation and examples check Wiki: https://github.com/qgustavor/mega/wiki**
 
 The bundled files are available via [npm](https://www.npmjs.com/package/megajs) and [UNPKG](https://unpkg.com/megajs/dist/). They're the following:
 
@@ -27,6 +27,8 @@ The bundled files are available via [npm](https://www.npmjs.com/package/megajs) 
 * `main.node-es.js`: default entry point when using ES modules
 * `main.browser-umd.js`: default entry point when requesting a browser version
 * `main.browser-es.js`: can be used to generate smaller browser bundles when tree shaking is used
+
+**For CLI usage check MEGAJS CLI**: https://github.com/qgustavor/megajs-cli
 
 ## Implementation notes:
 
