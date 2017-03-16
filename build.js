@@ -73,6 +73,9 @@ const doBundle = (format) => {
       }),
       format.bundleExternals && builtins(),
       format.bundleExternals && globals(),
+      replace({ values: {
+        'IS_BROWSER_BUILD': '' + format.bundleConfig.name.includes('browser')
+      }}),
       format.bundlePolyfills && replace({ values: {
         "from 'request'": "from '../browser/request.js'",
         "from './crypto/rsa'": "from '../browser/rsa.js'",
