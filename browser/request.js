@@ -174,7 +174,7 @@ function request (options, callback) {
   }
 
   // Only use fetch if it supports streams
-  if (typeof fetch === 'function' && typeof ReadableByteStream === 'function') {
+  if (typeof fetch === 'function' && (typeof ReadableStream === 'function' || !global.XMLHttpRequest)) {
     return runFetch(options)
   }
   return runXhr(options)
