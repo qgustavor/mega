@@ -111,6 +111,10 @@ const doBundle = (format) => {
             }
           }]]
         }).code
+
+        // For some reason Babel or babili use this in the top level of the ES module, causing warnings in Rollup
+        // Replaced it with a empty object (instead of undefined/void 0) to save 4 bytes
+        .replace('typeof global?this:global:window', 'typeof global?{}:global:window')
       } else {
         // Minify Browser UMD modules using Closure Compiler
         result.code = compile({
