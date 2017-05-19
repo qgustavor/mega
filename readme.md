@@ -21,12 +21,7 @@ import mega from 'megajs' // or
 
 **API documentation and examples check Wiki: https://github.com/qgustavor/mega/wiki**
 
-The bundled files are available via [npm](https://www.npmjs.com/package/megajs) and [UNPKG](https://unpkg.com/megajs/dist/). They're the following:
-
-* `main.node-cjs.js`: default entry point when using CommonJS
-* `main.node-es.js`: default entry point when using ES modules
-* `main.browser-umd.js`: default entry point when requesting a browser version
-* `main.browser-es.js`: can be used to generate smaller browser bundles when tree shaking is used
+The bundled files are available via [npm](https://www.npmjs.com/package/megajs) and [UNPKG](https://unpkg.com/megajs/dist/).
 
 **For CLI usage check MEGAJS CLI**: https://github.com/qgustavor/megajs-cli
 
@@ -56,4 +51,4 @@ This package started as a fork, with the following objectives:
 
 Request package was replaced with a shim based in [browser-request](https://www.npmjs.com/package/browser-request) and [xhr-stream](https://www.npmjs.com/package/xhr-stream), which additional changes in order to make it work inside Service Workers. Crypto was replaced with [secure-random](https://www.npmjs.com/package/secure-random).
 
-As there were many changes there isn't any plan to merge those changes into the original library, unless the original author accept those massive changes.
+As there were many changes there isn't any plan to merge those changes into the original library, unless the original author accept those massive changes. That's why I put "js" in the name, which is silly because both libraries use JavaScript. At least it's better than other ideas I had, like "mega2", "mega-es" and "modern-mega".

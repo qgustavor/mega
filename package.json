@@ -4,7 +4,10 @@
   "description": "Unofficial JavaScript SDK for MEGA",
   "main": "dist/main.node-cjs.js",
   "module": "dist/main.node-es.js",
-  "browser": "dist/main.browser-umd.js",
+  "browser": {
+    "dist/main.node-cjs.js": "dist/main.browser-umd.js",
+    "dist/main.node-es.js": "dist/main.browser-es.js"
+  },
   "files": [
     "dist"
   ],
@@ -22,7 +25,7 @@
     "pretest": "node test/pre-test",
     "test": "ava || npm run posttest",
     "posttest": "node test/post-test",
-    "dist": "npm run lint && npm run build -- --minify && npm run test"
+    "dist": "npm run lint && npm run build && npm run test"
   },
   "standard": {
     "ignore": [
@@ -52,8 +55,10 @@
   },
   "devDependencies": {
     "ava": "^0.17.0",
+    "babel-core": "^6.24.1",
     "babel-plugin-external-helpers": "^6.18.0",
     "babel-polyfill": "^6.20.0",
+    "babel-preset-babili": "0.0.12",
     "babel-preset-latest": "^6.16.0",
     "babel-register": "^6.18.0",
     "google-closure-compiler-js": "^20161201.0.0",

@@ -7,6 +7,7 @@ const json = require('rollup-plugin-json')
 const nodeResolve = require('rollup-plugin-node-resolve')
 const replace = require('rollup-plugin-replace')
 const compile = require('google-closure-compiler-js').compile
+const babelTransform = require('babel-core').transform
 
 const fs = require('fs')
 
@@ -22,9 +23,9 @@ const formats = [{
   bundleConfig: { name: 'browser-umd', format: 'umd', moduleName: 'mega' }
 }, {
   // to be loaded with ES Module compatible loader
-  bundleExternals: false,
+  bundleExternals: true,
   bundlePolyfills: true,
-  minifyResult: false,
+  minifyResult: true,
   entryPoint: 'lib/mega-es.js',
   bundleConfig: { name: 'browser-es', format: 'es' }
 }, {
@@ -98,10 +99,25 @@ const doBundle = (format) => {
     }, options))
 
     if (format.minifyResult) {
-      result.code = compile({
-        rewritePolyfills: false,
-        jsCode: [{src: result.code}]
-      }).compiledCode
+      if (options.format === 'es') {
+        // Minify Browser ES modules using babili (Closure don't support ES6 to ES6)
+        result.code = babelTransform(result.code, {
+          babelrc: false,
+          presets: [['babili', {
+            mangle: {
+              // Usually minifiers don't minify top level because it's the global scope on browsers
+              // But it don't applies to ES6 modules
+              topLevel: true
+            }
+          }]]
+        }).code
+      } else {
+        // Minify Browser UMD modules using Closure Compiler
+        result.code = compile({
+          rewritePolyfills: false,
+          jsCode: [{src: result.code}]
+        }).compiledCode
+      }
     }
 
     return writeFilePromise('dist/main.' + options.name + '.js', result.code)
