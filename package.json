@@ -4,6 +4,7 @@
   "description": "Unofficial JavaScript SDK for MEGA",
   "main": "dist/main.node-cjs.js",
   "module": "dist/main.node-es.js",
+  "jsnext:main": "dist/main.node-es.js",
   "browser": {
     "dist/main.node-cjs.js": "dist/main.browser-umd.js",
     "dist/main.node-es.js": "dist/main.browser-es.js"
