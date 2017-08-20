@@ -318,19 +318,31 @@ function runFetch (options) {
   xhr.seq_id = reqSeq
   xhr.id = reqSeq + ': ' + options.method + ' ' + options.uri
   xhr._id = xhr.id
+  reqSeq += 1
 
   const fetchOptions = {}
   if (options.headers) { fetchOptions.headers = options.headers }
   if (options.method) { fetchOptions.method = options.method }
   if (options.body) { fetchOptions.body = options.body }
 
+  const fetchStream = new stream.Readable()
+  fetchStream._read = noop
+
   global.fetch(options.uri || options.url, fetchOptions).then(response => {
     xhr.statusCode = xhr.status = response.status
+    fetchStream.emit('response', {
+      statusCode: response.status,
+      statusMessage: response.statusText,
+      headers: Array.from(response.headers).reduce((obj, [key, value]) => {
+        obj[key] = value
+        return obj
+      }, {})
+    })
 
     if (options.callback) {
       response.clone()[options.json ? 'json' : 'text']()
-        .then(data => options.callback(null, xhr, data))
-        .catch(error => options.callback(error))
+      .then(data => options.callback(null, xhr, data))
+      .catch(error => options.callback(error))
     }
 
     const bodyStream = response.body.getReader()
@@ -339,21 +351,19 @@ function runFetch (options) {
     function readLoop () {
       bodyStream.read().then(function (state) {
         if (state.done) {
-          xhrStream.push(null)
+          fetchStream.push(null)
         } else {
-          xhrStream.push(new Buffer(state.value))
+          fetchStream.push(new Buffer(state.value))
           readLoop()
         }
       })
     }
   }, error => {
-    xhrStream.emit('error', error)
+    fetchStream.emit('error', error)
     options.callback(error)
   })
 
-  const xhrStream = new stream.Readable()
-  xhrStream._read = noop
-  return xhrStream
+  return fetchStream
 } // fetch
 
 request.withCredentials = false
