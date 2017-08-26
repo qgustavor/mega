@@ -55,7 +55,8 @@ const doBundle = (format) => {
     'net', 'string_decoder', 'assert', 'punycode',
     'dns', 'dgram', 'request', 'combined-stream',
     'url', 'through', 'stream-combiner', 'events',
-    'secure-random', 'querystring', 'stream'
+    'secure-random', 'querystring', 'stream',
+    'stream-skip'
   ]
 
   return rollup.rollup({
@@ -68,6 +69,7 @@ const doBundle = (format) => {
           'node_modules/stream-combiner/**',
           'node_modules/combined-stream/**',
           'node_modules/secure-random/**',
+          'node_modules/stream-skip/**',
           'node_modules/through/**',
           'lib/**'
         ]

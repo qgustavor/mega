@@ -123,7 +123,7 @@ class AES {
 }
 
 class CTR {
-  constructor (aes, nonce, start) {
+  constructor (aes, nonce, start = 0) {
     this.aes = aes.aes
     this.nonce = [nonce.readInt32BE(0), nonce.readInt32BE(4)]
 
@@ -132,7 +132,7 @@ class CTR {
     this.pos = start
 
     this.ctr = [this.nonce[0], this.nonce[1], 0, 0]
-    if (start !== 0) this.incrementCTRBuffer(this.ctr, start)
+    if (start !== 0) this.incrementCTRBuffer(start / 16)
 
     this.mac = [this.ctr[0], this.ctr[1], this.ctr[0], this.ctr[1]]
     this.macs = []
@@ -229,12 +229,12 @@ class CTR {
   }
 
   // From https://github.com/jrnewell/crypto-aes-ctr/blob/77156490fcf32870215680c8db035c01390144b2/lib/index.js#L4-L18
-  incrementCTRBuffer (h32, cnt) {
+  incrementCTRBuffer (cnt) {
     const buf = new Buffer(16)
-    buf.writeInt32BE(h32[0], 0, true)
-    buf.writeInt32BE(h32[1], 4, true)
-    buf.writeInt32BE(h32[2], 8, true)
-    buf.writeInt32BE(h32[3], 12, true)
+    buf.writeInt32BE(this.ctr[0], 0, true)
+    buf.writeInt32BE(this.ctr[1], 4, true)
+    buf.writeInt32BE(this.ctr[2], 8, true)
+    buf.writeInt32BE(this.ctr[3], 12, true)
 
     const len = buf.length
     let i = len - 1
@@ -250,7 +250,7 @@ class CTR {
     }
 
     for (let i = 0; i < buf.length; i += 4) {
-      h32[(i / 4) & 3] ^= buf.readInt32BE(i, true)
+      this.ctr[(i / 4) & 3] ^= buf.readInt32BE(i, true)
     }
   }
 }
