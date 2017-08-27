@@ -132,10 +132,10 @@ class CTR {
     this.pos = start
 
     this.ctr = [this.nonce[0], this.nonce[1], 0, 0]
-    if (start !== 0) this.incrementCTRBuffer(start / 16)
-
     this.mac = [this.ctr[0], this.ctr[1], this.ctr[0], this.ctr[1]]
     this.macs = []
+
+    if (start !== 0) this.incrementCTRBuffer(start / 16)
   }
 
   condensedMac () {
