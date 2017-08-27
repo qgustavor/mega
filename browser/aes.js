@@ -228,29 +228,10 @@ class CTR {
     }
   }
 
-  // From https://github.com/jrnewell/crypto-aes-ctr/blob/77156490fcf32870215680c8db035c01390144b2/lib/index.js#L4-L18
   incrementCTRBuffer (cnt) {
-    const buf = new Buffer(16)
-    buf.writeInt32BE(this.ctr[0], 0, true)
-    buf.writeInt32BE(this.ctr[1], 4, true)
-    buf.writeInt32BE(this.ctr[2], 8, true)
-    buf.writeInt32BE(this.ctr[3], 12, true)
-
-    const len = buf.length
-    let i = len - 1
-    let mod
-    while (cnt !== 0) {
-      mod = (cnt + buf[i]) % 256
-      cnt = Math.floor((cnt + buf[i]) / 256)
-      buf[i] = mod
-      i -= 1
-      if (i < 0) {
-        i = len - 1
-      }
-    }
-
-    for (let i = 0; i < buf.length; i += 4) {
-      this.ctr[(i / 4) & 3] ^= buf.readInt32BE(i, true)
+    // todo: improve performance
+    for (let i = 0; i < cnt; i++) {
+      this.incrementCTR()
     }
   }
 }
