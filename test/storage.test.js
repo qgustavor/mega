@@ -5,7 +5,7 @@ import { testBuffer } from './test-utils.js'
 import { prepareKey, e64, AES } from '../lib/crypto'
 import crypto from 'crypto'
 
-import Storage from '../lib/Storage'
+import Storage from '../lib/storage'
 
 // Connections outside testing scope aren't permitted
 nock.disableNetConnect()
