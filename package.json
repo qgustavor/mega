@@ -24,9 +24,9 @@
     "build": "node build",
     "lint": "standard",
     "pretest": "node test/pre-test",
-    "test": "ava || npm run posttest",
+    "test": "npm run lint && ava || npm run posttest",
     "posttest": "node test/post-test",
-    "dist": "npm run lint && npm run build && npm run test"
+    "dist": "npm run test && npm run build"
   },
   "standard": {
     "ignore": [
