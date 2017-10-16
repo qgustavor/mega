@@ -42,31 +42,44 @@ test.cb('MEGA encrypt/decrypt streams', t => {
   encrypt.end(d0e.slice(100000, size))
 })
 
-test.cb('MEGA chunk decrypt', t => {
-  t.plan(5)
+test.cb('MEGA mid-stream decrypt', t => {
+  t.plan(3)
 
-  const chunks = 1024
+  // Create chunk buffer
   const chunkSize = 1024
-  const start = chunks * chunkSize
   const d0 = testBuffer(chunkSize)
   const d0e = Buffer.from(d0)
-  const key = testBuffer(24, 100, 7)
-  const encrypt = megaEncrypt(key)
 
+  // Set some variables
+  const chunks = 1024
+  const testChunkSize = 128
+  const start = (chunks + 1) * chunkSize - testChunkSize
+
+  // Generate an encrypt transform stream
+  const encrypt = megaEncrypt()
   stream2cb(encrypt, (err, buffer) => {
     t.ifError(err)
 
+    // After encrypting all the stream read the result
     const decryptPass = megaDecrypt(encrypt.key, { start })
     stream2cb(decryptPass, (err, buffer) => {
       t.ifError(err)
-      t.deepEqual(d0, buffer)
+
+      const expected = d0.slice(chunkSize - testChunkSize).toString('hex')
+      const got = buffer.toString('hex')
+      t.deepEqual(expected, got)
+      t.end()
     })
+
     decryptPass.end(buffer.slice(start))
   })
 
+  // Create a stream encrypting the original chunk many times
   for (let i = 0; i < chunks; i++) {
     encrypt.write(d0e)
   }
 
+  // As the d0e buffers could be changed by the encrypt stream
+  // add the original chunk at the end
   encrypt.end(Buffer.from(d0))
 })

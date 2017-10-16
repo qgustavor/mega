@@ -8,8 +8,17 @@
         "external-helpers"
       ]
     },
-    "test": {
+    "test-node": {
       "presets": [ "latest" ]
+    },
+    "test-browser": {
+      "presets": [ "latest" ],
+      "plugins": [
+        ["transform-rename-import", [
+          { "original": "./crypto/rsa", "replacement": "../browser/rsa.js"},
+          { "original": "./aes", "replacement": "../../browser/aes.js"}
+        ]]
+      ]
     }
   }
 }

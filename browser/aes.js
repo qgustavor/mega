@@ -211,14 +211,17 @@ class CTR {
   }
 
   incrementCTR () {
-    if (!(++this.ctr[3])) this.ctr[2]++
+    this.ctr[3]++
+
+    if (this.ctr[3] === 2147483648) {
+      this.ctr[3] = -2147483648
+    } else if (this.ctr[3] === 0) {
+      this.ctr[2]++
+    }
 
     this.pos += 16
     if (this.pos >= this.posNext) {
       this.macs.push(this.mac)
-      this.ctr[2] = (this.pos / 0x1000000000) >>> 0
-      this.ctr[3] = (this.pos / 0x10) >>> 0
-
       this.mac = [this.ctr[0], this.ctr[1], this.ctr[0], this.ctr[1]]
 
       if (this.increment < 1048576) {

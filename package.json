@@ -22,9 +22,10 @@
   ],
   "scripts": {
     "build": "cross-env BABEL_ENV=build node build",
-    "test": "npm run lint && npm run ava",
+    "test": "npm run lint && npm run ava-node && npm run ava-browser",
     "lint": "standard",
-    "ava": "cross-env BABEL_ENV=test ava",
+    "ava-node": "cross-env BABEL_ENV=test-node ava",
+    "ava-browser": "cross-env BABEL_ENV=test-browser ava",
     "dist": "npm run test && npm run build"
   },
   "standard": {
@@ -36,6 +37,7 @@
     "files": [
       "test/**/*.test.js"
     ],
+    "timeout": "2m",
     "require": [
       "babel-register",
       "babel-polyfill"
@@ -47,6 +49,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "babel-plugin-transform-rename-import": "^2.1.1",
     "combined-stream": "^1.0.5",
     "request": "^2.69.0",
     "secure-random": "^1.1.1",
