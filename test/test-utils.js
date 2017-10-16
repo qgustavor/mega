@@ -21,12 +21,9 @@ export function stream2cb (stream, cb) {
 }
 
 // Generate buffer with specific size.
-export function testBuffer (size, start, step) {
-  start = start || 0
-  step = step || 1
-
-  const buffer = new Buffer(size)
-  for (var i = 0; i < size; i++) {
+export function testBuffer (size, start = 0, step = 1) {
+  const buffer = Buffer.alloc(size)
+  for (let i = 0; i < size; i++) {
     buffer[i] = (start + i * step) % 255
   }
   return buffer

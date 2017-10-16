@@ -41,12 +41,12 @@ test.skip.cb('Should login normally', t => {
   const testEmail = 'test-account@example.com'
 
   // from prepareKey.test.js
-  const derivatedKey = new Buffer('c4589a459956887caf0b408635c3c03b', 'hex')
+  const derivatedKey = Buffer.from('c4589a459956887caf0b408635c3c03b', 'hex')
   const testAesKey = testBuffer(8)
   const generatedUh = e64(new AES(derivatedKey).stringhash(Buffer.from(testEmail)))
 
   // Some random generated private key
-  const rsaKey = new Buffer('A private RSA key, formatted in MEGA format', 'base64')
+  const rsaKey = Buffer.from('A private RSA key, formatted in MEGA format', 'base64')
 
   // AES key, encrypted with AES key generated from password
   const k = e64(crypto.createCipheriv('aes-128-ecb', derivatedKey, Buffer.alloc(0))

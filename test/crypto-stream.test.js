@@ -8,7 +8,7 @@ test.cb('MEGA encrypt/decrypt streams', t => {
 
   const size = 151511
   const d0 = testBuffer(size)
-  const d0e = new Buffer(d0)
+  const d0e = Buffer.from(d0)
   const key = testBuffer(24, 100, 7)
   const encrypt = megaEncrypt(key)
 
@@ -25,7 +25,7 @@ test.cb('MEGA encrypt/decrypt streams', t => {
     decryptPass.end(buffer)
 
     // Invalid mac.
-    const k2 = new Buffer(encrypt.key)
+    const k2 = Buffer.from(encrypt.key)
     k2[15] = ~k2[15] // flip one mac byte.
 
     const decryptFail = megaDecrypt(encrypt.key)
@@ -40,4 +40,33 @@ test.cb('MEGA encrypt/decrypt streams', t => {
   encrypt.write(d0e.slice(0, 50000))
   encrypt.write(d0e.slice(50000, 100000))
   encrypt.end(d0e.slice(100000, size))
+})
+
+test.cb('MEGA chunk decrypt', t => {
+  t.plan(5)
+
+  const chunks = 1024
+  const chunkSize = 1024
+  const start = chunks * chunkSize
+  const d0 = testBuffer(chunkSize)
+  const d0e = Buffer.from(d0)
+  const key = testBuffer(24, 100, 7)
+  const encrypt = megaEncrypt(key)
+
+  stream2cb(encrypt, (err, buffer) => {
+    t.ifError(err)
+
+    const decryptPass = megaDecrypt(encrypt.key, { start })
+    stream2cb(decryptPass, (err, buffer) => {
+      t.ifError(err)
+      t.deepEqual(d0, buffer)
+    })
+    decryptPass.end(buffer.slice(start))
+  })
+
+  for (let i = 0; i < chunks; i++) {
+    encrypt.write(d0e)
+  }
+
+  encrypt.end(Buffer.from(d0))
 })

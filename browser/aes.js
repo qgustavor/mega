@@ -19,7 +19,7 @@ export function prepareKey (password) {
     }
   }
 
-  const key = new Buffer(16)
+  const key = Buffer.allocUnsafe(16)
   for (i = 0; i < 4; i++) {
     key.writeInt32BE(pkey[i], i * 4, true)
   }
@@ -79,7 +79,7 @@ class AES {
 
     for (let i = 16384; i--;) h32 = this.aes.encrypt(h32)
 
-    const b = new Buffer(8)
+    const b = Buffer.allocUnsafe(8)
     b.writeInt32BE(h32[0], 0, true)
     b.writeInt32BE(h32[2], 4, true)
     return b
@@ -151,7 +151,7 @@ class CTR {
       mac = this.aes.encrypt(mac)
     }
 
-    const macBuffer = new Buffer(8)
+    const macBuffer = Buffer.allocUnsafe(8)
     macBuffer.writeInt32BE(mac[0] ^ mac[1], 0)
     macBuffer.writeInt32BE(mac[2] ^ mac[3], 4)
     return macBuffer

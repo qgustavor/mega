@@ -280,7 +280,7 @@ function runXhr (options) {
       offset += chunk.length
 
       if (chunk.length > 0) {
-        xhrStream.push(new Buffer(chunk, 'ascii'))
+        xhrStream.push(Buffer.from(chunk, 'ascii'))
       }
     }
 
@@ -353,7 +353,7 @@ function runFetch (options) {
         if (state.done) {
           fetchStream.push(null)
         } else {
-          fetchStream.push(new Buffer(state.value))
+          fetchStream.push(Buffer.from(state.value))
           readLoop()
         }
       })
