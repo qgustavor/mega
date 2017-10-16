@@ -1,10 +1,10 @@
 import test from 'ava'
-import { testBuffer, stream2cb } from './test-utils.js'
+import { testBuffer, stream2cb, sha1 } from './test-utils.js'
 import { megaEncrypt, megaDecrypt } from '../lib/crypto'
 
 // encrypt - decrypt
 test.cb('MEGA encrypt/decrypt streams', t => {
-  t.plan(5)
+  t.plan(6)
 
   const size = 151511
   const d0 = testBuffer(size)
@@ -15,6 +15,7 @@ test.cb('MEGA encrypt/decrypt streams', t => {
   stream2cb(encrypt, (err, buffer) => {
     t.ifError(err)
     t.is(encrypt.key.toString('hex'), 'b0b0909070707093e957d163217c2f3fd4dbe2e9f0f7fe0675f47bd299c3e9f2')
+    t.is(sha1(buffer), 'addb96c07ac4e6b66316b81530256c911b0b49d1')
 
     // Correct decrypt.
     const decryptPass = megaDecrypt(encrypt.key)
