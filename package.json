@@ -51,7 +51,7 @@
   "dependencies": {
     "babel-plugin-transform-rename-import": "^2.1.1",
     "combined-stream": "^1.0.5",
-    "request": "^2.69.0",
+    "request": "^2.85.0",
     "secure-random": "^1.1.1",
     "stream-combiner": "^0.2.2",
     "stream-skip": "^1.0.2",
