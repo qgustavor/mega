@@ -1,23 +1,17 @@
 {
   "env": {
-    "build": {
-      "presets": [
-        ["latest", { "es2015": { "modules": false } }]
-      ],
-      "plugins": [
-        "external-helpers"
-      ]
-    },
     "test-node": {
-      "presets": [ "latest" ]
+      "presets": [ "@babel/preset-env" ]
     },
     "test-browser": {
-      "presets": [ "latest" ],
+      "presets": [ "@babel/preset-env" ],
       "plugins": [
-        ["transform-rename-import", [
-          { "original": "./crypto/rsa", "replacement": "../browser/rsa.js"},
-          { "original": "./aes", "replacement": "../../browser/aes.js"}
-        ]]
+        ["transform-rename-import", {
+          "replacements": [
+            { "original": "./crypto/rsa", "replacement": "../browser/rsa.js"},
+            { "original": "./aes", "replacement": "../../browser/aes.js"}
+          ]
+        }]
       ]
     }
   }

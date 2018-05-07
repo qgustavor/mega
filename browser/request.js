@@ -341,8 +341,8 @@ function runFetch (options) {
 
     if (options.callback) {
       response.clone()[options.json ? 'json' : 'text']()
-      .then(data => options.callback(null, xhr, data))
-      .catch(error => options.callback(error))
+        .then(data => options.callback(null, xhr, data))
+        .catch(error => options.callback(error))
     }
 
     const bodyStream = response.body.getReader()
