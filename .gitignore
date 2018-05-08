@@ -51,3 +51,6 @@ jspm_packages
 
 # Dist files are available via NPM, in order to avoid git noise
 dist
+
+# Using package-lock.json introduces cross-platform issues
+/package-lock.json
