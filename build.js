@@ -21,7 +21,7 @@ const formats = [{
   minifyResult: true,
   entryPoint: 'lib/mega.js',
   bundleConfig: { format: 'umd', name: 'mega' },
-  targets: { browsers: '>1%' }
+  targets: { browsers: 'defaults' }
 }, {
   // to be loaded with ES Module compatible loader
   name: 'browser-es',
