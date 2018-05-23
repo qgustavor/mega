@@ -127,13 +127,13 @@ class AES {
     }
 
     for (x = xInv = 0; !sbox[x]; x ^= x2 || 1, xInv = th[xInv] || 1) {
-     // Compute sbox
+      // Compute sbox
       s = xInv ^ xInv << 1 ^ xInv << 2 ^ xInv << 3 ^ xInv << 4
       s = s >> 8 ^ s & 255 ^ 99
       sbox[x] = s
       sboxInv[s] = x
 
-     // Compute MixColumns
+      // Compute MixColumns
       x8 = d[x4 = d[x2 = d[x]]]
       tDec = x8 * 0x1010101 ^ x4 * 0x10001 ^ x2 * 0x101 ^ x * 0x1010100
       tEnc = d[s] * 0x101 ^ s * 0x1010100
@@ -163,8 +163,8 @@ class AES {
       throw new Error('invalid aes block size')
     }
 
-    const // state variables a,b,c,d are loaded with pre-whitened data
-    key = this._key[dir]
+    // state variables a,b,c,d are loaded with pre-whitened data
+    const key = this._key[dir]
 
     let a = input[0] ^ key[0]
     let b = input[dir ? 3 : 1] ^ key[1]
@@ -178,8 +178,8 @@ class AES {
     let kIndex = 4
     const out = [0, 0, 0, 0]
 
-    const // load up the tables
-    table = this._tables[dir]
+    // load up the tables
+    const table = this._tables[dir]
 
     const t0 = table[0]
     const t1 = table[1]

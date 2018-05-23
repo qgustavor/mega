@@ -237,7 +237,7 @@ function bdiv (a, b) {
     let topx = toppart(x, i, 3)
     while (q[m] * top > topx) q[m]--
 
-  // x-=q[m]*y*b^m
+    // x-=q[m]*y*b^m
     y2 = y2.slice(1)
     x2 = bsub(x, bmul([q[m]], y2))
     if (x2.length === 0) {
@@ -246,7 +246,7 @@ function bdiv (a, b) {
     }
     x = x2
   }
- // de-normalize
+  // de-normalize
   if (shift) {
     for (i = 0; i < x.length - 1; i++) x[i] = (x[i] >> shift) | ((x[i + 1] << shift2) & bm)
     x[x.length - 1] >>= shift
