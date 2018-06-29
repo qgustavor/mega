@@ -74,7 +74,12 @@ class AES {
   stringhash (buffer) {
     let h32 = [0, 0, 0, 0]
     for (let i = 0; i < buffer.length; i += 4) {
-      h32[(i / 4) & 3] ^= buffer.readInt32BE(i)
+      if (buffer.length - i < 4) {
+        const len = buffer.length - i
+        h32[i / 4 & 3] ^= buffer.readIntBE(i, len) << (4 - len) * 8
+      } else {
+        h32[i / 4 & 3] ^= buffer.readInt32BE(i)
+      }
     }
 
     for (let i = 16384; i--;) h32 = this.aes.encrypt(h32)

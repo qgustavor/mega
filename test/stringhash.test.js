@@ -6,7 +6,15 @@ import { prepareKey, AES } from '../lib/crypto'
 const derivedKey = prepareKey(testBuffer(8))
 const aes = new AES(derivedKey)
 
-test('stringhash - 8 byte email', t => {
+test('stringhash - 10 byte email', t => {
+  const emailBuffer = testBuffer(10)
+  const hash = aes.stringhash(emailBuffer)
+  const hashAsString = hash.toString('hex')
+
+  t.is(hashAsString, '9e791646c66840b5')
+})
+
+test('stringhash - 16 byte email', t => {
   const emailBuffer = testBuffer(16)
   const hash = aes.stringhash(emailBuffer)
   const hashAsString = hash.toString('hex')
