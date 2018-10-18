@@ -50,30 +50,30 @@
   "license": "MIT",
   "dependencies": {
     "combined-stream": "^1.0.5",
-    "request": "^2.85.0",
+    "request": "^2.88.0",
     "secure-random": "^1.1.1",
     "stream-combiner": "^0.2.2",
     "stream-skip": "^1.0.2",
     "through": "^2.1.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0-beta.46",
+    "@babel/core": "^7.1.0",
     "@babel/polyfill": "^7.0.0-beta.46",
-    "@babel/preset-env": "^7.0.0-beta.46",
+    "@babel/preset-env": "^7.1.0",
     "@babel/register": "^7.0.0-beta.46",
-    "ava": "^0.17.0",
+    "ava": "^0.25.0",
     "babel-plugin-transform-rename-import": "^2.1.1",
     "babel-preset-minify": "^0.4.1",
     "cross-env": "^5.1.4",
     "nock": "^9.0.2",
     "rollup": "^0.58.2",
-    "rollup-plugin-babel": "^4.0.0-beta.4",
+    "rollup-plugin-babel": "^4.0.3",
     "rollup-plugin-commonjs": "^8.4.1",
     "rollup-plugin-json": "^2.0.2",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-globals": "^1.2.0",
     "rollup-plugin-node-resolve": "^3.3.0",
-    "rollup-plugin-replace": "^2.0.0",
+    "rollup-plugin-replace": "^2.1.0",
     "standard": "^11.0.1"
   }
 }
