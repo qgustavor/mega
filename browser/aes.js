@@ -28,6 +28,7 @@ export function prepareKey (password) {
 
 class AES {
   constructor (key) {
+    if (key.length !== 16) throw Error('Wrong key length. Key must be 128bit.')
     const a32 = []
     for (let i = 0; i < 4; i++) a32[i] = key.readInt32BE(i * 4)
     this.aes = new SjclAES(a32)

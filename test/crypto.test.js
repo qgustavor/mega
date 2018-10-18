@@ -15,3 +15,16 @@ test('AES-CBC', t => {
   aes.decryptCBC(d0d)
   t.deepEqual(d0, d0d)
 })
+
+test('AES wrong key size', t => {
+  let aes
+
+  t.throws(() => {
+    aes = new AES(testBuffer(8))
+  }, Error)
+  t.throws(() => {
+    aes = new AES(testBuffer(32))
+  }, Error)
+
+  t.falsy(aes)
+})
