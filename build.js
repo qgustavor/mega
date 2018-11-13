@@ -12,6 +12,7 @@ const fs = require('fs')
 
 // to aid debugging
 const sourceMapEnabled = process.argv.includes('--generate-sourcemap')
+const formatFilters = process.argv.filter(e => e.startsWith('--only=')).map(e => e.substr(7))
 
 const formats = [{
   // to be loaded with <script>
@@ -150,6 +151,9 @@ function doBuild () {
   console.error('Building 0 of %d', formats.length)
 
   return formats.reduce((last, format, index) => last.then(() => {
+    // Filter formats if --only=format arguments were used
+    if (formatFilters.length > 0 && !formatFilters.includes(format.name)) return
+
     // return the previous line (A), then to the first character (G), clean the line (2K) and print state
     console.log('\x1b[A\x1b[G\x1b[2KBuilding %d of %d: %s', index + 1, formats.length, format.name)
 
