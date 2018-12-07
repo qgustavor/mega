@@ -26,6 +26,26 @@ export function prepareKey (password) {
   return key
 }
 
+// The same function but for version 2 accounts
+export function prepareKeyV2 (password, info, cb) {
+  const salt = Buffer.from(info.s, 'base64')
+  const iterations = 100000
+  const digest = 'SHA-512'
+
+  window.crypto.subtle.importKey('raw', password, {
+    name: 'PBKDF2'
+  }, false, 'deriveKey').then(key => {
+    return window.crypto.subtle.deriveBits({
+      name: 'PBKDF2',
+      salt,
+      iterations,
+      hash: {name: digest}
+    }, key, 256)
+  }).then(result => {
+    cb(null, Buffer.from(result))
+  }).catch(cb)
+}
+
 class AES {
   constructor (key) {
     if (key.length !== 16) throw Error('Wrong key length. Key must be 128bit.')

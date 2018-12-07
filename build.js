@@ -6,7 +6,7 @@ const globals = require('rollup-plugin-node-globals')
 const json = require('rollup-plugin-json')
 const nodeResolve = require('rollup-plugin-node-resolve')
 const replace = require('rollup-plugin-replace')
-const babelTransform = require('babel-core').transform
+const babelTransform = require('@babel/core').transform
 
 const fs = require('fs')
 
@@ -97,7 +97,7 @@ const doBundle = (format) => {
       format.bundleExternals && builtins(),
       format.bundleExternals && globals(),
       replace({ values: {
-        'IS_BROWSER_BUILD': '' + format.name.includes('browser')
+        'process.env.IS_BROWSER_BUILD': '' + format.name.includes('browser')
       }}),
       format.bundleExternals && nodeResolve({
         jsnext: true,
@@ -130,7 +130,7 @@ const doBundle = (format) => {
         // Keep pure annotations on ES modules
         shouldPrintComment: options.format === 'es' ? comment => {
           return comment === '#__PURE__'
-        } : null,
+        } : undefined,
         babelrc: false,
         presets: [['minify', {
           mangle: {
