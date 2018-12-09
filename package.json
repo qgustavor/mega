@@ -65,7 +65,7 @@
     "babel-plugin-transform-rename-import": "^2.1.1",
     "babel-preset-minify": "^0.4.1",
     "cross-env": "^5.1.4",
-    "mega-mock": "^0.1.0",
+    "mega-mock": "^0.2.0",
     "rollup": "^0.58.2",
     "rollup-plugin-babel": "^4.0.3",
     "rollup-plugin-commonjs": "^8.4.1",

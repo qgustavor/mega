@@ -93,12 +93,12 @@ test.serial.cb('Should upload streams', t => {
     t.is(userFiles.length, 2)
     t.is(userFiles[1].h, file.nodeId)
     t.is(userFiles[1].a, 'FLGDXkSOt1w9Xg46shAgJpz3_n2dCMVDQm4PoIgizCs')
-    t.is(userFiles[1].k, 'FjV5rwRHjdUOmDi5kX93XhY1ea8ER43VDpg4uZF_d14')
+    t.is(userFiles[1].k, '1m-R5ICCi0KRsC_IO_rsatZvkeSAgotCkbAvyDv67Go')
 
     t.end()
   })
 
-  uploadStream.end(Buffer.alloc(16))
+  uploadStream.end(Buffer.alloc(1024 * 1024))
 })
 
 test.serial.cb('Should share files', t => {
@@ -131,6 +131,124 @@ test.serial.cb('Should download shared files', t => {
     t.deepEqual(file.attributes, {n: 'test file'})
 
     file.download((error, data) => {
+      if (error) throw error
+      t.deepEqual(data, Buffer.alloc(16))
+      t.end()
+    })
+  })
+})
+
+test.serial.cb('Should create folders', t => {
+  const storage = t.context.storage
+  const server = t.context.server
+
+  storage.mkdir({
+    name: 'test folder 1',
+    key: Buffer.alloc(32)
+  }, (error, folder) => {
+    if (error) throw error
+
+    const userFiles = server.state.users.get('jCf2Pc0pLCU').files
+    t.is(userFiles.length, 3)
+    t.is(userFiles[2].h, folder.nodeId)
+    t.is(userFiles[2].a, 'FLGDXkSOt1w9Xg46shAgJi6dazxORZOSu6Tjbu3RcIU')
+    t.is(userFiles[2].k, 'MPFJW7WnKQxOAyhiHAOWgDDxSVu1pykMTgMoYhwDloA')
+    t.end()
+  })
+})
+
+test.serial.cb('Should share folders', t => {
+  const storage = t.context.storage
+  const server = t.context.server
+
+  const userFiles = server.state.users.get('jCf2Pc0pLCU').files
+
+  storage.files[userFiles[2].h].link({
+    key: Buffer.alloc(16)
+  }, (error, link) => {
+    if (error) throw error
+    t.is(link, 'https://mega.nz/#F!AAAAAAAG!AAAAAAAAAAAAAAAAAAAAAA')
+    t.end()
+  })
+})
+
+test.serial.cb('Should create folders in shared folders', t => {
+  const storage = t.context.storage
+  const server = t.context.server
+
+  const userFiles = server.state.users.get('jCf2Pc0pLCU').files
+
+  storage.files[userFiles[2].h].mkdir({
+    name: 'test folder 2',
+    key: Buffer.alloc(32)
+  }, (error, folder) => {
+    if (error) throw error
+
+    const userFiles = server.state.users.get('jCf2Pc0pLCU').files
+    t.is(userFiles.length, 4)
+    t.is(userFiles[3].h, folder.nodeId)
+    t.is(userFiles[3].a, 'FLGDXkSOt1w9Xg46shAgJhYO0ahp-pTkfjVlEBMNYk8')
+    t.is(userFiles[3].k, 'MPFJW7WnKQxOAyhiHAOWgDDxSVu1pykMTgMoYhwDloA')
+    t.end()
+  })
+})
+
+// See issue #45
+test.serial.cb('Should upload files in folders in shared folders', t => {
+  const storage = t.context.storage
+  const server = t.context.server
+
+  const userFiles = server.state.users.get('jCf2Pc0pLCU').files
+
+  storage.files[userFiles[3].h].upload({
+    name: 'test file',
+    key: Buffer.alloc(24)
+  }, Buffer.alloc(16), (error, file) => {
+    if (error) throw error
+
+    const userFiles = server.state.users.get('jCf2Pc0pLCU').files
+    t.is(userFiles.length, 5)
+    t.is(userFiles[4].h, file.nodeId)
+    t.is(userFiles[4].a, 'FLGDXkSOt1w9Xg46shAgJpz3_n2dCMVDQm4PoIgizCs')
+    t.is(userFiles[4].k, 'FjV5rwRHjdUOmDi5kX93XhY1ea8ER43VDpg4uZF_d14')
+
+    t.end()
+  })
+})
+
+// Skipped as mega-mock doesn't handle keys properly when sharing yet
+test.serial.cb.skip('Should download files shared in folders', t => {
+  const storage = t.context.storage
+
+  const folder = File.fromURL('https://mega.nz/#F!AAAAAAAG!AAAAAAAAAAAAAAAAAAAAAA')
+  folder.api.gateway = storage.api.gateway
+
+  folder.loadAttributes((error, loadedFile) => {
+    if (error) throw error
+    t.is(folder, loadedFile)
+
+    t.falsy(folder.size)
+    t.is(folder.directory, true)
+    t.is(folder.name, 'test folder 1')
+    t.deepEqual(folder.attributes, {n: 'test folder 1'})
+    t.truthy(folder.children)
+    t.is(folder.children.length, 1)
+
+    let children = folder.children[0]
+    t.falsy(children.size)
+    t.is(children.directory, true)
+    t.is(children.name, 'test folder 2')
+    t.deepEqual(children.attributes, {n: 'test folder 2'})
+    t.truthy(children.children)
+    t.is(children.children.length, 1)
+
+    children = folder.children[0]
+    t.is(children.size, 16)
+    t.is(children.directory, false)
+    t.is(children.name, 'test file')
+    t.deepEqual(children.attributes, {n: 'test file'})
+
+    children.download((error, data) => {
       if (error) throw error
       t.deepEqual(data, Buffer.alloc(16))
       t.end()
