@@ -15,17 +15,18 @@ npm install megajs
 
 ```javascript
 const mega = require('megajs') // or
-import mega from 'megajs' // or
-// load it using <script> and use exported `mega` global directly
+import mega from 'megajs'
 ```
 
-**API documentation and examples check Wiki: https://github.com/qgustavor/mega/wiki**
+You can also load it in a browser using `<script src="https://unpkg.com/megajs/dist/main.node-cjs.js"></script>`, which exports the library in the `mega` global variable. You can also use `import * as mega from 'https://unpkg.com/megajs/dist/main.browser-es.js'`.
+
+**For more details, API documentation and examples check wiki: https://github.com/qgustavor/mega/wiki**
 
 The bundled files are available via [npm](https://www.npmjs.com/package/megajs) and [UNPKG](https://unpkg.com/megajs/dist/).
 
 **For CLI usage check MEGAJS CLI**: https://github.com/qgustavor/megajs-cli
 
-## Implementation notes:
+## Implementation notes
 
 Only part of the file related API is implemented. For now implementing contact and chat functions seems out of scope.
 
@@ -33,13 +34,7 @@ Cryptography is mostly ported from browser code. In Node some parts are optimize
 
 This module works in the browser: the "main.browser-umd.js" is a build using the UMD format where Node specific modules, like crypto and request modules, were replaced with browser equivalents. If you want to use tree shaking then use the "main.browser-es.js" bundle. This module wasn't tested in other environments.
 
-## Warning: unstable!
-
-As this library is a work in progress sometimes things may break, most because the code don't have a good coverage.
-
-Breaking changes are avoided when possible, but then **don't use any function that's not documented** as those can be removed or replaced any time.
-
-## Fork objectives:
+## Fork objectives
 
 This package started as a fork, with the following objectives:
 
@@ -52,3 +47,7 @@ This package started as a fork, with the following objectives:
 Request package was replaced with a shim based in [browser-request](https://www.npmjs.com/package/browser-request) and [xhr-stream](https://www.npmjs.com/package/xhr-stream), which additional changes in order to make it work inside Service Workers. Crypto was replaced with [secure-random](https://www.npmjs.com/package/secure-random).
 
 As there were many changes there isn't any plan to merge those changes into the original library, unless the original author accept those massive changes. That's why I put "js" in the name, which is silly because both libraries use JavaScript. At least it's better than other ideas I had, like "mega2", "mega-es" and "modern-mega".
+
+## Contributing
+
+When contributing fork the project, clone it, run `npm install`, change the library as you want, run tests using `npm run test` and build the bundled versions using `npm run build`. Before creating a pull request, *please*, run tests.
