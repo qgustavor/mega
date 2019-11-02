@@ -144,7 +144,7 @@ test.serial.cb('Should create folders', t => {
 
   storage.mkdir({
     name: 'test folder 1',
-    key: Buffer.alloc(32)
+    key: Buffer.alloc(16)
   }, (error, folder) => {
     if (error) throw error
 
@@ -152,7 +152,7 @@ test.serial.cb('Should create folders', t => {
     t.is(userFiles.length, 3)
     t.is(userFiles[2].h, folder.nodeId)
     t.is(userFiles[2].a, 'FLGDXkSOt1w9Xg46shAgJi6dazxORZOSu6Tjbu3RcIU')
-    t.is(userFiles[2].k, 'MPFJW7WnKQxOAyhiHAOWgDDxSVu1pykMTgMoYhwDloA')
+    t.is(userFiles[2].k, 'MPFJW7WnKQxOAyhiHAOWgA')
     t.end()
   })
 })
@@ -180,7 +180,7 @@ test.serial.cb('Should create folders in shared folders', t => {
 
   storage.files[userFiles[2].h].mkdir({
     name: 'test folder 2',
-    key: Buffer.alloc(32)
+    key: Buffer.alloc(16)
   }, (error, folder) => {
     if (error) throw error
 
@@ -188,7 +188,7 @@ test.serial.cb('Should create folders in shared folders', t => {
     t.is(userFiles.length, 4)
     t.is(userFiles[3].h, folder.nodeId)
     t.is(userFiles[3].a, 'FLGDXkSOt1w9Xg46shAgJhYO0ahp-pTkfjVlEBMNYk8')
-    t.is(userFiles[3].k, 'MPFJW7WnKQxOAyhiHAOWgDDxSVu1pykMTgMoYhwDloA')
+    t.is(userFiles[3].k, 'MPFJW7WnKQxOAyhiHAOWgA')
     t.end()
   })
 })
