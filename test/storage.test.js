@@ -70,6 +70,9 @@ test.serial.cb('Should upload buffers', t => {
     t.is(userFiles.length, 1)
     t.is(userFiles[0].h, file.nodeId)
 
+    // This is the handler of the storage root in the mock server implementation
+    t.is(userFiles[0].p, 'handler2')
+
     // As the key is fixed so is the uploaded attribute
     t.is(userFiles[0].a, 'FLGDXkSOt1w9Xg46shAgJpz3_n2dCMVDQm4PoIgizCs')
     t.is(userFiles[0].k, 'FjV5rwRHjdUOmDi5kX93XhY1ea8ER43VDpg4uZF_d14')
@@ -92,6 +95,7 @@ test.serial.cb('Should upload streams', t => {
     const userFiles = server.state.users.get('jCf2Pc0pLCU').files
     t.is(userFiles.length, 2)
     t.is(userFiles[1].h, file.nodeId)
+    t.is(userFiles[1].p, 'handler2')
     t.is(userFiles[1].a, 'FLGDXkSOt1w9Xg46shAgJpz3_n2dCMVDQm4PoIgizCs')
     t.is(userFiles[1].k, '1m-R5ICCi0KRsC_IO_rsatZvkeSAgotCkbAvyDv67Go')
 
@@ -151,6 +155,7 @@ test.serial.cb('Should create folders', t => {
     const userFiles = server.state.users.get('jCf2Pc0pLCU').files
     t.is(userFiles.length, 3)
     t.is(userFiles[2].h, folder.nodeId)
+    t.is(userFiles[2].p, 'handler2')
     t.is(userFiles[2].a, 'FLGDXkSOt1w9Xg46shAgJi6dazxORZOSu6Tjbu3RcIU')
     t.is(userFiles[2].k, 'MPFJW7WnKQxOAyhiHAOWgA')
     t.end()
@@ -187,6 +192,7 @@ test.serial.cb('Should create folders in shared folders', t => {
     const userFiles = server.state.users.get('jCf2Pc0pLCU').files
     t.is(userFiles.length, 4)
     t.is(userFiles[3].h, folder.nodeId)
+    t.is(userFiles[3].p, userFiles[2].h)
     t.is(userFiles[3].a, 'FLGDXkSOt1w9Xg46shAgJhYO0ahp-pTkfjVlEBMNYk8')
     t.is(userFiles[3].k, 'MPFJW7WnKQxOAyhiHAOWgA')
     t.end()
@@ -209,6 +215,7 @@ test.serial.cb('Should upload files in folders in shared folders', t => {
     const userFiles = server.state.users.get('jCf2Pc0pLCU').files
     t.is(userFiles.length, 5)
     t.is(userFiles[4].h, file.nodeId)
+    t.is(userFiles[4].p, userFiles[3].h)
     t.is(userFiles[4].a, 'FLGDXkSOt1w9Xg46shAgJpz3_n2dCMVDQm4PoIgizCs')
     t.is(userFiles[4].k, 'FjV5rwRHjdUOmDi5kX93XhY1ea8ER43VDpg4uZF_d14')
 
@@ -271,7 +278,7 @@ test.serial.cb('Should upload streams on created folders', t => {
     const userFiles = server.state.users.get('jCf2Pc0pLCU').files
     t.is(userFiles.length, 6)
     t.is(userFiles[5].h, file.nodeId)
-    t.is(userFiles[5].t, userFiles[3].h)
+    t.is(userFiles[5].p, userFiles[3].h)
     t.is(userFiles[5].a, 'FLGDXkSOt1w9Xg46shAgJpz3_n2dCMVDQm4PoIgizCs')
     t.is(userFiles[5].k, '1m-R5ICCi0KRsC_IO_rsatZvkeSAgotCkbAvyDv67Go')
 
