@@ -263,31 +263,6 @@ test.serial.cb.skip('Should download files shared in folders', t => {
   })
 })
 
-test.serial.cb('Should upload streams on created folders', t => {
-  const storage = t.context.storage
-  const server = t.context.server
-
-  const userFiles = server.state.users.get('jCf2Pc0pLCU').files
-  const uploadStream = storage.files[userFiles[3].h].upload({
-    name: 'test file',
-    key: Buffer.alloc(24)
-  })
-
-  uploadStream.on('error', t.fail)
-  uploadStream.on('complete', file => {
-    const userFiles = server.state.users.get('jCf2Pc0pLCU').files
-    t.is(userFiles.length, 6)
-    t.is(userFiles[5].h, file.nodeId)
-    t.is(userFiles[5].p, userFiles[3].h)
-    t.is(userFiles[5].a, 'FLGDXkSOt1w9Xg46shAgJpz3_n2dCMVDQm4PoIgizCs')
-    t.is(userFiles[5].k, '1m-R5ICCi0KRsC_IO_rsatZvkeSAgotCkbAvyDv67Go')
-
-    t.end()
-  })
-
-  uploadStream.end(Buffer.alloc(1024 * 1024))
-})
-
 test.serial.after.cb(t => {
   t.context.cleanup()
   t.context.server.close(t.end)
