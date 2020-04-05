@@ -105,7 +105,7 @@ test.serial.cb('Should upload streams', t => {
   uploadStream.end(Buffer.alloc(1024 * 1024))
 })
 
-test.serial.cb('Should share files', t => {
+test.serial.cb('Should share files (old format)', t => {
   const storage = t.context.storage
   const server = t.context.server
 
@@ -119,10 +119,48 @@ test.serial.cb('Should share files', t => {
   })
 })
 
-test.serial.cb('Should download shared files', t => {
+// Skipped as mega-mock doesn't handle new url format yet
+test.serial.skip('Should share files (new format)', t => {
+  const storage = t.context.storage
+  const server = t.context.server
+
+  const userFiles = server.state.users.get('jCf2Pc0pLCU').files
+  const file = storage.files[userFiles[0].h]
+
+  file.link((error, link) => {
+    if (error) throw error
+    t.is(link, 'https://mega.nz/file/AAAAAAAE#AAAAAAAAAACldyOdMzqeRgAAAAAAAAAApXcjnTM6nkY')
+    t.end()
+  })
+})
+
+test.serial.cb('Should download shared files (old format)', t => {
   const storage = t.context.storage
 
   const file = File.fromURL('https://mega.nz/#!AAAAAAAE!AAAAAAAAAACldyOdMzqeRgAAAAAAAAAApXcjnTM6nkY')
+  file.api.gateway = storage.api.gateway
+
+  file.loadAttributes((error, loadedFile) => {
+    if (error) throw error
+    t.is(file, loadedFile)
+
+    t.is(file.size, 16)
+    t.is(file.directory, false)
+    t.is(file.name, 'test file')
+    t.deepEqual(file.attributes, {n: 'test file'})
+
+    file.download((error, data) => {
+      if (error) throw error
+      t.deepEqual(data, Buffer.alloc(16))
+      t.end()
+    })
+  })
+})
+
+test.serial.cb('Should download shared files (new format)', t => {
+  const storage = t.context.storage
+
+  const file = File.fromURL('https://mega.nz/file/AAAAAAAE#AAAAAAAAAACldyOdMzqeRgAAAAAAAAAApXcjnTM6nkY')
   file.api.gateway = storage.api.gateway
 
   file.loadAttributes((error, loadedFile) => {

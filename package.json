@@ -1,6 +1,6 @@
 {
   "name": "megajs",
-  "version": "0.16.1",
+  "version": "0.16.2",
   "description": "Unofficial JavaScript SDK for MEGA",
   "main": "dist/main.node-cjs.js",
   "module": "dist/main.node-es.js",
@@ -24,6 +24,7 @@
     "build": "cross-env BABEL_ENV=build node build",
     "test": "npm run lint && npm run ava-node && npm run ava-browser",
     "lint": "standard",
+    "lint-fix": "standard --fix",
     "ava-node": "cross-env BABEL_ENV=test-node ava",
     "ava-browser": "cross-env BABEL_ENV=test-browser ava",
     "dist": "npm run test && npm run build"
