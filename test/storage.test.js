@@ -12,6 +12,7 @@ test.serial.before.cb(t => {
     unsafeCleanup: true
   }, (err, path, cleanupCallback) => {
     if (err) throw err
+
     const server = megamock({
       dataFolder: path,
       visualize: false
@@ -105,22 +106,7 @@ test.serial.cb('Should upload streams', t => {
   uploadStream.end(Buffer.alloc(1024 * 1024))
 })
 
-test.serial.cb('Should share files (old format)', t => {
-  const storage = t.context.storage
-  const server = t.context.server
-
-  const userFiles = server.state.users.get('jCf2Pc0pLCU').files
-  const file = storage.files[userFiles[0].h]
-
-  file.link((error, link) => {
-    if (error) throw error
-    t.is(link, 'https://mega.nz/#!AAAAAAAE!AAAAAAAAAACldyOdMzqeRgAAAAAAAAAApXcjnTM6nkY')
-    t.end()
-  })
-})
-
-// Skipped as mega-mock doesn't handle new url format yet
-test.serial.skip('Should share files (new format)', t => {
+test.serial.cb('Should share files', t => {
   const storage = t.context.storage
   const server = t.context.server
 
@@ -210,7 +196,7 @@ test.serial.cb('Should share folders', t => {
     key: Buffer.alloc(16)
   }, (error, link) => {
     if (error) throw error
-    t.is(link, 'https://mega.nz/#F!AAAAAAAG!AAAAAAAAAAAAAAAAAAAAAA')
+    t.is(link, 'https://mega.nz/folder/AAAAAAAG#AAAAAAAAAAAAAAAAAAAAAA')
     t.end()
   })
 })
