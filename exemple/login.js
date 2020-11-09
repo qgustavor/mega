@@ -32,3 +32,6 @@ function print(f, indent) {
 
 //include renema module to rename a file/directory
 require("./rename")(storage);
+
+//include create remote directory module
+require("./mkdir")(storage);
