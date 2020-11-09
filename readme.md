@@ -48,6 +48,72 @@ Request package was replaced with a shim based in [browser-request](https://www.
 
 As there were many changes there isn't any plan to merge those changes into the original library, unless the original author accept those massive changes. That's why I put "js" in the name, which is silly because both libraries use JavaScript. At least it's better than other ideas I had, like "mega2", "mega-es" and "modern-mega".
 
+## Integration
+
+**Login to MEGA account
+
+```javascript
+// credential to connect to your mega account
+  const option={
+    email:"email@mail.co",
+    password:"*********"
+  };
+  //login to mega account
+  const storage= mega(option,function(err,file){
+    if(err) throw err;
+    //display all file/folder form your MEGA account
+    console.log("login success full");
+  })
+  
+```
+
+**Display Files/Directories
+
+```javascript
+//display your files and directories form your aacounts
+  storage.mounts.map(function(f){
+    console.log(f)
+  });
+  function print(f, indent) {
+    let dirFil = f.directory ? 'Directory' : 'File';
+    let dir = {
+        [dirFil]: f.name,
+        "size": f.directory ? '' : f.size + 'B',
+        "date": new Date(f.timestamp * 1000),
+        "nodeID": f.nodeId,
+        "child": !f.children ? [] : f.children.map(function (f) {
+            return print(f);
+        })
+    };
+    return dir;
+}
+```
+
+**Upload Files to your account
+
+```javascript
+  let filepath = "input.txt";
+    let read = fs.createReadStream(filepath);
+    let up = storage.upload({
+            name: path.basename(filepath),
+            size: fs.statSync(filepath).size, // removing this causes data buffering.
+            // attributes:{n:dir}
+           // target: { // use this to specified the folder target where to upload the file
+           //    nodeId: '' // add nodeId of the folder
+           // }
+        },
+        fs.readFileSync(filepath),
+        function (err, file) {
+            if (err) throw err;
+            console.log('Uploaded', file.name, file.size + 'B');
+
+            file.link(function (err, link) {
+                if (err) throw err
+                console.log('Download from:', link);
+            });
+        });
+```
+
 ## Contributing
 
 When contributing fork the project, clone it, run `npm install`, change the library as you want, run tests using `npm run test` and build the bundled versions using `npm run build`. Before creating a pull request, *please*, run tests.
