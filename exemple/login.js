@@ -29,3 +29,6 @@ function print(f, indent) {
     };
     return dir;
 }
+
+//include renema module to rename a file/directory
+require("./rename")(storage);
