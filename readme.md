@@ -49,7 +49,9 @@ Request package was replaced with a shim based in [browser-request](https://www.
 As there were many changes there isn't any plan to merge those changes into the original library, unless the original author accept those massive changes. That's why I put "js" in the name, which is silly because both libraries use JavaScript. At least it's better than other ideas I had, like "mega2", "mega-es" and "modern-mega".
 
 ## Integration
+
 **Login to MEGA account
+
 ```javascript
 // credential to connect to your mega account
   const option={
@@ -64,6 +66,7 @@ As there were many changes there isn't any plan to merge those changes into the 
   })
   
 ```
+
 **Display Files/Directories
 
 ```javascript
@@ -84,6 +87,31 @@ As there were many changes there isn't any plan to merge those changes into the 
     };
     return dir;
 }
+```
+
+**Upload Files to your account
+
+```javascript
+  let filepath = "input.txt";
+    let read = fs.createReadStream(filepath);
+    let up = storage.upload({
+            name: path.basename(filepath),
+            size: fs.statSync(filepath).size, // removing this causes data buffering.
+            // attributes:{n:dir}
+           // target: { // use this to specified the folder target where to upload the file
+           //    nodeId: '' // add nodeId of the folder
+           // }
+        },
+        fs.readFileSync(filepath),
+        function (err, file) {
+            if (err) throw err;
+            console.log('Uploaded', file.name, file.size + 'B');
+
+            file.link(function (err, link) {
+                if (err) throw err
+                console.log('Download from:', link);
+            });
+        });
 ```
 
 ## Contributing
