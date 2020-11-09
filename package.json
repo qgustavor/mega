@@ -62,7 +62,7 @@
     "@babel/polyfill": "^7.10.1",
     "@babel/preset-env": "^7.10.2",
     "@babel/register": "^7.10.1",
-    "ava": "1.0.0-rc.2",
+    "ava": "^3.13.0",
     "babel-plugin-transform-rename-import": "^2.3.0",
     "babel-preset-minify": "^0.4.3",
     "cross-env": "^5.2.1",
