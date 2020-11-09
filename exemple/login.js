@@ -38,3 +38,9 @@ require("./mkdir")(storage);
 
 //include delete remote file/directory module
 require("./delete")(storage);
+
+//include moveto module
+require("./moveto")(storage);
+
+//include upload module to uplaod files
+require("./uploado")(storage);
