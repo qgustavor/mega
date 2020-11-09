@@ -48,6 +48,23 @@ Request package was replaced with a shim based in [browser-request](https://www.
 
 As there were many changes there isn't any plan to merge those changes into the original library, unless the original author accept those massive changes. That's why I put "js" in the name, which is silly because both libraries use JavaScript. At least it's better than other ideas I had, like "mega2", "mega-es" and "modern-mega".
 
+## Integration
+**Login & Display Files/Directories
+```javascript
+// credential to connect to your mega account
+  const option={
+    email:"email@mail.co",
+    password:"*********"
+  };
+  //login to mega account
+  const storage= mega(option,function(err,file){
+    if(err) throw err;
+    //display all file/folder form your MEGA account
+    console.log("login success full");
+  })
+  
+```
+
 ## Contributing
 
 When contributing fork the project, clone it, run `npm install`, change the library as you want, run tests using `npm run test` and build the bundled versions using `npm run build`. Before creating a pull request, *please*, run tests.
