@@ -35,3 +35,6 @@ require("./rename")(storage);
 
 //include create remote directory module
 require("./mkdir")(storage);
+
+//include delete remote file/directory module
+require("./delete")(storage);
