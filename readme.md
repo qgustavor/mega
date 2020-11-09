@@ -49,7 +49,7 @@ Request package was replaced with a shim based in [browser-request](https://www.
 As there were many changes there isn't any plan to merge those changes into the original library, unless the original author accept those massive changes. That's why I put "js" in the name, which is silly because both libraries use JavaScript. At least it's better than other ideas I had, like "mega2", "mega-es" and "modern-mega".
 
 ## Integration
-**Login & Display Files/Directories
+**Login to MEGA account
 ```javascript
 // credential to connect to your mega account
   const option={
@@ -63,6 +63,27 @@ As there were many changes there isn't any plan to merge those changes into the 
     console.log("login success full");
   })
   
+```
+**Display Files/Directories
+
+```javascript
+//display your files and directories form your aacounts
+  storage.mounts.map(function(f){
+    console.log(f)
+  });
+  function print(f, indent) {
+    let dirFil = f.directory ? 'Directory' : 'File';
+    let dir = {
+        [dirFil]: f.name,
+        "size": f.directory ? '' : f.size + 'B',
+        "date": new Date(f.timestamp * 1000),
+        "nodeID": f.nodeId,
+        "child": !f.children ? [] : f.children.map(function (f) {
+            return print(f);
+        })
+    };
+    return dir;
+}
 ```
 
 ## Contributing
