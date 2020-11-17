@@ -50,7 +50,7 @@ jspm_packages
 .yarn-integrity
 
 # Dist files are available via NPM, in order to avoid git noise
-dist
+#dist
 
 # Using package-lock.json introduces cross-platform issues
 /package-lock.json
