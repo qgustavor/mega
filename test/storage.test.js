@@ -133,7 +133,7 @@ test.serial.cb('Should download shared files (old format)', t => {
     t.is(file.size, 16)
     t.is(file.directory, false)
     t.is(file.name, 'test file')
-    t.deepEqual(file.attributes, {n: 'test file'})
+    t.deepEqual(file.attributes, { n: 'test file' })
 
     file.download((error, data) => {
       if (error) throw error
@@ -156,7 +156,7 @@ test.serial.cb('Should download shared files (new format)', t => {
     t.is(file.size, 16)
     t.is(file.directory, false)
     t.is(file.name, 'test file')
-    t.deepEqual(file.attributes, {n: 'test file'})
+    t.deepEqual(file.attributes, { n: 'test file' })
 
     file.download((error, data) => {
       if (error) throw error
@@ -261,7 +261,7 @@ test.serial.cb.skip('Should download files shared in folders', t => {
     t.falsy(folder.size)
     t.is(folder.directory, true)
     t.is(folder.name, 'test folder 1')
-    t.deepEqual(folder.attributes, {n: 'test folder 1'})
+    t.deepEqual(folder.attributes, { n: 'test folder 1' })
     t.truthy(folder.children)
     t.is(folder.children.length, 1)
 
@@ -269,7 +269,7 @@ test.serial.cb.skip('Should download files shared in folders', t => {
     t.falsy(children.size)
     t.is(children.directory, true)
     t.is(children.name, 'test folder 2')
-    t.deepEqual(children.attributes, {n: 'test folder 2'})
+    t.deepEqual(children.attributes, { n: 'test folder 2' })
     t.truthy(children.children)
     t.is(children.children.length, 1)
 
@@ -277,7 +277,7 @@ test.serial.cb.skip('Should download files shared in folders', t => {
     t.is(children.size, 16)
     t.is(children.directory, false)
     t.is(children.name, 'test file')
-    t.deepEqual(children.attributes, {n: 'test file'})
+    t.deepEqual(children.attributes, { n: 'test file' })
 
     children.download((error, data) => {
       if (error) throw error

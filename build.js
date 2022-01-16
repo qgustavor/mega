@@ -71,14 +71,16 @@ const handleWarning = (warning) => {
 }
 
 const doBundle = (format) => {
-  const externalConfig = format.bundleExternals ? [] : [
-    'zlib', 'https', 'http', 'crypto', 'fs', 'tls',
-    'net', 'string_decoder', 'assert', 'punycode',
-    'dns', 'dgram', 'request', 'combined-stream',
-    'url', 'through', 'stream-combiner', 'events',
-    'secure-random', 'querystring', 'stream',
-    'stream-skip'
-  ]
+  const externalConfig = format.bundleExternals
+    ? []
+    : [
+        'zlib', 'https', 'http', 'crypto', 'fs', 'tls',
+        'net', 'string_decoder', 'assert', 'punycode',
+        'dns', 'dgram', 'cross-fetch', 'combined-stream',
+        'url', 'through', 'stream-combiner', 'events',
+        'secure-random', 'querystring', 'stream',
+        'stream-skip'
+      ]
 
   return rollup.rollup({
     input: format.entryPoint,
@@ -87,7 +89,6 @@ const doBundle = (format) => {
     plugins: [
       format.bundlePolyfills && replace({
         values: {
-          "from 'request'": "from '../browser/request.js'",
           "from './crypto/rsa'": "from '../browser/rsa.js'",
           "from './aes'": "from '../../browser/aes.js'"
         },
@@ -96,9 +97,11 @@ const doBundle = (format) => {
       commonjs(),
       format.bundleExternals && builtins(),
       format.bundleExternals && globals(),
-      replace({ values: {
-        'process.env.IS_BROWSER_BUILD': '' + format.name.includes('browser')
-      }}),
+      replace({
+        values: {
+          'process.env.IS_BROWSER_BUILD': '' + format.name.includes('browser')
+        }
+      }),
       format.bundleExternals && nodeResolve({
         jsnext: true,
         main: true,
@@ -128,9 +131,11 @@ const doBundle = (format) => {
       // Minify using babel-minify
       result.code = babelTransform(result.code, {
         // Keep pure annotations on ES modules
-        shouldPrintComment: options.format === 'es' ? comment => {
-          return comment === '#__PURE__'
-        } : undefined,
+        shouldPrintComment: options.format === 'es'
+          ? comment => {
+              return comment === '#__PURE__'
+            }
+          : undefined,
         babelrc: false,
         presets: [['minify', {
           mangle: {

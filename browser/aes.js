@@ -39,7 +39,7 @@ export function prepareKeyV2 (password, info, cb) {
       name: 'PBKDF2',
       salt,
       iterations,
-      hash: {name: digest}
+      hash: { name: digest }
     }, key, 256)
   }).then(result => {
     cb(null, Buffer.from(result))
@@ -56,7 +56,7 @@ class AES {
 
   encryptCBC (buffer) {
     let iv = [0, 0, 0, 0]
-    let d = Array(4)
+    const d = Array(4)
     let i, j
 
     for (i = 0; i < buffer.length; i += 16) {
@@ -174,7 +174,7 @@ class CTR {
       this.mac = undefined
     }
 
-    let mac = Buffer.alloc(16)
+    const mac = Buffer.alloc(16)
 
     for (let i = 0; i < this.macs.length; i++) {
       for (let j = 0; j < 16; j++) mac[j] ^= this.macs[i][j]
@@ -245,4 +245,4 @@ class CTR {
   }
 }
 
-export {AES, CTR}
+export { AES, CTR }
