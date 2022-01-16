@@ -135,7 +135,7 @@ test.serial('Should download shared files (old format)', t => {
     const storage = t.context.storage
 
     const file = File.fromURL('https://mega.nz/#!AAAAAAAE!AAAAAAAAAACldyOdMzqeRgAAAAAAAAAApXcjnTM6nkY')
-    file.api.gateway = storage.api.gateway
+    file.api = storage.api
 
     file.loadAttributes((error, loadedFile) => {
       if (error) return reject(error)
@@ -160,7 +160,7 @@ test.serial('Should download shared files (new format)', t => {
     const storage = t.context.storage
 
     const file = File.fromURL('https://mega.nz/file/AAAAAAAE#AAAAAAAAAACldyOdMzqeRgAAAAAAAAAApXcjnTM6nkY')
-    file.api.gateway = storage.api.gateway
+    file.api = storage.api
 
     file.loadAttributes((error, loadedFile) => {
       if (error) throw error
