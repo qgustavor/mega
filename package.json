@@ -41,7 +41,8 @@
     "timeout": "2m",
     "require": [
       "@babel/register",
-      "@babel/polyfill"
+      "core-js/stable",
+      "regenerator-runtime/runtime"
     ]
   },
   "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
@@ -59,24 +60,20 @@
     "through": "^2.1.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.10.2",
-    "@babel/polyfill": "^7.10.1",
-    "@babel/preset-env": "^7.10.2",
-    "@babel/register": "^7.10.1",
-    "ava": "1.0.0-rc.2",
-    "babel-plugin-transform-rename-import": "^2.3.0",
-    "babel-preset-minify": "^0.4.3",
+    "@babel/preset-env": "^7.16.8",
+    "@babel/register": "^7.16.9",
+    "ava": "^4.0.1",
+    "buffer": "^6.0.3",
     "cross-env": "^5.2.1",
-    "mega-mock": "^0.2.0",
-    "rollup": "^0.58.2",
-    "rollup-plugin-babel": "^4.4.0",
-    "rollup-plugin-commonjs": "^8.4.1",
-    "rollup-plugin-json": "^2.3.1",
-    "rollup-plugin-node-builtins": "^2.1.2",
-    "rollup-plugin-node-globals": "^1.4.0",
-    "rollup-plugin-node-resolve": "^3.4.0",
-    "rollup-plugin-replace": "^2.2.0",
+    "core-js": "^3.20.3",
+    "esbuild": "^0.14.11",
+    "esbuild-plugin-alias": "^0.2.1",
+    "eventemitter2": "^6.4.5",
+    "mega-mock": "^0.3.0",
+    "readable-stream": "^3.6.0",
+    "regenerator-runtime": "^0.13.9",
     "standard": "^16.0.4",
-    "tmp": "0.0.33"
+    "tmp": "0.0.33",
+    "util": "^0.12.4"
   }
 }

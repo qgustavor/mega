@@ -21,10 +21,14 @@ test('AES wrong key size', t => {
 
   t.throws(() => {
     aes = new AES(testBuffer(8))
-  }, Error)
+  }, {
+    message: 'Wrong key length. Key must be 128bit.'
+  })
   t.throws(() => {
     aes = new AES(testBuffer(32))
-  }, Error)
+  }, {
+    message: 'Wrong key length. Key must be 128bit.'
+  })
 
   t.falsy(aes)
 })
