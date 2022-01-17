@@ -74,7 +74,7 @@ async function doBundle (format) {
           'abort-controller',
           'agentkeepalive',
           'combined-stream',
-          'cross-fetch',
+          'node-fetch',
           'crypto',
           'events',
           'secure-random',
@@ -88,6 +88,7 @@ async function doBundle (format) {
       : [alias({
           http: require.resolve('./browser/noop.js'),
           https: require.resolve('./browser/noop.js'),
+          'node-fetch': require.resolve('./browser/fetch.js'),
           './crypto/rsa': require.resolve('./browser/rsa.js'),
           './aes': require.resolve('./browser/aes.js'),
           stream: require.resolve('readable-stream/readable-browser.js')
