@@ -69,7 +69,7 @@
     "cross-env": "^5.2.1",
     "esbuild": "^0.14.11",
     "esbuild-plugin-alias": "^0.2.1",
-    "eventemitter2": "^6.4.5",
+    "events": "^3.3.0",
     "mega-mock": "^0.3.0",
     "readable-stream": "^3.6.0",
     "regenerator-runtime": "^0.13.9",

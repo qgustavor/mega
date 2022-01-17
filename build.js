@@ -65,10 +65,14 @@ async function doBundle (format) {
     minify: format.minifyResult,
     platform: format.platform,
     sourcemap: sourceMapEnabled && 'inline',
+    inject: format.bundleExternals
+      ? ['./browser/process-shim.js']
+      : [],
     external: format.bundleExternals
       ? []
       : [
           'abort-controller',
+          'agentkeepalive',
           'combined-stream',
           'cross-fetch',
           'crypto',
@@ -82,10 +86,11 @@ async function doBundle (format) {
     plugins: !format.bundleExternals
       ? []
       : [alias({
+          http: require.resolve('./browser/noop.js'),
+          https: require.resolve('./browser/noop.js'),
           './crypto/rsa': require.resolve('./browser/rsa.js'),
           './aes': require.resolve('./browser/aes.js'),
-          events: require.resolve('eventemitter2'),
-          stream: require.resolve('readable-stream')
+          stream: require.resolve('readable-stream/readable-browser.js')
         })],
     write: false
   })
