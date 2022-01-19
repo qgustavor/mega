@@ -1,7 +1,7 @@
 import test from 'ava'
-import { testBuffer, sha1 } from './test-utils.js'
+import { testBuffer, sha1 } from './test-utils.mjs'
 
-import { AES } from '../lib/crypto'
+import { AES } from '../lib/crypto/index.mjs'
 
 test('AES-CBC', t => {
   const aes = new AES(testBuffer(16))

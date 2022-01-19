@@ -3,11 +3,15 @@
   "version": "0.17.2",
   "description": "Unofficial JavaScript SDK for MEGA",
   "main": "dist/main.node-cjs.js",
-  "module": "dist/main.node-es.js",
-  "jsnext:main": "dist/main.node-es.js",
-  "browser": {
-    "dist/main.node-cjs.js": "dist/main.browser-umd.js",
-    "dist/main.node-es.js": "dist/main.browser-es.js"
+  "exports": {
+    "node": {
+      "require": "./dist/main.node-cjs.js",
+      "import": "./dist/main.node-es.js"
+    },
+    "default": {
+      "require": "./dist/main.browser-cjs.js",
+      "import": "./dist/main.browser-es.js"
+    }
   },
   "files": [
     "dist"
@@ -21,28 +25,15 @@
     "storage"
   ],
   "scripts": {
-    "build": "cross-env BABEL_ENV=build node build",
-    "test": "npm run lint && npm run ava-node && npm run ava-browser",
+    "build": "node build",
+    "test": "npm run lint && ava",
     "lint": "standard",
     "lint-fix": "standard --fix",
-    "ava-node": "cross-env BABEL_ENV=test-node ava",
-    "ava-browser": "cross-env BABEL_ENV=test-browser ava",
     "dist": "npm run test && npm run build"
   },
   "standard": {
     "ignore": [
       "dist"
-    ]
-  },
-  "ava": {
-    "files": [
-      "test/**/*.test.js"
-    ],
-    "timeout": "2m",
-    "require": [
-      "@babel/register",
-      "core-js/stable",
-      "regenerator-runtime/runtime"
     ]
   },
   "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
@@ -60,13 +51,9 @@
     "through": "^2.1.0"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.16.8",
-    "@babel/register": "^7.16.9",
     "ava": "^4.0.1",
-    "babel-plugin-transform-rename-import": "^2.3.0",
     "buffer": "^6.0.3",
     "core-js": "^3.20.3",
-    "cross-env": "^5.2.1",
     "esbuild": "^0.14.11",
     "esbuild-plugin-alias": "^0.2.1",
     "events": "^3.3.0",

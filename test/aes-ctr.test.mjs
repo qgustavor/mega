@@ -1,7 +1,7 @@
 import test from 'ava'
-import { testBuffer, sha1 } from './test-utils.js'
+import { testBuffer, sha1 } from './test-utils.mjs'
 
-import { AES, CTR } from '../lib/crypto'
+import { AES, CTR } from '../lib/crypto/index.mjs'
 
 test('AES-CTR small', t => {
   const key = testBuffer(24)

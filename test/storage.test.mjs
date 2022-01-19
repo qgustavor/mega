@@ -2,8 +2,8 @@ import megamock from 'mega-mock'
 import test from 'ava'
 import tmp from 'tmp'
 
-import Storage from '../lib/storage'
-import File from '../lib/file'
+import Storage from '../lib/storage.mjs'
+import File from '../lib/file.mjs'
 
 // Set up test server
 test.serial.before(t => {

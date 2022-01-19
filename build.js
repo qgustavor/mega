@@ -1,4 +1,5 @@
 const alias = require('esbuild-plugin-alias')
+const packageJson = require('./package.json')
 const esbuild = require('esbuild')
 const fs = require('fs')
 
@@ -58,7 +59,8 @@ async function doBundle (format) {
     entryPoints: format.entryPoints,
     bundle: true,
     define: {
-      'process.env.IS_BROWSER_BUILD': JSON.stringify(format.name.includes('browser'))
+      'process.env.IS_BROWSER_BUILD': JSON.stringify(format.name.includes('browser')),
+      'process.env.PACKAGE_VERSION': JSON.stringify(packageJson.version)
     },
     format: format.bundleFormat,
     globalName: format.globalName,

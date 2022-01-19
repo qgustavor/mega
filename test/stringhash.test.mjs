@@ -1,7 +1,7 @@
 import test from 'ava'
-import { testBuffer } from './test-utils.js'
+import { testBuffer } from './test-utils.mjs'
 
-import { prepareKey, AES } from '../lib/crypto'
+import { prepareKey, AES } from '../lib/crypto/index.mjs'
 
 const derivedKey = prepareKey(testBuffer(8))
 const aes = new AES(derivedKey)
