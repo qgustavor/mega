@@ -1,5 +1,5 @@
 import test from 'ava'
-import { testBuffer, sha1 } from './test-utils.mjs'
+import { testBuffer, sha1 } from './helpers/test-utils.mjs'
 
 import { AES, CTR } from '../lib/crypto/index.mjs'
 

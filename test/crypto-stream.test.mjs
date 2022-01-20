@@ -1,5 +1,5 @@
 import test from 'ava'
-import { testBuffer, stream2cb, sha1 } from './test-utils.mjs'
+import { testBuffer, stream2cb, sha1 } from './helpers/test-utils.mjs'
 import { megaEncrypt, megaDecrypt } from '../lib/crypto/index.mjs'
 
 // encrypt - decrypt

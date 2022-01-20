@@ -1,5 +1,5 @@
 import test from 'ava'
-import { testBuffer } from './test-utils.mjs'
+import { testBuffer } from './helpers/test-utils.mjs'
 
 import { prepareKey } from '../lib/crypto/index.mjs'
 
