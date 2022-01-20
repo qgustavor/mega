@@ -160,12 +160,60 @@ class CTR {
     this.ctr = Buffer.alloc(16)
     this.nonce.copy(this.ctr, 0)
 
+    this.incrementCTR(start / 16)
+  }
+
+  encrypt (buffer) {
+    for (let i = 0; i < buffer.length; i += 16) {
+      const enc = this.aes.encryptECB(Buffer.from(this.ctr))
+
+      for (let j = 0; j < 16; j++) {
+        buffer[i + j] ^= enc[j]
+      }
+
+      this.incrementCTR()
+    }
+  }
+
+  decrypt (buffer) {
+    for (let i = 0; i < buffer.length; i += 16) {
+      const enc = this.aes.encryptECB(Buffer.from(this.ctr))
+
+      for (let j = 0; j < 16; j++) {
+        buffer[i + j] ^= enc[j]
+      }
+
+      this.incrementCTR()
+    }
+  }
+
+  incrementCTR (cnt = 1) {
+    const buf = this.ctr
+    let i = 15
+    let mod
+    while (cnt !== 0) {
+      mod = (cnt + buf[i]) % 256
+      cnt = Math.floor((cnt + buf[i]) / 256)
+      buf[i] = mod
+      i -= 1
+      if (i < 0) i = 15
+    }
+  }
+}
+
+class MAC {
+  constructor (aes, nonce, start = 0) {
+    this.aes = aes
+
+    this.nonce = nonce.slice(0, 8)
+    this.increment = 131072 // 2**17
+    this.posNext = this.increment
+    this.pos = 0
+
     this.mac = Buffer.alloc(16)
     this.nonce.copy(this.mac, 0)
     this.nonce.copy(this.mac, 8)
     this.macs = []
-
-    this.incrementCTR(start / 16)
   }
 
   condensedMac () {
@@ -187,46 +235,13 @@ class CTR {
     return macBuffer
   }
 
-  encrypt (buffer) {
+  verify (buffer) {
     for (let i = 0; i < buffer.length; i += 16) {
-      const enc = this.aes.encryptECB(Buffer.from(this.ctr))
-
       for (let j = 0; j < 16; j++) {
-        this.mac[j] ^= buffer[i + j]
-        buffer[i + j] ^= enc[j]
-      }
-
-      this.aes.encryptECB(this.mac)
-      this.incrementCTR()
-    }
-  }
-
-  decrypt (buffer) {
-    for (let i = 0; i < buffer.length; i += 16) {
-      const enc = this.aes.encryptECB(Buffer.from(this.ctr))
-
-      for (let j = 0; j < 16; j++) {
-        buffer[i + j] ^= enc[j]
         this.mac[j] ^= buffer[i + j]
       }
 
       this.aes.encryptECB(this.mac)
-      this.incrementCTR()
-    }
-  }
-
-  incrementCTR (cnt = 1) {
-    for (let i = 0; i < cnt; i++) this.checkMacBounding()
-
-    const buf = this.ctr
-    let i = 15
-    let mod
-    while (cnt !== 0) {
-      mod = (cnt + buf[i]) % 256
-      cnt = Math.floor((cnt + buf[i]) / 256)
-      buf[i] = mod
-      i -= 1
-      if (i < 0) i = 15
     }
   }
 
@@ -243,10 +258,6 @@ class CTR {
       this.posNext += this.increment
     }
   }
-}
-
-class MAC {
-  // TODO
 }
 
 export { AES, CTR, MAC }
