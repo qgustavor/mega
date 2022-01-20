@@ -95,7 +95,8 @@ test.serial('Should upload streams', t => {
 
     const uploadStream = storage.upload({
       name: 'test file',
-      key: Buffer.alloc(24)
+      key: Buffer.alloc(24),
+      size: 1024 * 1024
     })
 
     uploadStream.on('error', t.fail)
