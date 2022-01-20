@@ -22,7 +22,7 @@ const formats = [{
   name: 'browser-es',
   bundleExternals: true,
   minifyResult: true,
-  entryPoints: ['lib/mega-es.js'],
+  entryPoints: ['lib/mega-es.mjs'],
   bundleFormat: 'esm',
   platform: 'browser',
   targets: {
@@ -49,7 +49,7 @@ const formats = [{
   name: 'node-es',
   bundleExternals: false,
   minifyResult: false,
-  entryPoints: ['lib/mega-es.js'],
+  entryPoints: ['lib/mega-es.mjs'],
   bundleFormat: 'esm',
   platform: 'node'
 }]
@@ -68,7 +68,7 @@ async function doBundle (format) {
     platform: format.platform,
     sourcemap: sourceMapEnabled && 'inline',
     inject: format.bundleExternals
-      ? ['./browser/process-shim.js']
+      ? ['./browser/process-shim.mjs']
       : [],
     external: format.bundleExternals
       ? []
@@ -88,17 +88,18 @@ async function doBundle (format) {
     plugins: !format.bundleExternals
       ? []
       : [alias({
-          http: require.resolve('./browser/noop.js'),
-          https: require.resolve('./browser/noop.js'),
-          'node-fetch': require.resolve('./browser/fetch.js'),
-          './crypto/rsa': require.resolve('./browser/rsa.js'),
-          './aes': require.resolve('./browser/aes.js'),
+          http: require.resolve('./browser/noop.mjs'),
+          https: require.resolve('./browser/noop.mjs'),
+          'node-fetch': require.resolve('./browser/fetch.mjs'),
+          './crypto/rsa.mjs': require.resolve('./browser/rsa.mjs'),
+          './aes.mjs': require.resolve('./browser/aes.mjs'),
           stream: require.resolve('readable-stream/readable-browser.js')
         })],
     write: false
   })
 
-  return fs.promises.writeFile('dist/main.' + format.name + '.js', result.outputFiles[0].contents)
+  const ext = format.bundleFormat === 'esm' ? 'mjs' : 'js'
+  return fs.promises.writeFile('dist/main.' + format.name + '.' + ext, result.outputFiles[0].contents)
 }
 
 async function doBuild () {

@@ -1,4 +1,4 @@
-import { AES as SjclAES } from './sjcl'
+import { AES as SjclAES } from './sjcl.mjs'
 
 // convert user-supplied password array
 export function prepareKey (password) {
@@ -245,4 +245,8 @@ class CTR {
   }
 }
 
-export { AES, CTR }
+class MAC {
+  // TODO
+}
+
+export { AES, CTR, MAC }

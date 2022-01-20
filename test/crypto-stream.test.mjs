@@ -1,6 +1,6 @@
 import test from 'ava'
 import { testBuffer, stream2cb, sha1 } from './helpers/test-utils.mjs'
-import { megaEncrypt, megaDecrypt } from '../lib/crypto/index.mjs'
+import { encrypt as megaEncrypt, decrypt as megaDecrypt } from '../dist/main.node-es.mjs'
 
 // encrypt - decrypt
 test('MEGA encrypt/decrypt streams', t => {

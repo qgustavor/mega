@@ -6,11 +6,11 @@
   "exports": {
     "node": {
       "require": "./dist/main.node-cjs.js",
-      "import": "./dist/main.node-es.js"
+      "import": "./dist/main.node-es.mjs"
     },
     "default": {
       "require": "./dist/main.browser-cjs.js",
-      "import": "./dist/main.browser-es.js"
+      "import": "./dist/main.browser-es.mjs"
     }
   },
   "files": [
