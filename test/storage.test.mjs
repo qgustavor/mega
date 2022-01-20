@@ -88,6 +88,16 @@ test.serial('Should upload buffers', t => {
   })
 })
 
+test.serial('Should not allow uploading without a size', t => {
+  const storage = t.context.storage
+
+  t.throws(() => {
+    storage.upload({ name: 'test file' })
+  }, {
+    message: 'Specify a file size or set allowUploadBuffering to true'
+  })
+})
+
 test.serial('Should upload streams', t => {
   return new Promise((resolve, reject) => {
     const storage = t.context.storage

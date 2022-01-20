@@ -2,7 +2,7 @@ export default {
   files: [
     'test/**/*.test.mjs'
   ],
-  timeout: '1m',
+  timeout: '20s',
   failFast: true,
   extensions: {
     js: true,
