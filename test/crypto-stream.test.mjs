@@ -5,8 +5,6 @@ import { encrypt as megaEncrypt, decrypt as megaDecrypt } from '../dist/main.nod
 // encrypt - decrypt
 test('MEGA encrypt/decrypt streams', t => {
   return new Promise(resolve => {
-    t.plan(5)
-
     const size = 151511
     const d0 = testBuffer(size)
     const d0e = Buffer.from(d0)
@@ -47,8 +45,6 @@ test('MEGA encrypt/decrypt streams', t => {
 
 test('MEGA mid-stream decrypt', t => {
   return new Promise((resolve, reject) => {
-    t.plan(1)
-
     // Create chunk buffer
     const chunkSize = 1024
     const d0 = testBuffer(chunkSize)

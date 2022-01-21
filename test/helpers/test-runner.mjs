@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import cp from 'node:child_process'
 import fs from 'node:fs/promises'
 import megamock from 'mega-mock'
+import crypto from 'node:crypto'
 import esbuild from 'esbuild'
 import tmp from 'tmp-promise'
 import path from 'node:path'
@@ -39,7 +40,7 @@ if (testedPlatform === 'node') {
     platform: 'node',
     entryPoints: testFiles,
     bundle: true,
-    outdir: nodeBuildDir,
+    outdir: buildDir,
     format: 'esm',
     define: {
       'process.env.IS_BROWSER_BUILD': JSON.stringify(false),
@@ -69,7 +70,7 @@ if (testedPlatform === 'node') {
     platform: 'browser',
     entryPoints: denoTests,
     bundle: true,
-    outdir: denoBuildDir,
+    outdir: buildDir,
     format: 'esm',
     define: {
       'process.env.IS_BROWSER_BUILD': JSON.stringify(true),
@@ -109,7 +110,7 @@ let wasFailed = false
 // Run tests
 if (testedPlatform === 'node') {
   await new Promise(resolve => {
-    const subprocess = cp.spawn('npx', ['ava', path.join(nodeBuildDir, '*.js')], {
+    const subprocess = cp.spawn('npx', ['ava', '--', path.join(buildDir, '*.js')], {
       stdio: 'inherit',
       shell: os.platform() === 'win32',
       env: {
@@ -133,7 +134,7 @@ if (testedPlatform === 'node') {
 } else {
   await new Promise(resolve => {
     const subprocess = cp.spawn('deno', ['test', '--allow-env=MEGA_MOCK_URL'], {
-      cwd: denoBuildDir,
+      cwd: buildDir,
       stdio: 'inherit',
       shell: os.platform() === 'win32',
       env: {
@@ -154,6 +155,18 @@ if (testedPlatform === 'node') {
       resolve()
     })
   })
+}
+
+// Verify if server state is equal to expected server state after tests
+if (!wasFailed) {
+  const serverStateSerialized = JSON.stringify(server.state)
+  const serverStateHash = crypto.createHash('blake2b512').update(serverStateSerialized).digest('hex').slice(0, 64)
+  const expectedStateHash = '42b984f82197a04dc7f100288dea388b534acb876b5ee653a73482625e4450bd'
+  if (serverStateHash !== expectedStateHash) {
+    console.error('Got server state hash', serverStateHash)
+    console.error('Expected', expectedStateHash)
+    wasFailed = true
+  }
 }
 
 await new Promise(resolve => server.close(resolve))
