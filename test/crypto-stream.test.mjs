@@ -8,6 +8,7 @@ test('MEGA encrypt/decrypt streams', t => {
     const size = 151511
     const d0 = testBuffer(size)
     const d0e = Buffer.from(d0)
+    const d0sha = sha1(d0e)
     const key = testBuffer(24, 100, 7)
     const encrypt = megaEncrypt(key)
 
@@ -18,9 +19,9 @@ test('MEGA encrypt/decrypt streams', t => {
 
       // Correct decrypt.
       const decryptPass = megaDecrypt(encrypt.key)
-      stream2cb(decryptPass, function (err, buffer) {
+      stream2cb(decryptPass, (err, buffer) => {
         t.falsy(err)
-        t.deepEqual(d0, buffer)
+        t.is(sha1(buffer), d0sha)
       })
       decryptPass.end(buffer)
 
@@ -29,7 +30,7 @@ test('MEGA encrypt/decrypt streams', t => {
       k2[15] = ~k2[15] // flip one mac byte.
 
       const decryptFail = megaDecrypt(encrypt.key)
-      stream2cb(decryptFail, function (err, buffer) {
+      stream2cb(decryptFail, (err, buffer) => {
         t.truthy(err)
         resolve()
       })

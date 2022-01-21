@@ -4,9 +4,7 @@ import { Storage, File } from '../dist/main.node-es.mjs'
 // Set up Storage to use test server and credentials
 const gatewayUrl = typeof Deno !== 'undefined'
   ? Deno.env.get('MEGA_MOCK_URL')
-  : typeof process !== 'undefined'
-    ? process.env.MEGA_MOCK_URL
-    : null
+  : process.env.MEGA_MOCK_URL
 if (!gatewayUrl) throw Error('Missing MEGA_MOCK_URL environment variable')
 
 const storage = new Storage({

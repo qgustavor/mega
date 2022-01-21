@@ -44,12 +44,11 @@
   "license": "MIT",
   "dependencies": {
     "abort-controller": "^3.0.0",
-    "combined-stream": "^1.0.8",
+    "multistream": "^4.1.0",
     "node-fetch": "^2.6.7",
+    "pumpify": "^2.0.1",
     "secure-random": "^1.1.2",
-    "stream-combiner": "^0.2.2",
-    "stream-skip": "^1.0.3",
-    "through": "^2.1.0"
+    "stream-skip": "^1.0.3"
   },
   "devDependencies": {
     "ava": "^4.0.1",

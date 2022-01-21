@@ -1,5 +1,8 @@
 export { Buffer } from 'buffer'
 export const process = {
-  env: {}
+  env: {},
+  nextTick: (fn, ...argv) => {
+    globalThis.setTimeout(fn, 0, ...argv)
+  }
 }
 export const global = globalThis

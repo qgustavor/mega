@@ -50,13 +50,13 @@ if (testedPlatform === 'node') {
       'ava',
       'abort-controller',
       'agentkeepalive',
-      'combined-stream',
+      'multistream',
       'node-fetch',
       'crypto',
       'events',
       'secure-random',
       'stream',
-      'stream-combiner',
+      'pumpify',
       'stream-skip',
       'through'
     ]
@@ -74,7 +74,8 @@ if (testedPlatform === 'node') {
     format: 'esm',
     define: {
       'process.env.IS_BROWSER_BUILD': JSON.stringify(true),
-      'process.env.PACKAGE_VERSION': JSON.stringify(packageJson.version)
+      'process.env.PACKAGE_VERSION': JSON.stringify(packageJson.version),
+      'process.env.MEGA_MOCK_URL': JSON.stringify(null)
     },
     plugins: [alias({
       ava: fileURLToPath(new URL('ava-deno.mjs', import.meta.url)),
@@ -133,7 +134,7 @@ if (testedPlatform === 'node') {
   })
 } else {
   await new Promise(resolve => {
-    const subprocess = cp.spawn('deno', ['test', '--allow-env=MEGA_MOCK_URL'], {
+    const subprocess = cp.spawn('deno', ['test', '--allow-env=MEGA_MOCK_URL', '--allow-net=' + gateway.slice(7)], {
       cwd: buildDir,
       stdio: 'inherit',
       shell: os.platform() === 'win32',

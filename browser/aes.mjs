@@ -173,6 +173,8 @@ class CTR {
 
       this.incrementCTR()
     }
+
+    return buffer
   }
 
   decrypt (buffer) {
@@ -185,6 +187,8 @@ class CTR {
 
       this.incrementCTR()
     }
+
+    return buffer
   }
 
   incrementCTR (cnt = 1) {
@@ -216,7 +220,7 @@ class MAC {
     this.macs = []
   }
 
-  condensedMac () {
+  condense () {
     if (this.mac) {
       this.macs.push(this.mac)
       this.mac = undefined
@@ -235,17 +239,18 @@ class MAC {
     return macBuffer
   }
 
-  verify (buffer) {
+  update (buffer) {
     for (let i = 0; i < buffer.length; i += 16) {
       for (let j = 0; j < 16; j++) {
         this.mac[j] ^= buffer[i + j]
       }
 
       this.aes.encryptECB(this.mac)
+      this.checkBounding()
     }
   }
 
-  checkMacBounding () {
+  checkBounding () {
     this.pos += 16
     if (this.pos >= this.posNext) {
       this.macs.push(Buffer.from(this.mac))

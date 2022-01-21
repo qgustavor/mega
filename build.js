@@ -3,8 +3,7 @@ const packageJson = require('./package.json')
 const esbuild = require('esbuild')
 const fs = require('fs')
 
-// to aid debugging
-const sourceMapEnabled = process.argv.includes('--generate-sourcemap')
+const developmentMode = process.argv.includes('--dev')
 const formatFilters = process.argv.filter(e => e.startsWith('--only=')).map(e => e.substr(7))
 
 const formats = [{
@@ -64,9 +63,9 @@ async function doBundle (format) {
     },
     format: format.bundleFormat,
     globalName: format.globalName,
-    minify: format.minifyResult,
+    minify: !developmentMode && format.minifyResult,
     platform: format.platform,
-    sourcemap: sourceMapEnabled && 'inline',
+    sourcemap: developmentMode && 'inline',
     inject: format.bundleExternals
       ? ['./browser/process-shim.mjs']
       : [],
@@ -75,13 +74,13 @@ async function doBundle (format) {
       : [
           'abort-controller',
           'agentkeepalive',
-          'combined-stream',
+          'multistream',
           'node-fetch',
           'crypto',
           'events',
           'secure-random',
           'stream',
-          'stream-combiner',
+          'pumpify',
           'stream-skip',
           'through'
         ],
@@ -103,7 +102,7 @@ async function doBundle (format) {
 }
 
 async function doBuild () {
-  console.error('Starting build...')
+  console.error('Starting', developmentMode ? 'development' : 'production', 'build...')
   console.error('Building 0 of %d', formats.length)
 
   for (let index = 0; index < formats.length; index++) {
