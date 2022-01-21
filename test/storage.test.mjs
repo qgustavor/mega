@@ -1,47 +1,20 @@
-import megamock from 'mega-mock'
 import test from 'ava'
-import tmp from 'tmp'
-
 import { Storage, File } from '../dist/main.node-es.mjs'
 
 // Set up test server
 test.serial.before(t => {
-  return new Promise((resolve, reject) => {
-    tmp.dir({
-      prefix: 'megajs-tests-',
-      unsafeCleanup: true
-    }, (error, path, cleanupCallback) => {
-      if (error) return reject(error)
+  const gatewayUrl = typeof Deno !== 'undefined'
+    ? Deno.env.get('MEGA_MOCK_URL')
+    : typeof process !== 'undefined'
+      ? process.env.MEGA_MOCK_URL
+      : null
+  if (!gatewayUrl) throw Error('Missing MEGA_MOCK_URL environment variable')
 
-      const server = megamock({
-        dataFolder: path,
-        visualize: false
-      })
-
-      server.state.loginData.set('jCf2Pc0pLCU', {
-        csid: 'CACRPiCIZqylaYVkXvUxvE4XkQeJrwTonOWCikeZFTRPxu5R97xTMTRxNeWlY5keMSLoUACOceI6CHjDLILL-6mQYN37_El9Y5bgmcwJtSHN54au0igwkxxZw_lD7lliQ4uSvSSihQ_iKjj2SxFFmF4F8Sa2UCYQz1iLMDhejR7YAaGGggII5e8jYbtNPOiwwPYf-AFWB7IfOFFXmZ6tLzDJrbodbhAc6EVaiPZZ4QyT6fdKchQeDkjDZu_ygxU0DBQEco1X6SuekGfORsannkJsgAIIlp1Uz-ZdZrrbXoXhFDsCXsibUWJJjF4cPwHMtPSjzcyE_vd-ViFKQJcNDain',
-        privk: 'AY5AYTQVUt772M3pLi9v7WNhUSYhvrGOnXuyePr4bOlOlckyomWizvB6xqqHGkx3cYXGWTM3QrAxHPFRNhnd47cG974nkGJyjv7NL6vnIGsmtuiMNpLrrkl9nS8itTZCluBWV7jPc6dRlFWNQ7uiT-Bc6d2mFiApd3xYJuNXFmgFo2_8z_1HQhXWOFJIlsESXc_oaxg0QNx8zE9pCdrKWTCw07VKCbAvJNnYGFdSnEjv3phBUkOd2snyK3LA-Kn9ehPgfcDmSfLaCJ_5y5IN18rHGQdRt_Dxs_CabKYgmF6rKMJ8BCfunuOso6Gx984fOvtbyrwxeL6z0QbqsvGe6H3GpoY6d5M0tnFoJz_PlY0EX5gW6Eo0ZGSJ1xcyMewqQt2JBtw-LuMojrwctHc7KchgLgbqqbJHnuRYrOCjkJeySwOHoUR1lP8qjmHUIlSPaRvughULPIoAs6suoRNBgHq_LEvuAFb9zA05El3Z98eKH6Sxstw_K-d7ZbV_k4osKEwCgDa0Y9vTfpcxt6iw0IqGBqkt6v1U8u4lXaiue_0CVbxhrTH4N5Ceyy7yLsyt8ju6hKRljZ5G9fKcB6rvp3h5WxDnLdJ1KTuZatcZI37uAnEBHNhJJoJE-xNIAWIgcfpffQ-BXlBaejTIyAY_zf0SjRnXIYd3PvBVwRFGKNN7Yp-eEiS3nFTvtBuGv8YK1488UJhj4-jLaQdnFRxB3wFoFdaIPdIJowtZkaYlViZ15cNxd70EK97dgUJm9AUJKQGfIopl0ucEtxNUjXn6ekscILk23LpVNE3kDROCxyIOPTGCPKPo-FZtMTQkZxW3vZ6pxjzmCzTm5Q13XmMtMDrEsgVb9jWC9sEMlHxIMLA',
-        k: 'xMEmMmKm0AbbOf9nGPLgSA'
-      })
-
-      t.context.server = server
-      t.context.cleanup = cleanupCallback
-
-      // Create a Storage instance which will be used by each test
-      const storage = new Storage({
-        email: 'mock@test',
-        password: 'mock',
-        autologin: false
-      })
-      t.context.storage = storage
-
-      server.listen(0, '127.0.0.1', () => {
-        // Replace default gateway with mock
-        const port = server.address().port
-        storage.api.gateway = `http://127.0.0.1:${port}/`
-        resolve()
-      })
-    })
+  t.context.storage = new Storage({
+    email: 'mock@test',
+    password: 'mock',
+    autologin: false,
+    gateway: gatewayUrl
   })
 })
 
@@ -318,12 +291,5 @@ test.serial.skip('Should download files shared in folders', t => {
         resolve()
       })
     })
-  })
-})
-
-test.serial.after(t => {
-  return new Promise(resolve => {
-    t.context.cleanup()
-    t.context.server.close(resolve)
   })
 })

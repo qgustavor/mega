@@ -26,7 +26,8 @@
   ],
   "scripts": {
     "build": "node build",
-    "test": "npm run lint && ava",
+    "test": "npm run lint && npm run test-runner",
+    "test-runner": "node test/helpers/test-runner.mjs",
     "lint": "standard",
     "lint-fix": "standard --fix",
     "dist": "npm run test && npm run build"
@@ -61,7 +62,7 @@
     "readable-stream": "^3.6.0",
     "regenerator-runtime": "^0.13.9",
     "standard": "^16.0.4",
-    "tmp": "0.0.33",
+    "tmp-promise": "^3.0.3",
     "util": "^0.12.4"
   }
 }
