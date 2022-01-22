@@ -1,87 +1,78 @@
 import test from 'ava'
-import { testBuffer, stream2cb, sha1 } from './helpers/test-utils.mjs'
+import { testBuffer, stream2promise, sha1 } from './helpers/test-utils.mjs'
 import { encrypt as megaEncrypt, decrypt as megaDecrypt } from '../dist/main.node-es.mjs'
 
 // encrypt - decrypt
-test('MEGA encrypt/decrypt streams', t => {
-  return new Promise(resolve => {
-    const size = 151511
-    const d0 = testBuffer(size)
-    const d0e = Buffer.from(d0)
-    const d0sha = sha1(d0e)
-    const key = testBuffer(24, 100, 7)
-    const encrypt = megaEncrypt(key)
+test('MEGA encrypt/decrypt streams', async t => {
+  const size = 151511
+  const d0 = testBuffer(size)
+  const d0e = Buffer.from(d0)
+  const d0sha = sha1(d0e)
+  const key = testBuffer(24, 100, 7)
+  const encrypt = megaEncrypt(key)
+  let buffer
 
-    stream2cb(encrypt, (err, buffer) => {
-      if (err) throw err
-      t.is(encrypt.key.toString('hex'), 'b0b0909070707093e957d163217c2f3fd4dbe2e9f0f7fe0675f47bd299c3e9f2')
-      t.is(sha1(buffer), 'addb96c07ac4e6b66316b81530256c911b0b49d1')
+  encrypt.write(d0e.slice(0, 50000))
+  encrypt.write(d0e.slice(50000, 100000))
+  encrypt.end(d0e.slice(100000, size))
 
-      // Correct decrypt.
-      const decryptPass = megaDecrypt(encrypt.key)
-      stream2cb(decryptPass, (err, buffer) => {
-        t.falsy(err)
-        t.is(sha1(buffer), d0sha)
-      })
-      decryptPass.end(buffer)
+  buffer = await stream2promise(encrypt)
+  t.is(encrypt.key.toString('hex'), 'b0b0909070707093e957d163217c2f3fd4dbe2e9f0f7fe0675f47bd299c3e9f2')
+  t.is(sha1(buffer), 'addb96c07ac4e6b66316b81530256c911b0b49d1')
 
-      // Invalid mac.
-      const k2 = Buffer.from(encrypt.key)
-      k2[15] = ~k2[15] // flip one mac byte.
+  // Correct decrypt.
+  const decryptPass = megaDecrypt(encrypt.key)
+  decryptPass.end(buffer)
 
-      const decryptFail = megaDecrypt(encrypt.key)
-      stream2cb(decryptFail, (err, buffer) => {
-        t.truthy(err)
-        resolve()
-      })
+  buffer = await stream2promise(decryptPass)
+  t.is(sha1(buffer), d0sha)
 
-      decryptFail.end(buffer)
-    })
+  // Invalid mac.
+  const k2 = Buffer.from(encrypt.key)
+  k2[15] = ~k2[15] // flip one mac byte.
 
-    encrypt.write(d0e.slice(0, 50000))
-    encrypt.write(d0e.slice(50000, 100000))
-    encrypt.end(d0e.slice(100000, size))
-  })
+  try {
+    const decryptFail = megaDecrypt(encrypt.key)
+    decryptFail.end(buffer)
+    await stream2promise(decryptFail)
+
+    throw Error('Stream resolved instead of throwing')
+  } catch (error) {
+    t.is(error.message, 'MAC verification failed')
+  }
 })
 
-test('MEGA mid-stream decrypt', t => {
-  return new Promise((resolve, reject) => {
-    // Create chunk buffer
-    const chunkSize = 1024
-    const d0 = testBuffer(chunkSize)
-    const d0e = Buffer.from(d0)
+test('MEGA mid-stream decrypt', async t => {
+  // Create chunk buffer
+  const chunkSize = 1024
+  const d0 = testBuffer(chunkSize)
+  const d0e = Buffer.from(d0)
 
-    // Set some variables
-    const chunks = 1024
-    const testChunkSize = 128
-    const start = (chunks + 1) * chunkSize - testChunkSize
+  // Set some variables
+  const chunks = 1024
+  const testChunkSize = 128
+  const start = (chunks + 1) * chunkSize - testChunkSize
 
-    // Generate an encrypt transform stream
-    const encrypt = megaEncrypt()
-    stream2cb(encrypt, (error, buffer) => {
-      if (error) return reject(error)
+  // Generate an encrypt transform stream
+  const encrypt = megaEncrypt()
 
-      // After encrypting all the stream read the result
-      const decryptPass = megaDecrypt(encrypt.key, { start })
-      stream2cb(decryptPass, (error, buffer) => {
-        if (error) return reject(error)
+  // Create a stream encrypting the original chunk many times
+  for (let i = 0; i < chunks; i++) {
+    encrypt.write(d0e)
+  }
 
-        const expected = d0.slice(chunkSize - testChunkSize).toString('hex')
-        const got = buffer.toString('hex')
-        t.deepEqual(expected, got)
-        resolve()
-      })
+  // As the d0e buffers could be changed by the encrypt stream
+  // add the original chunk at the end
+  encrypt.end(Buffer.from(d0))
 
-      decryptPass.end(buffer.slice(start))
-    })
+  const buffer = await stream2promise(encrypt)
 
-    // Create a stream encrypting the original chunk many times
-    for (let i = 0; i < chunks; i++) {
-      encrypt.write(d0e)
-    }
+  // After encrypting all the stream read the result
+  const decryptPass = megaDecrypt(encrypt.key, { start })
+  decryptPass.end(buffer.slice(start))
 
-    // As the d0e buffers could be changed by the encrypt stream
-    // add the original chunk at the end
-    encrypt.end(Buffer.from(d0))
-  })
+  const decryptBuffer = await stream2promise(decryptPass)
+  const expected = d0.slice(chunkSize - testChunkSize).toString('hex')
+  const got = decryptBuffer.toString('hex')
+  t.is(expected, got)
 })
