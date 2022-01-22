@@ -162,7 +162,8 @@ if (testedPlatform === 'node') {
 if (!wasFailed) {
   const serverStateSerialized = JSON.stringify(server.state)
   const serverStateHash = crypto.createHash('blake2b512').update(serverStateSerialized).digest('hex').slice(0, 64)
-  const expectedStateHash = '42b984f82197a04dc7f100288dea388b534acb876b5ee653a73482625e4450bd'
+  const expectedStateHash = '26c4b2a6bfad4f31891b927b58c4a8aba9b9b9a7fe2f37eb2d6437aceace4790'
+
   if (serverStateHash !== expectedStateHash) {
     console.error('Got server state hash', serverStateHash)
     console.error('Expected', expectedStateHash)

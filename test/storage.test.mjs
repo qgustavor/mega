@@ -196,6 +196,33 @@ test.serial('Should upload files in folders in shared folders', t => {
 // TODO implement test for download files shared in folders
 // Depends on fixing mega-mock shared file key handling
 
+// https://github.com/qgustavor/mega/issues/83
+test.serial('Should upload empty files', t => {
+  return new Promise((resolve, reject) => {
+    storage.upload({
+      name: 'empty file',
+      key: Buffer.alloc(24)
+    }, Buffer.alloc(0), (error, file) => {
+      if (error) return reject(error)
+
+      t.is(file.name, 'empty file')
+      resolve()
+    })
+  })
+})
+
+test.serial('Should download empty files', t => {
+  return new Promise((resolve, reject) => {
+    const file = storage.root.children.find(e => e.name === 'empty file')
+
+    file.download((error, data) => {
+      if (error) return reject(error)
+      t.is(data.length, 0)
+      resolve()
+    })
+  })
+})
+
 test.serial('Should logout from MEGA', t => {
   return new Promise((resolve, reject) => {
     storage.close((error) => {
