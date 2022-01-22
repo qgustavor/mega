@@ -105,6 +105,11 @@ async function doBuild () {
   console.error('Starting', developmentMode ? 'development' : 'production', 'build...')
   console.error('Building 0 of %d', formats.length)
 
+  // Make dist folder if not exists
+  await fs.promises.mkdir('dist').catch(error => {
+    if (e.code !== 'EEXIST') throw error
+  })
+
   for (let index = 0; index < formats.length; index++) {
     const format = formats[index]
     if (formatFilters.length > 0 && !formatFilters.includes(format.name)) continue
