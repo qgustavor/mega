@@ -1,3 +1,5 @@
+/* global Deno */
+
 import test from 'ava'
 import { Storage, File } from '../dist/main.node-es.mjs'
 
@@ -35,7 +37,7 @@ test.serial('Should upload buffers', t => {
       key: Buffer.alloc(24)
     }, Buffer.alloc(16), (error, file) => {
       if (error) return reject(error)
-        
+
       t.is(file.name, 'test file buffer')
       resolve()
     })
@@ -96,7 +98,7 @@ test.serial('Should download shared files (old format)', t => {
 
       file.download((error, data) => {
         if (error) return reject(error)
-        t.deepEqual(data, Buffer.alloc(16))
+        t.is(data.toString('hex'), Buffer.alloc(16).toString('hex'))
         resolve()
       })
     })
@@ -119,7 +121,7 @@ test.serial('Should download shared files (new format)', t => {
 
       file.download((error, data) => {
         if (error) return reject(error)
-        t.deepEqual(data, Buffer.alloc(16))
+        t.is(data.toString('hex'), Buffer.alloc(16).toString('hex'))
         resolve()
       })
     })
@@ -163,7 +165,7 @@ test.serial('Should create folders in shared folders', t => {
       key: Buffer.alloc(16)
     }, (error, folder) => {
       if (error) return reject(error)
-        
+
       t.is(folder.name, 'test folder 2')
       t.is(folder.parent, parent)
       resolve()
@@ -183,7 +185,7 @@ test.serial('Should upload files in folders in shared folders', t => {
       key: Buffer.alloc(24)
     }, Buffer.alloc(16), (error, file) => {
       if (error) return reject(error)
-        
+
       t.is(file.name, 'file in folder 2')
       t.is(file.parent, folder)
       resolve()
@@ -193,3 +195,14 @@ test.serial('Should upload files in folders in shared folders', t => {
 
 // TODO implement test for download files shared in folders
 // Depends on fixing mega-mock shared file key handling
+
+test.serial('Should logout from MEGA', t => {
+  return new Promise((resolve, reject) => {
+    storage.close((error) => {
+      if (error) return reject(error)
+
+      t.is(storage.status, 'closed')
+      resolve()
+    })
+  })
+})

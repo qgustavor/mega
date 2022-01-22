@@ -23,7 +23,7 @@ export function stream2cb (stream, cb) {
 export function stream2promise (stream) {
   const chunks = []
   let complete
-  
+
   return new Promise((resolve, reject) => {
     stream.on('data', function (d) {
       chunks.push(d)

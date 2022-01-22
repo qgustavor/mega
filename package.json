@@ -34,7 +34,8 @@
   },
   "standard": {
     "ignore": [
-      "dist"
+      "dist",
+      "test/helpers/test-runner.mjs"
     ]
   },
   "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
@@ -57,7 +58,7 @@
     "esbuild": "^0.14.11",
     "esbuild-plugin-alias": "^0.2.1",
     "events": "^3.3.0",
-    "mega-mock": "^0.3.0",
+    "mega-mock": "^0.4.0",
     "readable-stream": "^3.6.0",
     "regenerator-runtime": "^0.13.9",
     "standard": "^16.0.4",
