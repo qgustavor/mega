@@ -113,8 +113,9 @@ if (testedPlatform === 'node') {
   await new Promise(resolve => {
     const subprocess = cp.spawn('npx', ['ava', '--', path.join(buildDir, '*.js')], {
       stdio: 'inherit',
-      shell: true,
+      shell: os.platform() === 'win32',
       env: {
+        ...process.env,
         MEGA_MOCK_URL: gateway
       }
     })
@@ -137,8 +138,9 @@ if (testedPlatform === 'node') {
     const subprocess = cp.spawn('deno', ['test', '--allow-env=MEGA_MOCK_URL', '--allow-net=' + gateway.slice(7)], {
       cwd: buildDir,
       stdio: 'inherit',
-      shell: true,
+      shell: os.platform() === 'win32',
       env: {
+        ...process.env,
         MEGA_MOCK_URL: gateway
       }
     })
