@@ -107,7 +107,7 @@ async function doBuild () {
 
   // Make dist folder if not exists
   await fs.promises.mkdir('dist').catch(error => {
-    if (e.code !== 'EEXIST') throw error
+    if (error.code !== 'EEXIST') throw error
   })
 
   for (let index = 0; index < formats.length; index++) {
