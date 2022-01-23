@@ -49,7 +49,6 @@ if (testedPlatform === 'node') {
     },
     external: [
       'ava',
-      'abort-controller',
       'agentkeepalive',
       'multistream',
       'node-fetch',
