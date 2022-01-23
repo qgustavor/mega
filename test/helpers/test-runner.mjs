@@ -41,7 +41,7 @@ if (testedPlatform === 'node') {
     entryPoints: testFiles,
     bundle: true,
     outdir: buildDir,
-    format: 'esm',
+    format: 'cjs',
     define: {
       'process.env.IS_BROWSER_BUILD': JSON.stringify(false),
       'process.env.PACKAGE_VERSION': JSON.stringify(packageJson.version)
