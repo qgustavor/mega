@@ -36,13 +36,12 @@ const testFiles = (await fs.readdir(testFolder))
   .map(e => fileURLToPath(new URL(e, testFolder.href)))
 
 if (testedPlatform === 'node') {
-  const useAbCtrlWorkaround = !globalThis.AbortController
   await esbuild.build({
     platform: 'node',
     entryPoints: testFiles,
     bundle: true,
     outdir: buildDir,
-    format: useAbCtrlWorkaround ? 'cjs' : 'esm',
+    format: 'esm',
     define: {
       'process.env.IS_BROWSER_BUILD': JSON.stringify(false),
       'process.env.PACKAGE_VERSION': JSON.stringify(packageJson.version)
@@ -59,12 +58,7 @@ if (testedPlatform === 'node') {
       'pumpify',
       'stream-skip',
       'through'
-    ],
-    plugins: useAbCtrlWorkaround
-      ? [alias({
-        '../dist/main.node-es.mjs': fileURLToPath(new URL('../../dist/main.node-cjs.js', import.meta.url))
-      })]
-      : []
+    ]
   })
 } else {
   // Only run tests on compiled code (integration tests?) on Deno by now
