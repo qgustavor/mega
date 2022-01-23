@@ -12,18 +12,23 @@ const testContext = {
   }
 }
 
-function test (name, fn) {
-  Deno.test(name, () => fn(testContext))
+function test (name, fn, denoOpts = {}) {
+  Deno.test({
+    name,
+    fn: () => fn(testContext),
+    ...denoOpts
+  })
 }
 
 // Does nothing: Deno by default runs tests in serial
 test.serial = test
 
-test.skip = test.serial.skip = (name, fn) => {
+test.skip = test.serial.skip = (name, fn, denoOpts = {}) => {
   Deno.test({
     name,
     fn,
-    ignore: true
+    ignore: true,
+    ...denoOpts
   })
 }
 

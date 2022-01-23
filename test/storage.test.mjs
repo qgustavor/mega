@@ -28,6 +28,9 @@ test.serial('Should login to MEGA', t => {
       resolve()
     })
   })
+}, {
+  sanitizeResources: false,
+  sanitizeOps: false
 })
 
 test.serial('Should upload buffers', t => {
