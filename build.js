@@ -21,7 +21,7 @@ const formats = [{
   name: 'browser-es',
   bundleExternals: true,
   minifyResult: true,
-  entryPoints: ['lib/mega-es.mjs'],
+  entryPoints: ['lib/mega.mjs'],
   bundleFormat: 'esm',
   platform: 'browser',
   targets: {
@@ -48,7 +48,7 @@ const formats = [{
   name: 'node-es',
   bundleExternals: false,
   minifyResult: false,
-  entryPoints: ['lib/mega-es.mjs'],
+  entryPoints: ['lib/mega.mjs'],
   bundleFormat: 'esm',
   platform: 'node'
 }]
