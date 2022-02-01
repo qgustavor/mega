@@ -3,6 +3,7 @@
   "version": "0.17.2",
   "description": "Unofficial JavaScript SDK for MEGA",
   "main": "dist/main.node-cjs.js",
+  "typings": "./index.d.ts",
   "exports": {
     "node": {
       "require": "./dist/main.node-cjs.js",
