@@ -12,7 +12,7 @@ import os from 'node:os'
 
 const testedPlatform = process.argv[2]
 if (testedPlatform !== 'node' && testedPlatform !== 'deno') {
-  throw Error(`Unknown platform: ${testedPlatform}`)
+  throw Error(`Unknown platform: ${testedPlatform}. Run "npm test node" or "npm test deno".`)
 }
 
 // Set up temporary directories
