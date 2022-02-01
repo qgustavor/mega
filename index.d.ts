@@ -21,9 +21,9 @@ declare namespace megajs {
         sid: string;
         aes: AES;
         name: string;
-        user: any;
+        user: any; // Not sure
         email: string;
-        shareKeys: any;
+        shareKeys: any; // Not sure
         options: StorageOpts;
         status: StorageStatus;
         root: MutableFile;
@@ -40,7 +40,9 @@ declare namespace megajs {
         upload(opt: any, buffer: any, cb: any): void;
         login(cb: (error: err, storage: this) => void): void;
         getAccountInfo(cb: (error: err, account: any) => void): void;
-        reload(cb: (error: err, mount: ReadonlyArray<File>[], force?: boolean) => void): any; // "A required parameter cannot follow an optional parameter."
+        // "A required parameter cannot follow an optional parameter."
+        // Do check this because in source code force is the first argument but I had to change the order because of above error
+        reload(cb: (error: err, mount: ReadonlyArray<File>[], force?: boolean) => void): any;
         on(event: 'add', listener: (File: MutableFile) => void): this;
         on(event: 'move', listener: (file: File, oldParent: File) => void): this;
         on(event: 'ready', listener: (storage: this) => void): this;
@@ -116,6 +118,13 @@ declare namespace megajs {
         shareFolder(options: any, cb: any): this;
         unshareFolder(options: any, cb: any): this;
         importFile(sharedFile: any, cb: any): any;
+        // Saw these in docs
+        on(event: 'move', listener: (oldDir: File) => void): this;
+        on(event: 'update', listener: (file: MutableFile) => void): this;
+        on(event: 'delete', listener: (file: Readonly<File>) => void): this;
+        once(event: 'move', listener: (oldDir: File) => void): this;
+        once(event: 'update', listener: (file: MutableFile) => void): this;
+        once(event: 'delete', listener: (file: Readonly<File>) => void): this;
     }
     export class AES {
         key: Buffer;
@@ -148,7 +157,7 @@ declare namespace megajs {
     }
     interface APIOpts {
         gateway?: string;
-        fetch?: any;
+        fetch?: Fetch;
     }
     interface FileOpts {
         api?: API;
