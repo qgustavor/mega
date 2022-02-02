@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { Transform } from 'stream';
+import { Readable, Writable, Transform } from 'stream';
 import { EventEmitter } from 'events';
 import { Agent as HttpAgent } from 'http';
 import { Agent as HttpsAgent } from 'https';
@@ -23,7 +23,7 @@ declare namespace megajs {
         name: string;
         user: any; // Not sure
         email: string;
-        shareKeys: any; // Not sure
+        shareKeys?: { [nodeId in string]: Buffer };
         options: StorageOpts;
         status: StorageStatus;
         root: MutableFile;
@@ -37,7 +37,7 @@ declare namespace megajs {
         close(cb: () => void): void;
         static fromJSON(json: StorageJSON): Storage;
         mkdir(opt: mkdirOpts | string, cb?: errorCb): void;
-        upload(opt: any, buffer: any, cb: any): void;
+        upload(opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): Writable;
         login(cb: (error: err, storage: this) => void): void;
         getAccountInfo(cb: (error: err, account: any) => void): void;
         // "A required parameter cannot follow an optional parameter."
@@ -76,38 +76,38 @@ declare namespace megajs {
 
     export class File extends EventEmitter {
         api: API;
-        name: string | null;
-        size?: number;
-        owner?: string;
         type: number;
+        size?: number;
+        label: string;
+        owner?: string;
+        nodeId?: string;
+        loadedFile?: any;
         key: Buffer | null;
+        name: string | null;
         downloadId: string;
         directory: boolean;
-        loadedFile?: any;
         timestamp?: number;
         attributes: BufferString;
-        label: string;
         favorited: boolean;
-        nodeId?: any;
         constructor(opts: FileOpts);
-        static fromURL(opt: any, extraOpt?: {}): File;
-        static unpackAttributes(at: any): any;
-        static defaultHandleRetries(tries: any, error: any, cb: any): void;
+        static fromURL(opt: FileOpts | string, extraOpt?: Partial<FileOpts>): File;
+        static unpackAttributes(at: Buffer): void | string;
+        static defaultHandleRetries(tries: number, error: err, cb: errorCb): void;
         get createdAt(): number;
-        checkConstructorArgument(value: BufferString): void;
-        loadMetadata(aes: any, opt: any): void;
-        decryptAttributes(at: BufferString): this;
-        parseAttributes(at: BufferString): void;
         loadAttributes(cb: BufferString): this;
-        download(options: any, cb: any): any;
-        link(options: any, cb: any, ...args: any[]): void;
+        parseAttributes(at: BufferString): void;
+        decryptAttributes(at: BufferString): this;
+        loadMetadata(aes: AES, opt: metaOpts): void;
+        checkConstructorArgument(value: BufferString): void;
+        link(options: linkOpts | boolean, cb: (error: err, url: string) => void): void;
+        download(options: downloadOpts, cb?: (error: err, data: Buffer) => void): Readable;
     }
     export class MutableFile extends File {
         storage: Storage;
         static packAttributes(attributes: any): Buffer;
         constructor(opts: FileOpts, storage: Storage);
         mkdir(opts: mkdirOpts | string, cb?: errorCb): void;
-        upload(opts: uploadOpts | string, source?: BufferString, cb?: any): any;
+        upload(opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): Writable;
         uploadAttribute(type: any, data: any, callback: any): void;
         delete(permanent: any, cb: any): this;
         moveTo(target: any, cb: any): this;
@@ -137,6 +137,7 @@ declare namespace megajs {
     }
     // Interfaces & Types
     type StorageStatus = 'ready' | 'connecting' | 'closed';
+    type uploadCb = (error: err, file: MutableFile) => void;
     type errorCb = (error: err) => void;
     type BufferString = Buffer | string;
     type err = Error | null;
@@ -167,7 +168,7 @@ declare namespace megajs {
         loadedFile: any; // Not sure
     }
     interface accountInfo {
-        type: number; // Not sure of the type
+        type: string;
         spaceUsed: number;
         spaceTotal: number;
         downloadBandwidthUsed: number;
@@ -177,9 +178,9 @@ declare namespace megajs {
     }
     interface mkdirOpts {
         name: string;
-        attributes?: any; // For now
-        target?: MutableFile; // or File maybe?
         key?: BufferString;
+        target?: MutableFile; // or File maybe?
+        attributes?: object | undefined;
     }
     interface uploadOpts {
         name: string;
@@ -189,12 +190,34 @@ declare namespace megajs {
         maxConnections?: number;
         initialChunkSize?: number;
         chunkSizeIncrement?: number;
-        previewImage?: Buffer | ReadableStream; // Not entirely sure about the ReadableStream as the type
-        thumbnailImage?: Buffer | ReadableStream;
+        previewImage?: Buffer | Readable; // Not entirely sure about the R as the type
+        thumbnailImage?: Buffer | Readable;
     }
     interface cryptOpts {
         start?: number;
         disableVerification?: boolean;
+    }
+    interface linkOpts {
+        noKey?: boolean;
+        key?: BufferString;
+    }
+    interface metaOpts {
+        t: any;
+        k: string;
+        s?: number;
+        ts?: number;
+        a?: BufferString;
+    }
+    interface downloadOpts {
+        end?: number;
+        start?: number;
+        forceHttps?: boolean;
+        maxChunkSize?: number;
+        maxConnections?: number;
+        initialChunkSize?: number;
+        returnCiphertext?: boolean;
+        chunkSizeIncrement?: number;
+        handleRetries?: (tries: number, error: err, cb: errorCb) => void;
     }
 }
 
