@@ -182,7 +182,7 @@ declare namespace megajs {
     interface mkdirOpts {
         name: string;
         key?: BufferString;
-        attributes?: Object | undefined;
+        attributes?: Object;
     }
     interface uploadOpts {
         name: string;
@@ -204,8 +204,8 @@ declare namespace megajs {
         key?: BufferString;
     }
     interface metaOpts {
-        t: any;
         k: string;
+        t: unknown;
         s?: number;
         ts?: number;
         a?: BufferString;
