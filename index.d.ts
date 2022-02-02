@@ -23,7 +23,7 @@ declare namespace megajs {
         name: string;
         user: any; // Not sure
         email: string;
-        shareKeys?: { [nodeId in string]: Buffer };
+        shareKeys: { [nodeId in string]: Buffer };
         options: StorageOpts;
         status: StorageStatus;
         root: MutableFile;
@@ -34,22 +34,22 @@ declare namespace megajs {
         RSAPrivateKey: (number | number[])[]; // tsc generated this        
         constructor(options: StorageOpts, cb?: errorCb);
         toJSON(): StorageJSON;
-        close(cb: () => void): void;
+        close(cb: noop): void;
         static fromJSON(json: StorageJSON): Storage;
         mkdir(opt: mkdirOpts | string, cb?: errorCb): void;
         upload(opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): Writable;
         login(cb: (error: err, storage: this) => void): void;
-        getAccountInfo(cb: (error: err, account: any) => void): void;
+        getAccountInfo(cb: (error: err, account: accountInfo) => void): accountInfo;
         // "A required parameter cannot follow an optional parameter."
         // Do check this because in source code force is the first argument but I had to change the order because of above error
-        reload(cb: (error: err, mount: ReadonlyArray<File>[], force?: boolean) => void): any;
-        on(event: 'add', listener: (File: MutableFile) => void): this;
-        on(event: 'move', listener: (file: File, oldParent: File) => void): this;
+        reload(cb: (error: err, mount: ReadonlyArray<File>[], force?: boolean) => void): void | this;
+        on(event: 'add', listener: (File: Nullable<MutableFile>) => void): this;
+        on(event: 'move', listener: (file: MutableFile, oldDir: MutableFile) => void): this;
         on(event: 'ready', listener: (storage: this) => void): this;
         on(event: 'update', listener: (file: MutableFile) => void): this;
         on(event: 'delete', listener: (file: Readonly<File>) => void): this;
         once(event: 'add', listener: (File: MutableFile) => void): this;
-        once(event: 'move', listener: (file: File, oldParent: File) => void): this;
+        once(event: 'move', listener: (file: MutableFile, oldDir: MutableFile) => void): this;
         once(event: 'ready', listener: (storage: this) => void): this;
         once(event: 'update', listener: (file: MutableFile) => void): this;
         once(event: 'delete', listener: (file: Readonly<File>) => void): this;
@@ -70,8 +70,7 @@ declare namespace megajs {
         pull(sn: AbortController, retryno?: number): void;
         wait(url: fetch.RequestInfo, sn: AbortController): void;
         defaultFetch(url: fetch.RequestInfo, opts?: fetch.RequestInit): Fetch;
-        // Not sure what is the type of response in callback
-        request(json: { [key in string]: any }, cb: (error: err, response?: any) => void, retryno?: number): void;
+        request(json: Object, cb: (error: err, response?: any) => void, retryno?: number): void;
     }
 
     export class File extends EventEmitter {
@@ -81,17 +80,17 @@ declare namespace megajs {
         label: string;
         owner?: string;
         nodeId?: string;
-        loadedFile?: any;
-        key: Buffer | null;
-        name: string | null;
+        loadedFile?: string; // not entirely sure
         downloadId: string;
         directory: boolean;
-        timestamp?: number;
-        attributes: BufferString;
         favorited: boolean;
+        timestamp?: number;
+        key: Nullable<Buffer>;
+        name: Nullable<string>;
+        attributes: BufferString;
         constructor(opts: FileOpts);
         static fromURL(opt: FileOpts | string, extraOpt?: Partial<FileOpts>): File;
-        static unpackAttributes(at: Buffer): void | string;
+        static unpackAttributes(at: Buffer): void | Object;
         static defaultHandleRetries(tries: number, error: err, cb: errorCb): void;
         get createdAt(): number;
         loadAttributes(cb: BufferString): this;
@@ -104,21 +103,23 @@ declare namespace megajs {
     }
     export class MutableFile extends File {
         storage: Storage;
-        static packAttributes(attributes: any): Buffer;
+        s: Nullable<MutableFile>;
+        static packAttributes(attributes: Object): Buffer;
         constructor(opts: FileOpts, storage: Storage);
-        mkdir(opts: mkdirOpts | string, cb?: errorCb): void;
-        upload(opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): Writable;
-        uploadAttribute(type: any, data: any, callback: any): void;
-        delete(permanent: any, cb: any): this;
-        moveTo(target: any, cb: any): this;
-        setAttributes(attributes: any, cb: any): this;
-        rename(filename: any, cb: any): this;
-        setLabel(label: any, cb: any): this;
-        setFavorite(isFavorite: any, cb: any): this;
-        shareFolder(options: any, cb: any): this;
-        unshareFolder(options: any, cb: any): this;
-        importFile(sharedFile: any, cb: any): any;
-        // Saw these in docs
+        mkdir(opts: mkdirOpts | string, cb?: (error: err, file: Nullable<MutableFile>) => void): void;
+        upload(opts: uploadOpts | string, source?: BufferString, cb?: uploadCb): Writable;
+        uploadAttribute(type: 0 | 1, data: Buffer, callback?: (error: err, file?: this) => void): void;
+        // Not sure about type of file in delete's cb
+        delete(permanent?: boolean, cb?: (error: err, file?: File) => void): this;
+        moveTo(target: File | string, cb?: (error: err, file?: File) => void): this;
+        setAttributes(attributes: Object, cb?: noop): this;
+        rename(filename: string, cb?: noop): this;
+        setLabel(label: labelType, cb?: noop): this;
+        setFavorite(isFavorite?: boolean, cb?: noop): this;
+        shareFolder(options: linkOpts, cb?: noop): this;
+        // this method has a option paramteter but never uses it, maybe update this in the file or change it here 
+        unshareFolder(cb?: noop): this;
+        importFile(sharedFile: string | File, cb?: (error: err, file?: this) => void): void | this;
         on(event: 'move', listener: (oldDir: File) => void): this;
         on(event: 'update', listener: (file: MutableFile) => void): this;
         on(event: 'delete', listener: (file: Readonly<File>) => void): this;
@@ -136,11 +137,14 @@ declare namespace megajs {
         decryptECB(buffer: Buffer): Buffer;
     }
     // Interfaces & Types
+    type labelType = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | '' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'grey';
     type StorageStatus = 'ready' | 'connecting' | 'closed';
     type uploadCb = (error: err, file: MutableFile) => void;
     type errorCb = (error: err) => void;
     type BufferString = Buffer | string;
-    type err = Error | null;
+    type Nullable<T> = T | null;
+    type err = Nullable<Error>;
+    type noop = () => void;
     type Fetch = any; // Change this if you can get the type of fetch
     interface StorageOpts {
         email: string;
@@ -165,7 +169,7 @@ declare namespace megajs {
         key?: BufferString;
         directory?: boolean;
         downloadId: string;
-        loadedFile: any; // Not sure
+        loadedFile: string; // Not sure
     }
     interface accountInfo {
         type: string;
@@ -179,8 +183,7 @@ declare namespace megajs {
     interface mkdirOpts {
         name: string;
         key?: BufferString;
-        target?: MutableFile; // or File maybe?
-        attributes?: object | undefined;
+        attributes?: Object | undefined;
     }
     interface uploadOpts {
         name: string;
@@ -190,7 +193,7 @@ declare namespace megajs {
         maxConnections?: number;
         initialChunkSize?: number;
         chunkSizeIncrement?: number;
-        previewImage?: Buffer | Readable; // Not entirely sure about the R as the type
+        previewImage?: Buffer | Readable;
         thumbnailImage?: Buffer | Readable;
     }
     interface cryptOpts {
