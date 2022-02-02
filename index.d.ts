@@ -43,7 +43,7 @@ declare namespace megajs {
         // "A required parameter cannot follow an optional parameter."
         // Do check this because in source code force is the first argument but I had to change the order because of above error
         reload(cb: (error: err, mount: ReadonlyArray<File>[], force?: boolean) => void): void | this;
-        on(event: 'add', listener: (File: Nullable<MutableFile>) => void): this;
+        on(event: 'add', listener: (File: MutableFile) => void): this;
         on(event: 'move', listener: (file: MutableFile, oldDir: MutableFile) => void): this;
         on(event: 'ready', listener: (storage: this) => void): this;
         on(event: 'update', listener: (file: MutableFile) => void): this;
@@ -103,7 +103,6 @@ declare namespace megajs {
     }
     export class MutableFile extends File {
         storage: Storage;
-        s: Nullable<MutableFile>;
         static packAttributes(attributes: Object): Buffer;
         constructor(opts: FileOpts, storage: Storage);
         mkdir(opts: mkdirOpts | string, cb?: (error: err, file: Nullable<MutableFile>) => void): void;
