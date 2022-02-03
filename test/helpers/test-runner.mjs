@@ -118,13 +118,13 @@ if (testedPlatform === 'node') {
         MEGA_MOCK_URL: gateway
       }
     })
-    
+
     subprocess.on('error', error => {
       console.error(error)
       wasFailed = true
       resolve()
     })
-    
+
     subprocess.on('exit', code => {
       if (code === 0) return resolve()
       console.error('Node tests exited with code', code)
@@ -143,13 +143,13 @@ if (testedPlatform === 'node') {
         MEGA_MOCK_URL: gateway
       }
     })
-    
+
     subprocess.on('error', error => {
       console.error(error)
       wasFailed = true
       resolve()
     })
-    
+
     subprocess.on('exit', code => {
       if (code === 0) return resolve()
       console.error('Deno tests exited with code', code)
