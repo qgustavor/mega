@@ -5,36 +5,25 @@ Unofficial JavaScript SDK for MEGA
 * This is based on [tonistiigi's mega library](https://github.com/tonistiigi/mega).
 * This is all unofficial, based on [developer guide](https://mega.nz/#developers) and site source.
 * Make sure you agree with MEGA's [Terms of Service](https://mega.nz/#terms) before using it.
-* Maybe an official SDK will probably be released in the future here: https://github.com/meganz/
 
-## Installation
-
-```shell
-npm install megajs
-```
-
-```javascript
-const mega = require('megajs') // or
-import mega from 'megajs'
-```
-
-You can also load it in a browser using `<script src="https://unpkg.com/megajs/dist/main.node-cjs.js"></script>`, which exports the library in the `mega` global variable. You can also use `import * as mega from 'https://unpkg.com/megajs/dist/main.browser-es.js'`.
-
-**For more details, API documentation and examples check wiki: https://github.com/qgustavor/mega/wiki**
-
-The bundled files are available via [npm](https://www.npmjs.com/package/megajs) and [UNPKG](https://unpkg.com/megajs/dist/).
+**API documentation and examples is available in the website: https://mega.js.org/**
 
 **For CLI usage check MEGAJS CLI**: https://github.com/qgustavor/megajs-cli
 
-## Implementation notes
+## Contributing
 
-Only part of the file related API is implemented. For now implementing contact and chat functions seems out of scope.
+When contributing fork the project:
 
-Cryptography is mostly ported from browser code. In Node some parts are optimized: AES operations are done using native crypto. Sadly WebCrypto don't support streaming so in browser the old pure JavaScript implementation is used. The RSA operations aren't optimized as currently there isn't any need to improve that.
+- Clone it;
+- Run `npm install`;
+- Change the library as you want;
+- Build the bundled versions using `npm run build`;
+- Run at least Node tests using `npm test node` to test Node;
+- Optionally run `npm test deno` to test Deno if you have it installed (CI will test Deno anyway).
 
-This module works in the browser: the "main.browser-umd.js" is a build using the UMD format where Node specific modules, like crypto and request modules, were replaced with browser equivalents. If you want to use tree shaking then use the "main.browser-es.js" bundle. This module wasn't tested in other environments.
+Before creating a pull request, *please*, run tests. If you implement new features them implement tests for it too if possible.
 
-## Fork objectives
+## Project history
 
 This package started as a fork, with the following objectives:
 
@@ -48,6 +37,4 @@ Request package was replaced with a shim based in [browser-request](https://www.
 
 As there were many changes there isn't any plan to merge those changes into the original library, unless the original author accept those massive changes. That's why I put "js" in the name, which is silly because both libraries use JavaScript. At least it's better than other ideas I had, like "mega2", "mega-es" and "modern-mega".
 
-## Contributing
-
-When contributing fork the project, clone it, run `npm install`, change the library as you want, run tests using `npm run test` and build the bundled versions using `npm run build`. Before creating a pull request, *please*, run tests.
+In 1.0 release request was replaced with fetch, Deno support was added (including tests), TypeScript types were added, Rollup was replaced with esbuild, streaming libraries were updated or replaced and some issues were fixed.
