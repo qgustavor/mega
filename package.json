@@ -35,8 +35,7 @@
   },
   "standard": {
     "ignore": [
-      "dist",
-      "test/helpers/test-runner.mjs"
+      "dist"
     ]
   },
   "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
@@ -64,7 +63,7 @@
     "mega-mock": "^0.4.1",
     "readable-stream": "^3.6.0",
     "regenerator-runtime": "^0.13.9",
-    "standard": "^16.0.4",
+    "standard": "^17.0.0-2",
     "tmp-promise": "^3.0.3",
     "util": "^0.12.4"
   }

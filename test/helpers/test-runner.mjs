@@ -12,7 +12,7 @@ import os from 'node:os'
 
 const testedPlatform = process.argv[2]
 if (testedPlatform !== 'node' && testedPlatform !== 'deno') {
-  throw Error(`Unknown platform: ${testedPlatform}`)
+  throw Error(`Unknown platform: ${testedPlatform}. Run "npm test node" or "npm test deno".`)
 }
 
 // Set up temporary directories
@@ -118,13 +118,13 @@ if (testedPlatform === 'node') {
         MEGA_MOCK_URL: gateway
       }
     })
-    
+
     subprocess.on('error', error => {
       console.error(error)
       wasFailed = true
       resolve()
     })
-    
+
     subprocess.on('exit', code => {
       if (code === 0) return resolve()
       console.error('Node tests exited with code', code)
@@ -143,13 +143,13 @@ if (testedPlatform === 'node') {
         MEGA_MOCK_URL: gateway
       }
     })
-    
+
     subprocess.on('error', error => {
       console.error(error)
       wasFailed = true
       resolve()
     })
-    
+
     subprocess.on('exit', code => {
       if (code === 0) return resolve()
       console.error('Deno tests exited with code', code)
