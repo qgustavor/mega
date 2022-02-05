@@ -21,7 +21,7 @@ declare namespace megajs {
         sid: string;
         aes: AES;
         name: string;
-        user: any; // Not sure
+        user: string;
         email: string;
         shareKeys: { [nodeId in string]: Buffer };
         options: StorageOpts;
@@ -31,7 +31,7 @@ declare namespace megajs {
         inbox: MutableFile;
         mounts: ReadonlyArray<File>[];
         files: { [id in string]: MutableFile };
-        RSAPrivateKey: (number | number[])[]; // tsc generated this        
+        RSAPrivateKey: (number | number[])[];        
         constructor(options: StorageOpts, cb?: errorCb);
         toJSON(): StorageJSON;
         close(cb: noop): void;
@@ -70,7 +70,7 @@ declare namespace megajs {
         pull(sn: AbortController, retryno?: number): void;
         wait(url: fetch.RequestInfo, sn: AbortController): void;
         defaultFetch(url: fetch.RequestInfo, opts?: fetch.RequestInit): Fetch;
-        request(json: Object, cb: (error: err, response?: any) => void, retryno?: number): void;
+        request(json: JSON, cb: (error: err, response?: any) => void, retryno?: number): void;
     }
 
     export class File extends EventEmitter {
@@ -80,17 +80,17 @@ declare namespace megajs {
         label: string;
         owner?: string;
         nodeId?: string;
-        loadedFile?: string; // not entirely sure
+        loadedFile?: string;
         downloadId: string;
         directory: boolean;
         favorited: boolean;
         timestamp?: number;
         key: Nullable<Buffer>;
         name: Nullable<string>;
-        attributes: BufferString;
+        attributes: JSON;
         constructor(opts: FileOpts);
         static fromURL(opt: FileOpts | string, extraOpt?: Partial<FileOpts>): File;
-        static unpackAttributes(at: Buffer): void | Object;
+        static unpackAttributes(at: Buffer): void | JSON;
         static defaultHandleRetries(tries: number, error: err, cb: errorCb): void;
         get createdAt(): number;
         loadAttributes(cb: BufferString): this;
@@ -103,20 +103,19 @@ declare namespace megajs {
     }
     export class MutableFile extends File {
         storage: Storage;
-        static packAttributes(attributes: Object): Buffer;
+        static packAttributes(attributes: JSON): Buffer;
         constructor(opts: FileOpts, storage: Storage);
         mkdir(opts: mkdirOpts | string, cb?: (error: err, file: Nullable<MutableFile>) => void): void;
         upload(opts: uploadOpts | string, source?: BufferString, cb?: uploadCb): Writable;
         uploadAttribute(type: 0 | 1, data: Buffer, callback?: (error: err, file?: this) => void): void;
         // Not sure about type of file in delete's cb
-        delete(permanent?: boolean, cb?: (error: err, file?: File) => void): this;
-        moveTo(target: File | string, cb?: (error: err, file?: File) => void): this;
-        setAttributes(attributes: Object, cb?: noop): this;
+        delete(permanent?: boolean, cb?: (error: err, data?: any) => void): this;
+        moveTo(target: File | string, cb?: (error: err, data?: any) => void): this;
+        setAttributes(attributes: JSON, cb?: noop): this;
         rename(filename: string, cb?: noop): this;
         setLabel(label: labelType, cb?: noop): this;
         setFavorite(isFavorite?: boolean, cb?: noop): this;
         shareFolder(options: linkOpts, cb?: noop): this;
-        // this method has a option paramteter but never uses it, maybe update this in the file or change it here 
         unshareFolder(cb?: noop): this;
         importFile(sharedFile: string | File, cb?: (error: err, file?: this) => void): void | this;
         on(event: 'move', listener: (oldDir: File) => void): this;
@@ -135,7 +134,7 @@ declare namespace megajs {
         encryptECB(buffer: Buffer): Buffer;
         decryptECB(buffer: Buffer): Buffer;
     }
-    // Interfaces & Types
+    // Interfaces & Type Aliases
     type labelType = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | '' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'grey';
     type StorageStatus = 'ready' | 'connecting' | 'closed';
     type uploadCb = (error: err, file: MutableFile) => void;
@@ -144,10 +143,10 @@ declare namespace megajs {
     type Nullable<T> = T | null;
     type err = Nullable<Error>;
     type noop = () => void;
-    type Fetch = any; // Change this if you can get the type of fetch
-    interface StorageOpts {
+    type Fetch = any; // Change this if you can get the types of fetch
+    interface StorageOpts extends APIOpts {
         email: string;
-        password: string;
+        password: BufferString;
         autoload?: boolean;
         autologin?: boolean;
         keepalive?: boolean;
@@ -156,7 +155,7 @@ declare namespace megajs {
         key: string;
         sid: string;
         name: string;
-        user: any; // Not sure what this is
+        user: string;
         options: StorageOpts;
     }
     interface APIOpts {
@@ -165,10 +164,10 @@ declare namespace megajs {
     }
     interface FileOpts {
         api?: API;
-        key?: BufferString;
+        key: BufferString;
         directory?: boolean;
         downloadId: string;
-        loadedFile: string; // Not sure
+        loadedFile: string;
     }
     interface accountInfo {
         type: string;
@@ -182,7 +181,7 @@ declare namespace megajs {
     interface mkdirOpts {
         name: string;
         key?: BufferString;
-        attributes?: Object;
+        attributes?: JSON;
     }
     interface uploadOpts {
         name: string;
