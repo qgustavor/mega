@@ -34,7 +34,7 @@ declare namespace megajs {
         RSAPrivateKey: (number | number[])[];        
         constructor(options: StorageOpts, cb?: errorCb);
         toJSON(): StorageJSON;
-        close(cb: noop): void;
+        close(cb?: noop): void;
         static fromJSON(json: StorageJSON): Storage;
         mkdir(opt: mkdirOpts | string, cb?: errorCb): void;
         upload(opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): Writable;
@@ -116,6 +116,7 @@ declare namespace megajs {
         setLabel(label: labelType, cb?: noop): this;
         setFavorite(isFavorite?: boolean, cb?: noop): this;
         shareFolder(options: linkOpts, cb?: noop): this;
+        unshare(cb?: noop): this;
         unshareFolder(cb?: noop): this;
         importFile(sharedFile: string | File, cb?: (error: err, file?: this) => void): void | this;
         on(event: 'move', listener: (oldDir: File) => void): this;
@@ -159,15 +160,18 @@ declare namespace megajs {
         options: StorageOpts;
     }
     interface APIOpts {
-        gateway?: string;
         fetch?: Fetch;
+        gateway?: string;
+        httpAgent?: HttpAgent
+        httpsAgent?: HttpsAgent
+        userAgent?: Nullable<string>
     }
-    interface FileOpts {
+        interface FileOpts {
         api?: API;
-        key: BufferString;
+        key?: BufferString;
         directory?: boolean;
         downloadId: string;
-        loadedFile: string;
+        loadedFile?: string;
     }
     interface accountInfo {
         type: string;
