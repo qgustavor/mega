@@ -40,7 +40,8 @@ declare namespace megajs {
         upload(opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): Writable;
         login(cb: (error: err, storage: this) => void): void;
         getAccountInfo(cb: (error: err, account: accountInfo) => void): accountInfo;
-        reload(cb: (error: err, mount: ReadonlyArray<File>[], force?: boolean) => void): void | this;
+        reload(cb: (error: err, mount: ReadonlyArray<File>[]) => void): void | this;
+        reload(force: boolean, cb: (error: err, mount: ReadonlyArray<File>[]) => void): void | this;
         on(event: 'add', listener: (File: MutableFile) => void): this;
         on(event: 'move', listener: (file: MutableFile, oldDir: MutableFile) => void): this;
         on(event: 'ready', listener: (storage: this) => void): this;
