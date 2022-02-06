@@ -40,8 +40,6 @@ declare namespace megajs {
         upload(opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): Writable;
         login(cb: (error: err, storage: this) => void): void;
         getAccountInfo(cb: (error: err, account: accountInfo) => void): accountInfo;
-        // "A required parameter cannot follow an optional parameter."
-        // Do check this because in source code force is the first argument but I had to change the order because of above error
         reload(cb: (error: err, mount: ReadonlyArray<File>[], force?: boolean) => void): void | this;
         on(event: 'add', listener: (File: MutableFile) => void): this;
         on(event: 'move', listener: (file: MutableFile, oldDir: MutableFile) => void): this;
@@ -108,7 +106,6 @@ declare namespace megajs {
         mkdir(opts: mkdirOpts | string, cb?: (error: err, file: Nullable<MutableFile>) => void): void;
         upload(opts: uploadOpts | string, source?: BufferString, cb?: uploadCb): Writable;
         uploadAttribute(type: 0 | 1, data: Buffer, callback?: (error: err, file?: this) => void): void;
-        // Not sure about type of file in delete's cb
         delete(permanent?: boolean, cb?: (error: err, data?: any) => void): this;
         moveTo(target: File | string, cb?: (error: err, data?: any) => void): this;
         setAttributes(attributes: JSON, cb?: noop): this;
