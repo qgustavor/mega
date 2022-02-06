@@ -166,7 +166,7 @@ declare namespace megajs {
         httpsAgent?: HttpsAgent
         userAgent?: Nullable<string>
     }
-        interface FileOpts {
+    interface FileOpts {
         api?: API;
         key?: BufferString;
         directory?: boolean;
