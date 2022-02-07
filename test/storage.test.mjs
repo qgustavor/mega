@@ -131,6 +131,19 @@ test.serial('Should download shared files (new format)', t => {
   })
 })
 
+test.serial('Should load attributes from shared files using promises', async t => {
+  const file = File.fromURL('https://mega.nz/#!AAAAAAAE!AAAAAAAAAACldyOdMzqeRgAAAAAAAAAApXcjnTM6nkY')
+  file.api = storage.api
+
+  const loadedFile = await file.loadAttributes()
+  t.is(file, loadedFile)
+
+  t.is(file.size, 16)
+  t.is(file.directory, false)
+  t.is(file.name, 'test file buffer')
+  t.deepEqual(file.attributes, { n: 'test file buffer' })
+})
+
 test.serial('Should create folders', t => {
   return new Promise((resolve, reject) => {
     storage.mkdir({
@@ -224,6 +237,15 @@ test.serial('Should download empty files', t => {
       resolve()
     })
   })
+})
+
+test.serial('Should create using promises', async t => {
+  const folder = await storage.mkdir({
+    name: 'test folder promise',
+    key: Buffer.alloc(16)
+  })
+
+  t.is(folder.name, 'test folder promise')
 })
 
 test.serial('Should logout from MEGA', t => {
