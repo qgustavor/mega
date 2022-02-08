@@ -37,11 +37,10 @@ declare namespace megajs {
         close(cb?: noop): Promise<void>;
         static fromJSON(json: StorageJSON): Storage;
         mkdir(opt: mkdirOpts | string, cb?: errorCb): void;
+        login(cb?: (error: err, storage: this) => void): Promise<this>;
         upload(opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): Writable;
-        login(cb: (error: err, storage: this) => void): Promise<this>;
-        reload(cb: (error: err, mount: MutableFile[]) => void): Promise<MutableFile[]>;
-        getAccountInfo(cb: (error: err, account: accountInfo) => void): Promise<accountInfo>;
-        reload(force: boolean, cb: (error: err, mount: MutableFile[]) => void): Promise<MutableFile[]>;
+        getAccountInfo(cb?: (error: err, account: accountInfo) => void): Promise<accountInfo>;
+        reload(force?: boolean, cb?: (error: err, mount: MutableFile[]) => void): Promise<MutableFile[]>;
         on(event: 'add', listener: (File: MutableFile) => void): this;
         on(event: 'move', listener: (file: MutableFile, oldDir: MutableFile) => void): this;
         on(event: 'ready', listener: (storage: this) => void): this;
@@ -69,7 +68,7 @@ declare namespace megajs {
         pull(sn: AbortController, retryno?: number): void;
         wait(url: fetch.RequestInfo, sn: AbortController): void;
         defaultFetch(url: fetch.RequestInfo, opts?: fetch.RequestInit): Fetch;
-        request(json: JSON, cb: (error: err, response?: any) => void, retryno?: number): Promise<any>;
+        request(json: JSON, cb?: (error: err, response?: any) => void, retryno?: number): Promise<any>;
     }
 
     export class File extends EventEmitter {
@@ -92,13 +91,13 @@ declare namespace megajs {
         static fromURL(opt: FileOpts | string, extraOpt?: Partial<FileOpts>): File;
         static defaultHandleRetries(tries: number, error: err, cb: errorCb): void;
         constructor(opts: FileOpts);
-        loadAttributes(cb: BufferString): Promise<string | this>;
+        loadAttributes(cb?: BufferString): Promise<this>;
         parseAttributes(at: BufferString): void;
         decryptAttributes(at: BufferString): this;
         loadMetadata(aes: AES, opt: metaOpts): void;
         checkConstructorArgument(value: BufferString): void;
         download(options: downloadOpts, cb?: (error: err, data?: Buffer) => void): Readable;
-        link(options: linkOpts | boolean, cb: (error: err, url?: string) => void): Promise<string>;
+        link(options: linkOpts | boolean, cb?: (error: err, url?: string) => void): Promise<string>;
     }
     export class MutableFile extends File {
         storage: Storage;
