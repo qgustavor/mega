@@ -10,9 +10,12 @@ import tmp from 'tmp-promise'
 import path from 'node:path'
 import os from 'node:os'
 
-const testedPlatform = process.argv[2]
+let testedPlatform = process.argv[2]
 if (testedPlatform !== 'node' && testedPlatform !== 'deno') {
-  throw Error(`Unknown platform: ${testedPlatform}. Run "npm test node" or "npm test deno".`)
+  console.warn(`Unknown platform: ${testedPlatform}.`)
+  console.warn('This is a multi-platform project and because CI the test command needs to know what platform is being tested.')
+  console.warn('Assuming "node". Next time run "npm test node" or "npm test deno".')
+  testedPlatform = 'node'
 }
 
 // Set up temporary directories

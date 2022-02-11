@@ -29,15 +29,21 @@
     "build": "node build",
     "test": "npm run lint && npm run test-runner",
     "test-runner": "node test/helpers/test-runner.mjs",
-    "lint": "ts-standard",
-    "lint-fix": "ts-standard --fix",
+    "lint": "npm run lint-js && npm run lint-ts",
+    "lint-fix": "npm run lint-js-fix && npm run lint-ts-fix",
+    "lint-js": "standard",
+    "lint-js-fix": "standard --fix",
+    "lint-ts": "ts-standard",
+    "lint-ts-fix": "ts-standard --fix",
     "dist": "npm run test && npm run build"
   },
-  "ts-standard": {
+  "standard": {
     "ignore": [
-      "dist",
-      "test/helpers/test-runner.mjs"
+      "dist"
     ]
+  },
+  "ts-standard": {
+    "files": "index.d.ts"
   },
   "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
   "contributors": [
@@ -64,6 +70,7 @@
     "mega-mock": "^0.4.1",
     "readable-stream": "^3.6.0",
     "regenerator-runtime": "^0.13.9",
+    "standard": "^17.0.0-2",
     "tmp-promise": "^3.0.3",
     "ts-standard": "^11.0.0",
     "util": "^0.12.4"
