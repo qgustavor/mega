@@ -21,7 +21,9 @@ When contributing fork the project:
 - Run at least Node tests using `npm test node` to test Node;
 - Optionally run `npm test deno` to test Deno if you have it installed (CI will test Deno anyway).
 
-Before creating a pull request, *please*, run tests. If you implement new features them implement tests for it too if possible.
+Before creating a pull request, *please*, run tests. If you implement new features them implement tests for it too if possible. The hash at the end of test/helpers/test-runner.mjs may be updated if tests are updated in a way it change server state (like adding new files to tests).
+
+Because ts-standard do not support top-level await yet "test/helpers/test-runner.mjs" is not being linted. Avoid doing changes to this file - beside changing the hash - until ts-standard support it or install standard@next locally - which supports top-level await - and use it.
 
 ## Project history
 
