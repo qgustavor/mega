@@ -55,6 +55,7 @@
   "devDependencies": {
     "@types/node": "^17.0.14",
     "@types/node-fetch": "^2.5.12",
+    "@typescript-eslint/experimental-utils": "^5.11.0",
     "ava": "^4.0.1",
     "buffer": "^6.0.3",
     "core-js": "^3.20.3",
