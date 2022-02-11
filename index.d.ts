@@ -113,7 +113,7 @@ declare namespace megajs {
         delete(permanent?: boolean, cb?: (error: err, data?: any) => void): this;
         moveTo(target: File | string, cb?: (error: err, data?: any) => void): this;
         upload(opts: uploadOpts | string, source?: BufferString, cb?: uploadCb): Writable;
-        mkdir(opts: mkdirOpts | string, cb?: (error: err, file: Nullable<MutableFile>) => void): Promise<this>;
+        mkdir(opts: mkdirOpts | string, cb?: (error: err, file: MutableFile) => void): Promise<this>;
         uploadAttribute(type: uploadAttrType, data: Buffer, cb?: (error: err, file?: this) => void): Promise<this>;
         importFile(sharedFile: string | File, cb?: (error: err, file?: this) => void): Promise<MutableFile>;
         on(event: 'move', listener: (oldDir: File) => void): this;
