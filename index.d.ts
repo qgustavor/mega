@@ -36,7 +36,7 @@ declare namespace megajs {
         toJSON(): StorageJSON;
         close(cb?: noop): Promise<void>;
         static fromJSON(json: StorageJSON): Storage;
-        mkdir(opt: mkdirOpts | string, cb?: errorCb): void;
+        mkdir(opt: mkdirOpts | string, cb?: errorCb): Promise<MutableFile>;
         login(cb?: (error: err, storage: this) => void): Promise<this>;
         upload(opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): Writable;
         getAccountInfo(cb?: (error: err, account: accountInfo) => void): Promise<accountInfo>;
@@ -91,7 +91,7 @@ declare namespace megajs {
         static fromURL(opt: FileOpts | string, extraOpt?: Partial<FileOpts>): File;
         static defaultHandleRetries(tries: number, error: err, cb: errorCb): void;
         constructor(opts: FileOpts);
-        loadAttributes(cb?: BufferString): Promise<this>;
+        loadAttributes(cb?: BufferString): Promise<File | this>;
         parseAttributes(at: BufferString): void;
         decryptAttributes(at: BufferString): this;
         loadMetadata(aes: AES, opt: metaOpts): void;
@@ -114,7 +114,7 @@ declare namespace megajs {
         moveTo(target: File | string, cb?: (error: err, data?: any) => void): this;
         upload(opts: uploadOpts | string, source?: BufferString, cb?: uploadCb): Writable;
         mkdir(opts: mkdirOpts | string, cb?: (error: err, file: Nullable<MutableFile>) => void): Promise<this>;
-        uploadAttribute(type: 0 | 1, data: Buffer, callback?: (error: err, file?: this) => void): Promise<this>;
+        uploadAttribute(type: uploadAttrType, data: Buffer, cb?: (error: err, file?: this) => void): Promise<this>;
         importFile(sharedFile: string | File, cb?: (error: err, file?: this) => void): Promise<MutableFile>;
         on(event: 'move', listener: (oldDir: File) => void): this;
         on(event: 'update', listener: (file: MutableFile) => void): this;
@@ -135,6 +135,7 @@ declare namespace megajs {
     // Interfaces & Type Aliases
     type labelType = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | '' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'grey';
     type StorageStatus = 'ready' | 'connecting' | 'closed';
+    type uploadAttrType = 0 | 1 | 'thumbnail' | 'preview'
     type uploadCb = (error: err, file: MutableFile) => void;
     type errorCb = (error: err) => void;
     type BufferString = Buffer | string;
