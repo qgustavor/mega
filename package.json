@@ -3,6 +3,7 @@
   "version": "0.17.2",
   "description": "Unofficial JavaScript SDK for MEGA",
   "main": "dist/main.node-cjs.js",
+  "typings": "./index.d.ts",
   "exports": {
     "node": {
       "require": "./dist/main.node-cjs.js",
@@ -51,6 +52,8 @@
     "stream-skip": "^1.0.3"
   },
   "devDependencies": {
+    "@types/node": "^17.0.14",
+    "@types/node-fetch": "^2.5.12",
     "ava": "^4.0.1",
     "buffer": "^6.0.3",
     "core-js": "^3.20.3",
