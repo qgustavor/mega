@@ -131,7 +131,7 @@ test.serial('Should download shared files (new format)', t => {
   })
 })
 
-test.serial('Should load attributes from shared files using promises', async t => {
+test.serial('Should download shared files using promises', async t => {
   const file = File.fromURL('https://mega.nz/#!AAAAAAAE!AAAAAAAAAACldyOdMzqeRgAAAAAAAAAApXcjnTM6nkY')
   file.api = storage.api
 
@@ -142,6 +142,9 @@ test.serial('Should load attributes from shared files using promises', async t =
   t.is(file.directory, false)
   t.is(file.name, 'test file buffer')
   t.deepEqual(file.attributes, { n: 'test file buffer' })
+
+  const data = await file.downloadBuffer()
+  t.is(data.toString('hex'), Buffer.alloc(16).toString('hex'))
 })
 
 test.serial('Should create folders', t => {
@@ -239,13 +242,27 @@ test.serial('Should download empty files', t => {
   })
 })
 
-test.serial('Should create using promises', async t => {
+test.serial('Should create folders using promises', async t => {
   const folder = await storage.mkdir({
     name: 'test folder promise',
     key: Buffer.alloc(16)
   })
 
   t.is(folder.name, 'test folder promise')
+})
+
+test.serial('Should upload files using promises', async t => {
+  const file = await storage.upload({
+    name: 'test file buffer promise',
+    key: Buffer.alloc(24)
+  }, Buffer.alloc(16)).complete
+
+  t.is(file.name, 'test file buffer promise')
+})
+
+test.serial('Should login using promises', async t => {
+  const promiseResolvedValue = await storage.ready
+  t.is(promiseResolvedValue, storage)
 })
 
 test.serial('Should logout from MEGA', t => {

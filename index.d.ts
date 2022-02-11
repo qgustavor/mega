@@ -32,13 +32,14 @@ declare namespace megajs {
         mounts: MutableFile[];
         files: { [id in string]: MutableFile };
         RSAPrivateKey: (number | number[])[];
+        ready: Promise<this>;
         constructor(options: StorageOpts, cb?: errorCb);
         toJSON(): StorageJSON;
         close(cb?: noop): Promise<void>;
         static fromJSON(json: StorageJSON): Storage;
         mkdir(opt: mkdirOpts | string, cb?: errorCb): Promise<MutableFile>;
         login(cb?: (error: err, storage: this) => void): Promise<this>;
-        upload(opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): Writable;
+        upload(opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): UploadStream;
         getAccountInfo(cb?: (error: err, account: accountInfo) => void): Promise<accountInfo>;
         reload(force?: boolean, cb?: (error: err, mount: MutableFile[]) => void): Promise<MutableFile[]>;
         on(event: 'add', listener: (File: MutableFile) => void): this;
@@ -97,6 +98,7 @@ declare namespace megajs {
         loadMetadata(aes: AES, opt: metaOpts): void;
         checkConstructorArgument(value: BufferString): void;
         download(options: downloadOpts, cb?: (error: err, data?: Buffer) => void): Readable;
+        downloadBuffer(options: downloadOpts, cb?: (error: err, data?: Buffer) => void): Promise<Buffer>;
         link(options: linkOpts | boolean, cb?: (error: err, url?: string) => void): Promise<string>;
     }
     export class MutableFile extends File {
@@ -113,7 +115,7 @@ declare namespace megajs {
         delete(permanent?: boolean, cb?: (error: err, data?: any) => void): this;
         moveTo(target: File | string, cb?: (error: err, data?: any) => void): this;
         upload(opts: uploadOpts | string, source?: BufferString, cb?: uploadCb): Writable;
-        mkdir(opts: mkdirOpts | string, cb?: (error: err, file: MutableFile) => void): Promise<this>;
+        mkdir(opts: mkdirOpts | string, cb?: (error: err, file: MutableFile) => void): Promise<MutableFile>;
         uploadAttribute(type: uploadAttrType, data: Buffer, cb?: (error: err, file?: this) => void): Promise<this>;
         importFile(sharedFile: string | File, cb?: (error: err, file?: this) => void): Promise<MutableFile>;
         on(event: 'move', listener: (oldDir: File) => void): this;
@@ -221,6 +223,13 @@ declare namespace megajs {
         returnCiphertext?: boolean;
         chunkSizeIncrement?: number;
         handleRetries?: (tries: number, error: err, cb: errorCb) => void;
+    }
+    interface UploadStream extends Writable {
+      complete: Promise<MutableFile>;
+      on(event: string, listener: (...args: any[]) => void): this;
+      on(event: 'complete', listener: (file: MutableFile) => void): this;
+      once(event: string, listener: (...args: any[]) => void): this;
+      once(event: 'complete', listener: (file: MutableFile) => void): this;
     }
 }
 
