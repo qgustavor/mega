@@ -11,9 +11,9 @@ declare function megajs (options: megajs.StorageOpts, cb?: megajs.errorCb): mega
 
 declare namespace megajs {
 
-  export function megaEncrypt (key: Buffer, options?: cryptOpts): Transform
-  export function megaDecrypt (key: Buffer, options?: cryptOpts): Transform
-  export function megaVerify (key: Buffer): Transform
+  export function encrypt (key: Buffer, options?: cryptOpts): Transform
+  export function decrypt (key: Buffer, options?: cryptOpts): Transform
+  export function verify (key: Buffer): Transform
 
   export class Storage extends EventEmitter {
     api: API
@@ -53,6 +53,7 @@ declare namespace megajs {
     once (event: 'update', listener: (file: MutableFile) => void): this;
     once (event: 'delete', listener: (file: Readonly<File>) => void): this;
   }
+
   export class API extends EventEmitter {
     fetch: Fetch
     gateway: string
@@ -101,6 +102,7 @@ declare namespace megajs {
     downloadBuffer (options: downloadOpts, cb?: (error: err, data?: Buffer) => void): Promise<Buffer>;
     link (options: linkOpts | boolean, cb?: (error: err, url?: string) => void): Promise<string>;
   }
+
   export class MutableFile extends File {
     storage: Storage
     static packAttributes (attributes: JSON): Buffer;
@@ -125,6 +127,7 @@ declare namespace megajs {
     once (event: 'update', listener: (file: MutableFile) => void): this;
     once (event: 'delete', listener: (file: Readonly<File>) => void): this;
   }
+
   export class AES {
     key: Buffer
     constructor (key: Buffer);
@@ -134,6 +137,7 @@ declare namespace megajs {
     encryptECB (buffer: Buffer): Buffer;
     decryptECB (buffer: Buffer): Buffer;
   }
+
     // Interfaces & Type Aliases
     type labelType = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | '' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'grey'
     type StorageStatus = 'ready' | 'connecting' | 'closed'
@@ -226,10 +230,12 @@ declare namespace megajs {
     }
     interface UploadStream extends Writable {
       complete: Promise<MutableFile>
-      on: (event: string, listener: (...args: any[]) => void) => this
-      on: (event: 'complete', listener: (file: MutableFile) => void) => this
-      once: (event: string, listener: (...args: any[]) => void) => this
-      once: (event: 'complete', listener: (file: MutableFile) => void) => this
+      on:
+      ((event: string, listener: (...args: any[]) => void) => this) &
+      ((event: 'complete', listener: (file: MutableFile) => void) => this)
+      once:
+      ((event: string, listener: (...args: any[]) => void) => this) &
+      ((event: 'complete', listener: (file: MutableFile) => void) => this)
     }
 }
 

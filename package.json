@@ -3,8 +3,12 @@
   "version": "1.0.0-alpha.2",
   "description": "Unofficial JavaScript SDK for MEGA",
   "main": "dist/main.node-cjs.js",
-  "typings": "./index.d.ts",
+  "typings": "types/cjs.d.ts",
   "exports": {
+    "types": {
+      "require": "./types/cjs.d.ts",
+      "import": "./types/es.d.ts"
+    },
     "node": {
       "require": "./dist/main.node-cjs.js",
       "import": "./dist/main.node-es.mjs"
@@ -16,7 +20,7 @@
   },
   "files": [
     "dist",
-    "index.d.ts"
+    "types"
   ],
   "repository": {
     "type": "git",
@@ -44,7 +48,7 @@
     ]
   },
   "ts-standard": {
-    "files": "index.d.ts"
+    "files": "types/cjs.d.ts"
   },
   "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
   "contributors": [
