@@ -37,7 +37,7 @@ declare namespace megajs {
     toJSON (): StorageJSON;
     close (cb?: noop): Promise<void>;
     static fromJSON (json: StorageJSON): Storage;
-    mkdir (opt: mkdirOpts | string, cb?: errorCb): Promise<MutableFile>;
+    mkdir (opt: mkdirOpts | string, cb?: (error: err, file: MutableFile) => void): Promise<MutableFile>;
     login (cb?: (error: err, storage: this) => void): Promise<this>;
     upload (opt: uploadOpts | string, buffer?: BufferString, cb?: uploadCb): UploadStream;
     getAccountInfo (cb?: (error: err, account: accountInfo) => void): Promise<accountInfo>;
@@ -69,7 +69,7 @@ declare namespace megajs {
     pull (sn: AbortController, retryno?: number): void;
     wait (url: fetch.RequestInfo, sn: AbortController): void;
     defaultFetch (url: fetch.RequestInfo, opts?: fetch.RequestInit): Fetch;
-    request (json: JSON, cb?: (error: err, response?: any) => void, retryno?: number): Promise<any>;
+    request (json: JSON, cb?: (error: err, response?: JSON) => void, retryno?: number): Promise<JSON>;
   }
 
   export class File extends EventEmitter {
@@ -92,9 +92,9 @@ declare namespace megajs {
     static fromURL (opt: FileOpts | string, extraOpt?: Partial<FileOpts>): File;
     static defaultHandleRetries (tries: number, error: err, cb: errorCb): void;
     constructor (opts: FileOpts);
-    loadAttributes (cb?: BufferString): Promise<File | this>;
+    loadAttributes (cb?: (error: err, file: File | this) => void): Promise<File | this>;
     parseAttributes (at: BufferString): void;
-    decryptAttributes (at: BufferString): this;
+    decryptAttributes (at: BufferString): void;
     loadMetadata (aes: AES, opt: metaOpts): void;
     checkConstructorArgument (value: BufferString): void;
     download (options: downloadOpts, cb?: (error: err, data?: Buffer) => void): Readable;
@@ -105,15 +105,15 @@ declare namespace megajs {
     storage: Storage
     static packAttributes (attributes: JSON): Buffer;
     constructor (opts: FileOpts, storage: Storage);
-    unshare (cb?: noop): this;
-    unshareFolder (cb?: noop): this;
-    rename (filename: string, cb?: noop): this;
-    setLabel (label: labelType, cb?: noop): this;
-    shareFolder (options: linkOpts, cb?: noop): Promise<string>;
-    setFavorite (isFavorite?: boolean, cb?: noop): this;
+    unshare (cb?: noop): Promise<void>;
+    unshareFolder (cb?: noop): Promise<void>;
+    rename (filename: string, cb?: noop): Promise<void>;
+    setLabel (label: labelType, cb?: noop): Promise<void>;
+    shareFolder (options: linkOpts, cb?: (error: err, url?: string) => void): Promise<string>;
+    setFavorite (isFavorite?: boolean, cb?: noop): Promise<void>;
     setAttributes (attributes: JSON, cb?: noop): Promise<void>;
-    delete (permanent?: boolean, cb?: (error: err, data?: any) => void): this;
-    moveTo (target: File | string, cb?: (error: err, data?: any) => void): this;
+    delete (permanent?: boolean, cb?: (error: err, data?: any) => void): Promise<void>;
+    moveTo (target: File | string, cb?: (error: err, data?: any) => void): Promise<void>;
     upload (opts: uploadOpts | string, source?: BufferString, cb?: uploadCb): Writable;
     mkdir (opts: mkdirOpts | string, cb?: (error: err, file: MutableFile) => void): Promise<MutableFile>;
     uploadAttribute (type: uploadAttrType, data: Buffer, cb?: (error: err, file?: this) => void): Promise<this>;
