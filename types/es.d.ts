@@ -53,6 +53,7 @@ export declare class API extends EventEmitter {
   counterId: string
   userAgent: string
   keepalive: boolean
+  closed: boolean
   httpAgent: HttpAgent
   httpsAgent: HttpsAgent
   sn?: AbortController
