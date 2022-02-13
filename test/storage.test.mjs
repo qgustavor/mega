@@ -265,6 +265,25 @@ test.serial('Should login using promises', async t => {
   t.is(promiseResolvedValue, storage)
 })
 
+test.serial('Should share folders using promises', async t => {
+  const folder = storage.root.children.find(e => e.name === 'test folder')
+
+  const link = await folder.link({
+    key: Buffer.alloc(16)
+  })
+  t.is(link, 'https://mega.nz/folder/AAAAAAAG#AAAAAAAAAAAAAAAAAAAAAA')
+})
+
+test.serial('Should share folders without keys', async t => {
+  const folder = storage.root.children.find(e => e.name === 'test folder')
+
+  const link = await folder.link({
+    key: Buffer.alloc(16),
+    noKey: true
+  })
+  t.is(link, 'https://mega.nz/folder/AAAAAAAG')
+})
+
 test.serial('Should logout from MEGA', t => {
   return new Promise((resolve, reject) => {
     storage.close((error) => {
