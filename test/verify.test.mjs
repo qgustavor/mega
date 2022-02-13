@@ -16,3 +16,9 @@ test('MEGA verify stream', async t => {
   await stream2promise(verifyStream)
   t.is(verifyStream.mac.toString('hex'), '671427db245c00c7')
 })
+
+test('Should not accept wrong key sizes', t => {
+  t.throws(() => verify(Buffer.alloc(10)), {
+    message: 'Wrong key length. Key must be 256bit.'
+  })
+})

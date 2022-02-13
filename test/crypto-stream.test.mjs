@@ -76,3 +76,9 @@ test('MEGA mid-stream decrypt', async t => {
   const got = decryptBuffer.toString('hex')
   t.is(expected, got)
 })
+
+test('Should not accept wrong key sizes', t => {
+  t.throws(() => megaEncrypt(Buffer.alloc(10)), {
+    message: 'Wrong key length. Key must be 192bit.'
+  })
+})

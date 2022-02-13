@@ -284,6 +284,75 @@ test.serial('Should share folders without keys', async t => {
   t.is(link, 'https://mega.nz/folder/AAAAAAAG')
 })
 
+// Zalgo = https://oren.github.io/articles/zalgo/
+test.serial('Should not release zalgo when using callbacks', t => {
+  let released = false
+  // eslint-disable-next-line no-new
+  new Storage({
+    email: 'mock@test',
+    password: 'mock',
+    autologin: false
+  }, () => {
+    released = true
+  })
+  t.is(released, false)
+})
+
+test.serial('Should not release zalgo when using promises', t => {
+  let released = false
+  // eslint-disable-next-line no-new
+  new Storage({
+    email: 'mock@test',
+    password: 'mock',
+    autologin: false
+  }).ready.then(() => {
+    released = true
+  })
+  t.is(released, false)
+})
+
+test.serial('Should share folders using shareFolder (callback)', t => {
+  return new Promise((resolve, reject) => {
+    const folder = storage.root.children.find(e => e.name === 'test folder')
+
+    folder.shareFolder({
+      key: Buffer.alloc(16),
+      noKey: true
+    }, (error, link) => {
+      if (error) return reject(link)
+      t.is(link, 'https://mega.nz/folder/AAAAAAAG')
+      resolve()
+    })
+  })
+})
+
+test.serial('Should share folders using shareFolder (promise)', async t => {
+  const folder = storage.root.children.find(e => e.name === 'test folder')
+
+  const link = await folder.shareFolder({
+    key: Buffer.alloc(16),
+    noKey: true
+  })
+  t.is(link, 'https://mega.nz/folder/AAAAAAAG')
+})
+
+test.serial('Should not release zalgo when using shareFolder', async t => {
+  return new Promise((resolve, reject) => {
+    const folder = storage.root.children.find(e => e.name === 'test folder promise')
+
+    let zalgoReleased = true
+    folder.shareFolder({
+      key: Buffer.alloc(32)
+    }, (error, link) => {
+      if (!error) return reject(Error('Should fail'))
+      t.is(error.message, 'share key must be 16 byte / 22 characters')
+      t.is(zalgoReleased, false)
+      resolve()
+    })
+    zalgoReleased = false
+  })
+})
+
 test.serial('Should logout from MEGA', t => {
   return new Promise((resolve, reject) => {
     storage.close((error) => {
