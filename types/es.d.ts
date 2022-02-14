@@ -80,6 +80,8 @@ export declare class File extends EventEmitter {
   directory: boolean
   favorited: boolean
   loadedFile?: string
+  parent?: File
+  children?: File[]
   key: Nullable<Buffer>
   name: Nullable<string>
   get createdAt (): number;

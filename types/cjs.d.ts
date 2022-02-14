@@ -87,6 +87,8 @@ declare namespace megajs {
     directory: boolean
     favorited: boolean
     loadedFile?: string
+    parent?: File
+    children?: File[]
     key: Nullable<Buffer>
     name: Nullable<string>
     get createdAt (): number;
@@ -104,7 +106,7 @@ declare namespace megajs {
     link (options: linkOpts | boolean, cb?: (error: err, url?: string) => void): Promise<string>;
   }
 
-  export class MutableFile extends File {
+  export declare class MutableFile extends File {
     storage: Storage
     static packAttributes (attributes: JSON): Buffer;
     constructor (opts: FileOpts, storage: Storage);
