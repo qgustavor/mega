@@ -1,6 +1,7 @@
 /* global Deno */
 
 import test from 'ava'
+import { testBuffer, sha1 } from './helpers/test-utils.mjs'
 import { Storage, File } from '../dist/main.node-es.mjs'
 
 // Set up Storage to use test server and credentials
@@ -55,22 +56,31 @@ test.serial('Should not allow uploading without a size', t => {
   })
 })
 
-test.serial('Should upload streams', t => {
-  return new Promise((resolve, reject) => {
-    const uploadStream = storage.upload({
-      name: 'test file streams',
-      key: Buffer.alloc(24),
-      size: 1024 * 1024
-    })
-
-    uploadStream.on('error', reject)
-    uploadStream.on('complete', file => {
-      t.is(file.name, 'test file streams')
-      resolve()
-    })
-
-    uploadStream.end(Buffer.alloc(1024 * 1024))
+test.serial('Should stream upload and download', async t => {
+  const dataSize = 2 * 1024 * 1024
+  const uploadedData = testBuffer(dataSize)
+  const uploadedHash = sha1(uploadedData)
+  const uploadStream = storage.upload({
+    name: 'test file streams',
+    key: Buffer.alloc(24),
+    size: dataSize
   })
+  uploadStream.end(Buffer.from(uploadedData))
+
+  const file = await uploadStream.complete
+  t.is(file.name, 'test file streams')
+  t.is(file.key.toString('hex'), '0000000000000000831f1ab870f945580000000000000000831f1ab870f94558')
+  t.is(file.size, dataSize)
+
+  const singleConnData = await file.downloadBuffer({
+    maxConnections: 1
+  })
+  t.is(singleConnData.length, dataSize)
+  t.is(sha1(singleConnData), uploadedHash)
+
+  const multiConnData = await file.downloadBuffer()
+  t.is(multiConnData.length, dataSize)
+  t.is(sha1(singleConnData), uploadedHash)
 })
 
 test.serial('Should share files', t => {
@@ -351,6 +361,34 @@ test.serial('Should not release zalgo when using shareFolder', async t => {
     })
     zalgoReleased = false
   })
+})
+
+test.serial('Should upload and download huge files in parts', async t => {
+  const parts = 16
+  const partSize = 128 * 1024
+  const fullSize = parts * partSize
+  const uploadedData = Buffer.alloc(fullSize)
+  const uploadStream = storage.upload({
+    name: 'test file streams 2',
+    key: Buffer.alloc(24),
+    size: fullSize
+  })
+
+  for (let i = 0; i < parts; i++) {
+    const data = testBuffer(partSize)
+    data.copy(uploadedData, partSize * i)
+    uploadStream.write(data)
+    await new Promise(resolve => setTimeout(resolve, 0))
+  }
+  uploadStream.end()
+
+  const file = await uploadStream.complete
+  t.is(file.name, 'test file streams 2')
+  t.is(file.size, fullSize)
+
+  const downloadedData = await file.downloadBuffer()
+  t.is(downloadedData.length, fullSize)
+  t.is(sha1(downloadedData), sha1(uploadedData))
 })
 
 test.serial('Should logout from MEGA', t => {
