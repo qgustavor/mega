@@ -56,10 +56,9 @@ test.serial('Should not allow uploading without a size', t => {
   })
 })
 
-test.serial('Should stream upload and download', async t => {
+test.serial('Should stream upload', async t => {
   const dataSize = 2 * 1024 * 1024
   const uploadedData = testBuffer(dataSize)
-  const uploadedHash = sha1(uploadedData)
   const uploadStream = storage.upload({
     name: 'test file streams',
     key: Buffer.alloc(24),
@@ -71,15 +70,20 @@ test.serial('Should stream upload and download', async t => {
   t.is(file.name, 'test file streams')
   t.is(file.key.toString('hex'), '0000000000000000831f1ab870f945580000000000000000831f1ab870f94558')
   t.is(file.size, dataSize)
+})
 
+test.serial('Should stream download', async t => {
+  const file = storage.root.children.find(e => e.name === 'test file streams')
+  const uploadedData = testBuffer(file.size)
+  const uploadedHash = sha1(uploadedData)
   const singleConnData = await file.downloadBuffer({
     maxConnections: 1
   })
-  t.is(singleConnData.length, dataSize)
+  t.is(singleConnData.length, file.size)
   t.is(sha1(singleConnData), uploadedHash)
 
   const multiConnData = await file.downloadBuffer()
-  t.is(multiConnData.length, dataSize)
+  t.is(multiConnData.length, file.size)
   t.is(sha1(singleConnData), uploadedHash)
 })
 
@@ -363,7 +367,8 @@ test.serial('Should not release zalgo when using shareFolder', async t => {
   })
 })
 
-test.serial('Should upload and download huge files in parts', async t => {
+let uploadedSha
+test.serial('Should upload huge files in parts', async t => {
   const parts = 16
   const partSize = 128 * 1024
   const fullSize = parts * partSize
@@ -385,10 +390,14 @@ test.serial('Should upload and download huge files in parts', async t => {
   const file = await uploadStream.complete
   t.is(file.name, 'test file streams 2')
   t.is(file.size, fullSize)
+  uploadedSha = sha1(uploadedData)
+})
 
+test.serial('Should download files uploaded in parts', async t => {
+  const file = storage.root.children.find(e => e.name === 'test file streams 2')
   const downloadedData = await file.downloadBuffer()
-  t.is(downloadedData.length, fullSize)
-  t.is(sha1(downloadedData), sha1(uploadedData))
+  t.is(downloadedData.length, file.size)
+  t.is(sha1(downloadedData), uploadedSha)
 })
 
 test.serial('Should logout from MEGA', t => {
