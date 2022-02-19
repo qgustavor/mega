@@ -1,7 +1,7 @@
 import test from 'ava'
-import { testBuffer, sha1 } from './test-utils.js'
+import { testBuffer, sha1 } from './helpers/test-utils.mjs'
 
-import { AES } from '../lib/crypto'
+import { AES } from '../lib/crypto/index.mjs'
 
 test('AES-CBC', t => {
   const aes = new AES(testBuffer(16))
@@ -21,10 +21,14 @@ test('AES wrong key size', t => {
 
   t.throws(() => {
     aes = new AES(testBuffer(8))
-  }, Error)
+  }, {
+    message: 'Wrong key length. Key must be 128bit.'
+  })
   t.throws(() => {
     aes = new AES(testBuffer(32))
-  }, Error)
+  }, {
+    message: 'Wrong key length. Key must be 128bit.'
+  })
 
   t.falsy(aes)
 })

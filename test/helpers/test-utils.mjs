@@ -20,6 +20,29 @@ export function stream2cb (stream, cb) {
   })
 }
 
+export function stream2promise (stream) {
+  const chunks = []
+  let complete
+
+  return new Promise((resolve, reject) => {
+    stream.on('data', function (d) {
+      chunks.push(d)
+    })
+    stream.on('end', function () {
+      if (!complete) {
+        complete = true
+        resolve(Buffer.concat(chunks))
+      }
+    })
+    stream.on('error', function (e) {
+      if (!complete) {
+        complete = true
+        reject(e)
+      }
+    })
+  })
+}
+
 // Generate buffer with specific size.
 export function testBuffer (size, start = 0, step = 1) {
   const buffer = Buffer.alloc(size)

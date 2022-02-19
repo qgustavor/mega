@@ -1,16 +1,26 @@
 {
   "name": "megajs",
-  "version": "0.17.2",
+  "version": "1.0.0",
   "description": "Unofficial JavaScript SDK for MEGA",
   "main": "dist/main.node-cjs.js",
-  "module": "dist/main.node-es.js",
-  "jsnext:main": "dist/main.node-es.js",
-  "browser": {
-    "dist/main.node-cjs.js": "dist/main.browser-umd.js",
-    "dist/main.node-es.js": "dist/main.browser-es.js"
+  "typings": "types/cjs.d.ts",
+  "exports": {
+    "types": {
+      "require": "./types/cjs.d.ts",
+      "import": "./types/es.d.ts"
+    },
+    "node": {
+      "require": "./dist/main.node-cjs.js",
+      "import": "./dist/main.node-es.mjs"
+    },
+    "default": {
+      "require": "./dist/main.browser-cjs.js",
+      "import": "./dist/main.browser-es.mjs"
+    }
   },
   "files": [
-    "dist"
+    "dist",
+    "types"
   ],
   "repository": {
     "type": "git",
@@ -21,12 +31,15 @@
     "storage"
   ],
   "scripts": {
-    "build": "cross-env BABEL_ENV=build node build",
-    "test": "npm run lint && npm run ava-node && npm run ava-browser",
-    "lint": "standard",
-    "lint-fix": "standard --fix",
-    "ava-node": "cross-env BABEL_ENV=test-node ava",
-    "ava-browser": "cross-env BABEL_ENV=test-browser ava",
+    "build": "node build",
+    "test": "npm run lint && npm run test-runner",
+    "test-runner": "node test/helpers/test-runner.mjs",
+    "lint": "npm run lint-js && npm run lint-ts",
+    "lint-fix": "npm run lint-js-fix && npm run lint-ts-fix",
+    "lint-js": "standard",
+    "lint-js-fix": "standard --fix",
+    "lint-ts": "ts-standard",
+    "lint-ts-fix": "ts-standard --fix",
     "dist": "npm run test && npm run build"
   },
   "standard": {
@@ -34,15 +47,8 @@
       "dist"
     ]
   },
-  "ava": {
-    "files": [
-      "test/**/*.test.js"
-    ],
-    "timeout": "2m",
-    "require": [
-      "@babel/register",
-      "@babel/polyfill"
-    ]
+  "ts-standard": {
+    "files": "types/cjs.d.ts"
   },
   "author": "Tõnis Tiigi <tonistiigi@gmail.com>",
   "contributors": [
@@ -50,32 +56,27 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "combined-stream": "^1.0.8",
-    "request": "^2.88.2",
+    "abort-controller": "^3.0.0",
+    "node-fetch": "^2.6.7",
+    "pumpify": "^2.0.1",
     "secure-random": "^1.1.2",
-    "stream-combiner": "^0.2.2",
-    "stream-skip": "^1.0.3",
-    "through": "^2.1.0"
+    "stream-skip": "^1.0.3"
   },
   "devDependencies": {
-    "@babel/core": "^7.10.2",
-    "@babel/polyfill": "^7.10.1",
-    "@babel/preset-env": "^7.10.2",
-    "@babel/register": "^7.10.1",
-    "ava": "1.0.0-rc.2",
-    "babel-plugin-transform-rename-import": "^2.3.0",
-    "babel-preset-minify": "^0.4.3",
-    "cross-env": "^5.2.1",
-    "mega-mock": "^0.2.0",
-    "rollup": "^0.58.2",
-    "rollup-plugin-babel": "^4.4.0",
-    "rollup-plugin-commonjs": "^8.4.1",
-    "rollup-plugin-json": "^2.3.1",
-    "rollup-plugin-node-builtins": "^2.1.2",
-    "rollup-plugin-node-globals": "^1.4.0",
-    "rollup-plugin-node-resolve": "^3.4.0",
-    "rollup-plugin-replace": "^2.2.0",
-    "standard": "^11.0.1",
-    "tmp": "0.0.33"
+    "@types/node": "^17.0.14",
+    "@types/node-fetch": "^2.5.12",
+    "ava": "^4.0.1",
+    "buffer": "^6.0.3",
+    "core-js": "^3.20.3",
+    "esbuild": "^0.14.11",
+    "esbuild-plugin-alias": "^0.2.1",
+    "events": "^3.3.0",
+    "mega-mock": "^0.4.1",
+    "readable-stream": "^3.6.0",
+    "regenerator-runtime": "^0.13.9",
+    "standard": "^17.0.0-2",
+    "tmp-promise": "^3.0.3",
+    "ts-standard": "^11.0.0",
+    "util": "^0.12.4"
   }
 }

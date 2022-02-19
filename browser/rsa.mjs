@@ -107,14 +107,14 @@ function bsub (a, b) {
 }
 
 function ip (w, n, x, y, c) {
-  let xl = x & bdm
-  let xh = x >> bd
+  const xl = x & bdm
+  const xh = x >> bd
 
-  let yl = y & bdm
-  let yh = y >> bd
+  const yl = y & bdm
+  const yh = y >> bd
 
-  let m = xh * yl + yh * xl
-  let l = xl * yl + ((m & bdm) << bd) + w[n] + c
+  const m = xh * yl + yh * xl
+  const l = xl * yl + ((m & bdm) << bd) + w[n] + c
   w[n] = l & bm
   c = xh * yh + (m >> bd) + (l >> bs)
   return c
@@ -123,9 +123,9 @@ function ip (w, n, x, y, c) {
 // Multiple-precision squaring, HAC Algorithm 14.16
 
 function bsqr (x) {
-  let t = x.length
-  let n = 2 * t
-  let r = zeros(n)
+  const t = x.length
+  const n = 2 * t
+  const r = zeros(n)
   let c = 0
   let i, j
 
@@ -143,9 +143,9 @@ function bsqr (x) {
 // Multiple-precision multiplication, HAC Algorithm 14.12
 
 function bmul (x, y) {
-  let n = x.length
-  let t = y.length
-  let r = zeros(n + t - 1)
+  const n = x.length
+  const t = y.length
+  const r = zeros(n + t - 1)
   let c, i, j
 
   for (i = 0; i < t; i++) {
@@ -168,9 +168,9 @@ function toppart (x, start, len) {
 // Multiple-precision division, HAC Algorithm 14.20
 function bdiv (a, b) {
   let n = a.length - 1
-  let t = b.length - 1
+  const t = b.length - 1
   let nmt = n - t
-  let x, y, qq, xx
+  let x, qq, xx
   let i
 
   // trivial cases; a < b
@@ -195,11 +195,11 @@ function bdiv (a, b) {
   }
 
   // normalize
-  let shift2 = Math.floor(Math.log(b[t]) / log2) + 1
-  let shift = bs - shift2
+  const shift2 = Math.floor(Math.log(b[t]) / log2) + 1
+  const shift = bs - shift2
 
   x = a.concat()
-  y = b.concat()
+  const y = b.concat()
 
   if (shift) {
     for (i = t; i > 0; i--) y[i] = ((y[i] << shift) & bm) | (y[i - 1] >> shift2)
@@ -212,7 +212,7 @@ function bdiv (a, b) {
   }
 
   let x2
-  let q = zeros(nmt + 1)
+  const q = zeros(nmt + 1)
   let y2 = zeros(nmt).concat(y)
   for (;;) {
     x2 = bsub(x, y2)
@@ -221,8 +221,8 @@ function bdiv (a, b) {
     x = x2
   }
 
-  let yt = y[t]
-  let top = toppart(y, t, 2)
+  const yt = y[t]
+  const top = toppart(y, t, 2)
   let m
   for (i = n; i > t; i--) {
     m = i - t - 1
@@ -234,7 +234,7 @@ function bdiv (a, b) {
       q[m] = Math.floor(toppart(x, i, 2) / yt)
     }
 
-    let topx = toppart(x, i, 3)
+    const topx = toppart(x, i, 3)
     while (q[m] * top > topx) q[m]--
 
     // x-=q[m]*y*b^m
@@ -275,22 +275,22 @@ function bmod (p, m) {
     if (m[0] < bdm) return [simplemod(p, m[0])]
   }
 
-  let r = bdiv(p, m)
+  const r = bdiv(p, m)
   return r.mod
 }
 
 // Barrett's modular reduction, HAC Algorithm 14.42
 
 function bmod2 (x, m, mu) {
-  let xl = x.length - (m.length << 1)
+  const xl = x.length - (m.length << 1)
   if (xl > 0) return bmod2(x.slice(0, xl).concat(bmod2(x.slice(xl), m, mu)), m, mu)
 
-  let ml1 = m.length + 1
-  let ml2 = m.length - 1
+  const ml1 = m.length + 1
+  const ml2 = m.length - 1
   let rr
-  let q3 = bmul(x.slice(ml2), mu).slice(ml1)
-  let r1 = x.slice(0, ml1)
-  let r2 = bmul(q3, m).slice(0, ml1)
+  const q3 = bmul(x.slice(ml2), mu).slice(ml1)
+  const r1 = x.slice(0, ml1)
+  const r2 = bmul(q3, m).slice(0, ml1)
   let r = bsub(r1, r2)
 
   if (r.length === 0) {
@@ -331,8 +331,8 @@ function bmodexp (g, e, m) {
 // Compute m**d mod p*q for RSA private key operations.
 
 function RSAdecrypt (m, d, p, q, u) {
-  let xp = bmodexp(bmod(m, p), bmod(d, bsub(p, [1])), p)
-  let xq = bmodexp(bmod(m, q), bmod(d, bsub(q, [1])), q)
+  const xp = bmodexp(bmod(m, p), bmod(d, bsub(p, [1])), p)
+  const xq = bmodexp(bmod(m, q), bmod(d, bsub(q, [1])), q)
 
   let t = bsub(xq, xp)
   if (t.length === 0) {
@@ -351,7 +351,7 @@ function RSAdecrypt (m, d, p, q, u) {
 
 function mpi2b (s) {
   let bn = 1
-  let r = [0]
+  const r = [0]
   let rn = 0
   let sb = 256
   let sn = s.length
@@ -359,8 +359,8 @@ function mpi2b (s) {
 
   if (sn < 2) return 0
 
-  let len = (sn - 2) * 8
-  let bits = s.charCodeAt(0) * 256 + s.charCodeAt(1)
+  const len = (sn - 2) * 8
+  const bits = s.charCodeAt(0) * 256 + s.charCodeAt(1)
   if (bits > len || bits < len - 8) return 0
 
   for (let n = 0; n < len; n++) {
@@ -381,10 +381,10 @@ function mpi2b (s) {
 function b2s (b) {
   let bn = 1
   let bc = 0
-  let r = [0]
+  const r = [0]
   let rb = 1
   let rn = 0
-  let bits = b.length * bs
+  const bits = b.length * bs
   let rr = ''
   let n
 

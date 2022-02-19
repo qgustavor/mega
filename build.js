@@ -1,36 +1,29 @@
-const rollup = require('rollup')
-const babel = require('rollup-plugin-babel')
-const builtins = require('rollup-plugin-node-builtins')
-const commonjs = require('rollup-plugin-commonjs')
-const globals = require('rollup-plugin-node-globals')
-const json = require('rollup-plugin-json')
-const nodeResolve = require('rollup-plugin-node-resolve')
-const replace = require('rollup-plugin-replace')
-const babelTransform = require('@babel/core').transform
-
+const alias = require('esbuild-plugin-alias')
+const packageJson = require('./package.json')
+const esbuild = require('esbuild')
 const fs = require('fs')
 
-// to aid debugging
-const sourceMapEnabled = process.argv.includes('--generate-sourcemap')
+const developmentMode = process.argv.includes('--dev')
 const formatFilters = process.argv.filter(e => e.startsWith('--only=')).map(e => e.substr(7))
 
 const formats = [{
   // to be loaded with <script>
   name: 'browser-umd',
   bundleExternals: true,
-  bundlePolyfills: true,
   minifyResult: true,
-  entryPoint: 'lib/mega.js',
-  bundleConfig: { format: 'umd', name: 'mega' },
+  entryPoints: ['lib/mega.js'],
+  bundleFormat: 'iife',
+  globalName: 'mega',
+  platform: 'browser',
   targets: { browsers: 'defaults' }
 }, {
   // to be loaded with ES Module compatible loader
   name: 'browser-es',
   bundleExternals: true,
-  bundlePolyfills: true,
   minifyResult: true,
-  entryPoint: 'lib/mega-es.js',
-  bundleConfig: { format: 'es' },
+  entryPoints: ['lib/mega.mjs'],
+  bundleFormat: 'esm',
+  platform: 'browser',
   targets: {
     // Only browsers that support <script type="module"> are supported because
     // usually when ES modules are loaded in older browsers a transpiler is used.
@@ -46,126 +39,86 @@ const formats = [{
   // to allow the old commonjs usage
   name: 'node-cjs',
   bundleExternals: false,
-  bundlePolyfills: false,
   minifyResult: false,
-  entryPoint: 'lib/mega.js',
-  bundleConfig: { format: 'cjs' },
-  targets: { node: 6 }
+  entryPoints: ['lib/mega.js'],
+  bundleFormat: 'cjs',
+  platform: 'node'
 }, {
   // to be loaded with ES Module compatible loader
   name: 'node-es',
   bundleExternals: false,
-  bundlePolyfills: false,
   minifyResult: false,
-  entryPoint: 'lib/mega-es.js',
-  bundleConfig: { format: 'es' },
-  targets: { node: 6 }
+  entryPoints: ['lib/mega.mjs'],
+  bundleFormat: 'esm',
+  platform: 'node'
 }]
 
-const warnings = []
-const handleWarning = (warning) => {
-  // https://github.com/calvinmetcalf/rollup-plugin-node-builtins/issues/39#issuecomment-378276979
-  if (warning.code === 'CIRCULAR_DEPENDENCY') return
-
-  warnings.push(warning)
-}
-
-const doBundle = (format) => {
-  const externalConfig = format.bundleExternals ? [] : [
-    'zlib', 'https', 'http', 'crypto', 'fs', 'tls',
-    'net', 'string_decoder', 'assert', 'punycode',
-    'dns', 'dgram', 'request', 'combined-stream',
-    'url', 'through', 'stream-combiner', 'events',
-    'secure-random', 'querystring', 'stream',
-    'stream-skip'
-  ]
-
-  return rollup.rollup({
-    input: format.entryPoint,
-    external: externalConfig,
-    onwarn: handleWarning,
-    plugins: [
-      format.bundlePolyfills && replace({
-        values: {
-          "from 'request'": "from '../browser/request.js'",
-          "from './crypto/rsa'": "from '../browser/rsa.js'",
-          "from './aes'": "from '../../browser/aes.js'"
-        },
-        delimiters: ['', '']
-      }),
-      commonjs(),
-      format.bundleExternals && builtins(),
-      format.bundleExternals && globals(),
-      replace({ values: {
-        'process.env.IS_BROWSER_BUILD': '' + format.name.includes('browser')
-      }}),
-      format.bundleExternals && nodeResolve({
-        jsnext: true,
-        main: true,
-        browser: true
-      }),
-      json(),
-      babel({
-        exclude: 'node_modules/**',
-        // .babelrc is used only on tests
-        babelrc: false,
-        presets: [
-          ['@babel/preset-env', {
-            modules: false,
-            targets: format.targets
-          }]
-        ]
-      })
-    ]
-  }).then((bundle) => {
-    const options = format.bundleConfig
-    return bundle.generate(Object.assign({
-      sourcemap: sourceMapEnabled && 'inline'
-    }, options))
-  }).then((result) => {
-    const options = format.bundleConfig
-    if (format.minifyResult) {
-      // Minify using babel-minify
-      result.code = babelTransform(result.code, {
-        // Keep pure annotations on ES modules
-        shouldPrintComment: options.format === 'es' ? comment => {
-          return comment === '#__PURE__'
-        } : undefined,
-        babelrc: false,
-        presets: [['minify', {
-          mangle: {
-            // Usually minifiers don't minify top level because it's the global scope on browsers
-            // But it don't applies to ES6 modules
-            topLevel: options.format === 'es'
-          }
-        }]]
-      }).code
-    }
-
-    return writeFilePromise('dist/main.' + format.name + '.js', result.code)
+async function doBundle (format) {
+  const result = await esbuild.build({
+    entryPoints: format.entryPoints,
+    bundle: true,
+    define: {
+      'process.env.IS_BROWSER_BUILD': JSON.stringify(format.name.includes('browser')),
+      'process.env.PACKAGE_VERSION': JSON.stringify(packageJson.version)
+    },
+    format: format.bundleFormat,
+    globalName: format.globalName,
+    minify: !developmentMode && format.minifyResult,
+    platform: format.platform,
+    sourcemap: developmentMode && 'inline',
+    inject: format.bundleExternals
+      ? ['./browser/process-shim.mjs']
+      : [],
+    external: format.bundleExternals
+      ? []
+      : [
+          'abort-controller',
+          'agentkeepalive',
+          'multistream',
+          'node-fetch',
+          'crypto',
+          'events',
+          'secure-random',
+          'stream',
+          'pumpify',
+          'stream-skip',
+          'through'
+        ],
+    plugins: !format.bundleExternals
+      ? []
+      : [alias({
+          http: require.resolve('./browser/noop.mjs'),
+          https: require.resolve('./browser/noop.mjs'),
+          'abort-controller': require.resolve('./browser/noop.mjs'),
+          'node-fetch': require.resolve('./browser/fetch.mjs'),
+          './crypto/rsa.mjs': require.resolve('./browser/rsa.mjs'),
+          './aes.mjs': require.resolve('./browser/aes.mjs'),
+          stream: require.resolve('readable-stream/readable-browser.js')
+        })],
+    write: false
   })
+
+  const ext = format.bundleFormat === 'esm' ? 'mjs' : 'js'
+  return fs.promises.writeFile('dist/main.' + format.name + '.' + ext, result.outputFiles[0].contents)
 }
 
-function doBuild () {
-  console.error('Starting build...')
+async function doBuild () {
+  console.error('Starting', developmentMode ? 'development' : 'production', 'build...')
   console.error('Building 0 of %d', formats.length)
 
-  return formats.reduce((last, format, index) => last.then(() => {
-    // Filter formats if --only=format arguments were used
-    if (formatFilters.length > 0 && !formatFilters.includes(format.name)) return
+  // Make dist folder if not exists
+  await fs.promises.mkdir('dist').catch(error => {
+    if (error.code !== 'EEXIST') throw error
+  })
+
+  for (let index = 0; index < formats.length; index++) {
+    const format = formats[index]
+    if (formatFilters.length > 0 && !formatFilters.includes(format.name)) continue
 
     // return the previous line (A), then to the first character (G), clean the line (2K) and print state
     console.log('\x1b[A\x1b[G\x1b[2KBuilding %d of %d: %s', index + 1, formats.length, format.name)
 
-    return doBundle(format)
-  }), Promise.resolve())
-}
-
-function afterBuilding () {
-  if (warnings.length) {
-    console.log('Build completed with warnings')
-    console.log(Array.from(new Set(warnings)).join('\n'))
-    process.exit(1)
+    await doBundle(format)
   }
 
   console.log('Build completed with success')
@@ -176,17 +129,5 @@ function handleBuildErrors (error) {
   process.exit(1)
 }
 
-function writeFilePromise (...argv) {
-  return new Promise((resolve, reject) => {
-    fs.writeFile(...argv, (err) => {
-      if (err) {
-        reject(err)
-      } else {
-        resolve()
-      }
-    })
-  })
-}
-
 // Init build
-doBuild().then(afterBuilding).catch(handleBuildErrors)
+doBuild().catch(handleBuildErrors)

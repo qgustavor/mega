@@ -1,4 +1,4 @@
-import { AES as SjclAES } from './sjcl'
+import { AES as SjclAES } from './sjcl.mjs'
 
 // convert user-supplied password array
 export function prepareKey (password) {
@@ -39,7 +39,7 @@ export function prepareKeyV2 (password, info, cb) {
       name: 'PBKDF2',
       salt,
       iterations,
-      hash: {name: digest}
+      hash: { name: digest }
     }, key, 256)
   }).then(result => {
     cb(null, Buffer.from(result))
@@ -56,7 +56,7 @@ class AES {
 
   encryptCBC (buffer) {
     let iv = [0, 0, 0, 0]
-    let d = Array(4)
+    const d = Array(4)
     let i, j
 
     for (i = 0; i < buffer.length; i += 16) {
@@ -160,21 +160,73 @@ class CTR {
     this.ctr = Buffer.alloc(16)
     this.nonce.copy(this.ctr, 0)
 
+    this.incrementCTR(start / 16)
+  }
+
+  encrypt (buffer) {
+    for (let i = 0; i < buffer.length; i += 16) {
+      const enc = this.aes.encryptECB(Buffer.from(this.ctr))
+
+      for (let j = 0; j < 16; j++) {
+        buffer[i + j] ^= enc[j]
+      }
+
+      this.incrementCTR()
+    }
+
+    return buffer
+  }
+
+  decrypt (buffer) {
+    for (let i = 0; i < buffer.length; i += 16) {
+      const enc = this.aes.encryptECB(Buffer.from(this.ctr))
+
+      for (let j = 0; j < 16; j++) {
+        buffer[i + j] ^= enc[j]
+      }
+
+      this.incrementCTR()
+    }
+
+    return buffer
+  }
+
+  incrementCTR (cnt = 1) {
+    const buf = this.ctr
+    let i = 15
+    let mod
+    while (cnt !== 0) {
+      mod = (cnt + buf[i]) % 256
+      cnt = Math.floor((cnt + buf[i]) / 256)
+      buf[i] = mod
+      i -= 1
+      if (i < 0) i = 15
+    }
+  }
+}
+
+class MAC {
+  constructor (aes, nonce, start = 0) {
+    this.aes = aes
+
+    this.nonce = nonce.slice(0, 8)
+    this.increment = 131072 // 2**17
+    this.posNext = this.increment
+    this.pos = 0
+
     this.mac = Buffer.alloc(16)
     this.nonce.copy(this.mac, 0)
     this.nonce.copy(this.mac, 8)
     this.macs = []
-
-    this.incrementCTR(start / 16)
   }
 
-  condensedMac () {
+  condense () {
     if (this.mac) {
       this.macs.push(this.mac)
       this.mac = undefined
     }
 
-    let mac = Buffer.alloc(16)
+    const mac = Buffer.alloc(16)
 
     for (let i = 0; i < this.macs.length; i++) {
       for (let j = 0; j < 16; j++) mac[j] ^= this.macs[i][j]
@@ -187,50 +239,18 @@ class CTR {
     return macBuffer
   }
 
-  encrypt (buffer) {
+  update (buffer) {
     for (let i = 0; i < buffer.length; i += 16) {
-      const enc = this.aes.encryptECB(Buffer.from(this.ctr))
-
       for (let j = 0; j < 16; j++) {
-        this.mac[j] ^= buffer[i + j]
-        buffer[i + j] ^= enc[j]
-      }
-
-      this.aes.encryptECB(this.mac)
-      this.incrementCTR()
-    }
-  }
-
-  decrypt (buffer) {
-    for (let i = 0; i < buffer.length; i += 16) {
-      const enc = this.aes.encryptECB(Buffer.from(this.ctr))
-
-      for (let j = 0; j < 16; j++) {
-        buffer[i + j] ^= enc[j]
         this.mac[j] ^= buffer[i + j]
       }
 
       this.aes.encryptECB(this.mac)
-      this.incrementCTR()
+      this.checkBounding()
     }
   }
 
-  incrementCTR (cnt = 1) {
-    for (let i = 0; i < cnt; i++) this.checkMacBounding()
-
-    const buf = this.ctr
-    let i = 15
-    let mod
-    while (cnt !== 0) {
-      mod = (cnt + buf[i]) % 256
-      cnt = Math.floor((cnt + buf[i]) / 256)
-      buf[i] = mod
-      i -= 1
-      if (i < 0) i = 15
-    }
-  }
-
-  checkMacBounding () {
+  checkBounding () {
     this.pos += 16
     if (this.pos >= this.posNext) {
       this.macs.push(Buffer.from(this.mac))
@@ -245,4 +265,4 @@ class CTR {
   }
 }
 
-export {AES, CTR}
+export { AES, CTR, MAC }

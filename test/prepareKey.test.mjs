@@ -1,7 +1,7 @@
 import test from 'ava'
-import { testBuffer } from './test-utils.js'
+import { testBuffer } from './helpers/test-utils.mjs'
 
-import { prepareKey } from '../lib/crypto'
+import { prepareKey } from '../lib/crypto/index.mjs'
 
 test('prepareKey - small - 8 bytes', t => {
   const derivedKey = prepareKey(testBuffer(8))

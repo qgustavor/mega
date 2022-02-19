@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "checkJs": true
+  },
+  "include": ["types/cjs.d.ts"]
+}

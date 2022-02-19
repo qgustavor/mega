@@ -1,0 +1,66 @@
+# This workflow will do a clean install of node dependencies, cache/restore them, run tests across different versions of node and deno
+
+name: Test library
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  pre_check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+
+  test-node:
+    needs: pre_check
+    if: ${{ needs.pre_check.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm run lint-js
+    - run: npm run lint-ts
+      if: ${{ matrix.node-version != '14.x' }}
+    - run: npm run test-runner node
+
+  test-deno:
+    needs: pre_check
+    if: ${{ needs.pre_check.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        deno-version: [v1.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    # Testing code still depends on Node
+    # (mostly because mega-mock: no plan to migrate it to Deno)
+    - uses: actions/setup-node@v2
+      with:
+        node-version: 16.x
+        cache: 'npm'
+    - name: Use Deno ${{ matrix.deno-version }}
+      uses: denoland/setup-deno@v1
+      with:
+        deno-version: ${{ matrix.deno-version }}
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm test deno
