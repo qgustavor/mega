@@ -101,6 +101,8 @@ export declare class File extends EventEmitter {
 
 declare class MutableFile extends File {
   storage: Storage
+  parent?: MutableFile
+  children?: MutableFile[]
   static packAttributes (attributes: JSON): Buffer;
   constructor (opts: FileOpts, storage: Storage);
   unshare (cb?: noop): Promise<void>;
