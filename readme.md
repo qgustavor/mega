@@ -2,13 +2,13 @@
 
 Unofficial JavaScript SDK for MEGA
 
-* This is based on [tonistiigi's mega library](https://github.com/tonistiigi/mega).
-* This is all unofficial, based on [developer guide](https://mega.nz/#developers) and site source.
-* Make sure you agree with MEGA's [Terms of Service](https://mega.nz/#terms) before using it.
-
 **API documentation and examples is available in the website: [https://mega.js.org/](https://mega.js.org/)**
 
 **For CLI usage check MEGAJS CLI**: https://github.com/qgustavor/megajs-cli
+
+* This is based on [tonistiigi's mega library](https://github.com/tonistiigi/mega).
+* This is all unofficial, based on [developer guide](https://mega.nz/#developers) and site source.
+* Make sure you agree with MEGA's [Terms of Service](https://mega.nz/#terms) before using it.
 
 ## Contributing
 
