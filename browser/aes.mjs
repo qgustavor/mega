@@ -10,7 +10,7 @@ export function prepareKey (password) {
       const key = [0, 0, 0, 0]
 
       for (i = 0; i < 16; i += 4) {
-        if (i + j < password.length) {
+        if (i + j < password.length - 3) {
           key[i / 4] = password.readInt32BE(i + j)
         }
       }
