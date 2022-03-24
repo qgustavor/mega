@@ -15,6 +15,9 @@ Please only post issues here. Since 1.0 was released other kind of messages such
 A clear and concise description of what the bug is.
 
 **To Reproduce**
+
+Run this code in Node X.XX (or Deno/Firefox/Chromium/Cloudflare Workers/etc):
+
 ```js
 import { Storage } from 'megajs'
 // edit this with your code
