@@ -400,6 +400,23 @@ test.serial('Should download files uploaded in parts', async t => {
   t.is(sha1(downloadedData), uploadedSha)
 })
 
+// Issue #101
+test.serial('Should allowUploadBuffering ', async t => {
+  const dataSize = 2 * 1024 * 1024
+  const uploadedData = testBuffer(dataSize)
+  const uploadStream = storage.upload({
+    name: 'test file streams',
+    key: Buffer.alloc(24),
+    allowUploadBuffering: true
+  })
+  uploadStream.end(Buffer.from(uploadedData))
+
+  const file = await uploadStream.complete
+  t.is(file.name, 'test file streams')
+  t.is(file.key.toString('hex'), '0000000000000000831f1ab870f945580000000000000000831f1ab870f94558')
+  t.is(file.size, dataSize)
+})
+
 test.serial('Should logout from MEGA', t => {
   return new Promise((resolve, reject) => {
     storage.close((error) => {
