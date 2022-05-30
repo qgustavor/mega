@@ -2,7 +2,7 @@
 
 Unofficial JavaScript SDK for MEGA
 
-**API documentation and examples is available in the website: [https://mega.js.org/](https://mega.js.org/)**
+**API documentation and examples are available in the website: [https://mega.js.org/](https://mega.js.org/)**
 
 **For CLI usage check MEGAJS CLI**: https://github.com/qgustavor/megajs-cli
 
