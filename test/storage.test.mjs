@@ -288,6 +288,13 @@ test.serial('Should share folders using promises', async t => {
   t.is(link, 'https://mega.nz/folder/AAAAAAAG#AAAAAAAAAAAAAAAAAAAAAA')
 })
 
+test.serial('Should share folders without passing argument', async t => {
+  const folder = storage.root.children.find(e => e.name === 'test folder')
+
+  const link = await folder.link()
+  t.is(link, 'https://mega.nz/folder/AAAAAAAG#AAAAAAAAAAAAAAAAAAAAAA')
+})
+
 test.serial('Should share folders without keys', async t => {
   const folder = storage.root.children.find(e => e.name === 'test folder')
 
