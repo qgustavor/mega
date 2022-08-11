@@ -5,17 +5,17 @@
   "main": "dist/main.node-cjs.js",
   "typings": "types/cjs.d.ts",
   "exports": {
-    "types": {
-      "require": "./types/cjs.d.ts",
-      "import": "./types/es.d.ts"
-    },
-    "node": {
-      "require": "./dist/main.node-cjs.js",
-      "import": "./dist/main.node-es.mjs"
-    },
-    "default": {
-      "require": "./dist/main.browser-cjs.js",
-      "import": "./dist/main.browser-es.mjs"
+    ".": {
+      "import": {
+        "types": "./types/es.d.ts",
+        "node": "./dist/main.node-es.mjs",
+        "default": "./dist/main.browser-es.mjs"
+      },
+      "require": {
+        "types": "./types/cjs.d.ts",
+        "node": "./dist/main.node-cjs.js",
+        "default": "./dist/main.browser-cjs.js"
+      }
     }
   },
   "files": [
