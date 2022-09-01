@@ -1,4 +1,4 @@
-import '@types/node/index.d.ts'
+import 'node/index.d.ts'
 import { Readable, Writable, Transform } from 'stream'
 import { EventEmitter } from 'events'
 import { Agent as HttpAgent } from 'http'
@@ -106,7 +106,7 @@ declare namespace megajs {
     link (options: linkOpts | boolean, cb?: (error: err, url?: string) => void): Promise<string>;
   }
 
-  export declare class MutableFile extends File {
+  export class MutableFile extends File {
     storage: Storage
     parent?: MutableFile
     children?: MutableFile[]
