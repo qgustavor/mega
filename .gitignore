@@ -48,6 +48,3 @@ jspm_packages
 
 # Yarn Integrity file
 .yarn-integrity
-
-# Dist files are available via NPM, in order to avoid git noise
-dist
