@@ -32,9 +32,7 @@ export function prepareKeyV2 (password, info, cb) {
   const iterations = 100000
   const digest = 'SHA-512'
 
-  window.crypto.subtle.importKey('raw', password, {
-    name: 'PBKDF2'
-  }, false, 'deriveKey').then(key => {
+  window.crypto.subtle.importKey('raw', password, 'PBKDF2', false, ['deriveKey', 'deriveBits']).then(key => {
     return window.crypto.subtle.deriveBits({
       name: 'PBKDF2',
       salt,
