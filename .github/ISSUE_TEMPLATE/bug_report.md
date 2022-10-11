@@ -21,7 +21,9 @@ Run this code in Node X.XX (or Deno/Firefox/Chromium/Cloudflare Workers/etc):
 ```js
 import { Storage } from 'megajs'
 // edit this with your code
-// if your code includes passwords replace those with
+
+// if your code includes passwords and you think the issue
+// is in the password hashing code replace those with
 // "*n-length password*" (where "n" is the length of the password)
 ```
 
