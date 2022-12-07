@@ -4,24 +4,27 @@ Unofficial JavaScript SDK for MEGA
 
 **API documentation and examples are available in the website: [https://mega.js.org/](https://mega.js.org/)**
 
-**For CLI usage check MEGAJS CLI**: https://github.com/qgustavor/megajs-cli
-
 * This is based on [tonistiigi's mega library](https://github.com/tonistiigi/mega).
 * This is all unofficial, based on [developer guide](https://mega.nz/#developers) and site source.
 * Make sure you agree with MEGA's [Terms of Service](https://mega.nz/#terms) before using it.
 
 ## Contributing
 
-When contributing fork the project:
+[![pr-release](https://img.shields.io/badge/-pr--release-blueviolet)](https://pr-release.org/) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com/)
 
-- Clone it;
-- Run `npm install`;
-- Change the library as you want;
-- Build the bundled versions using `npm run build`;
-- Run at least Node tests using `npm test node` to test Node;
-- Optionally run `npm test deno` to test Deno if you have it installed (CI will test Deno anyway).
+- Fork the project
+- Clone it
+- Run `npm install`
+- Switch to a feature branch
+- Change the library as you want
+- Build the bundled versions using `npm run build`
+- Run at least Node tests using `npm test node` to test Node
+- Optionally run `npm test deno` to test Deno if you have it installed (CI will test Deno anyway)
+- Create a pull-request against `next` (not `main`)
 
-Before creating a pull request, *please*, run tests. If you implement new features them implement tests for it too if possible. The hash at the end of test/helpers/test-runner.mjs may be updated if tests are updated in a way it change server state (like adding new files to tests).
+Before creating a pull request, *please*, run tests. It will avoid a lot of common issues! You can run `npm run lint-fix` to fix common issues.
+
+If you implement new features them implement tests for it too if possible. The hash at the end of `test/helpers/test-runner.mjs` may be updated if tests are updated in a way it change server state (like adding new files to tests).
 
 ## Project history
 
