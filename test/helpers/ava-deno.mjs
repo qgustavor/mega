@@ -8,6 +8,7 @@ const testContext = {
   assert,
   is: assertStrictEquals,
   deepEqual: assertEquals,
+  falsy: value => assert(!value),
   throws: (fn, condition) => {
     return assertThrows(fn, condition.instanceof, condition.message)
   }
