@@ -9,6 +9,7 @@ import esbuild from 'esbuild'
 import tmp from 'tmp-promise'
 import path from 'node:path'
 import os from 'node:os'
+import { createRequire } from 'module'
 
 let testedPlatform = process.argv[2]
 if (testedPlatform !== 'node' && testedPlatform !== 'deno') {
@@ -64,25 +65,32 @@ if (testedPlatform === 'node') {
     ]
   })
 } else {
-  // Only run tests on compiled code (integration tests?) on Deno by now
-  // as probably the additional Node tests will not cover
-  // issues not affected by cross-platform differences
-  const denoTests = testFiles.filter(e => e.match(/(storage|crypto-stream|verify)\./))
+  const require = createRequire(import.meta.url)
   await esbuild.build({
     platform: 'browser',
-    entryPoints: denoTests,
+    entryPoints: testFiles,
     bundle: true,
     outdir: buildDir,
     format: 'esm',
     define: {
       'process.env.IS_BROWSER_BUILD': JSON.stringify(true),
       'process.env.PACKAGE_VERSION': JSON.stringify(packageJson.version),
-      'process.env.MEGA_MOCK_URL': JSON.stringify(null)
+      'process.env.MEGA_MOCK_URL': JSON.stringify(null),
+      'process.version': '""',
+      global: 'window'
     },
     plugins: [alias({
       ava: fileURLToPath(new URL('ava-deno.mjs', import.meta.url)),
       './helpers/test-utils.mjs': fileURLToPath(new URL('test-utils-deno.mjs', import.meta.url)),
-      '../dist/main.node-es.mjs': fileURLToPath(new URL('../../dist/main.browser-es.mjs', import.meta.url))
+      '../dist/main.node-es.mjs': fileURLToPath(new URL('../../dist/main.browser-es.mjs', import.meta.url)),
+      // The below aliases are copied from build.js
+      http: require.resolve('../../browser/noop.mjs'),
+      https: require.resolve('../../browser/noop.mjs'),
+      'abort-controller': require.resolve('../../browser/noop.mjs'),
+      'node-fetch': require.resolve('../../browser/fetch.mjs'),
+      './crypto/rsa.mjs': require.resolve('../../browser/rsa.mjs'),
+      './aes.mjs': require.resolve('../../browser/aes.mjs'),
+      stream: require.resolve('readable-stream/readable-browser.js')
     })]
   })
 }
