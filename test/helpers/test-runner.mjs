@@ -19,6 +19,10 @@ if (testedPlatform !== 'node' && testedPlatform !== 'deno') {
   testedPlatform = 'node'
 }
 
+const extraArguments = process.argv.includes('--')
+  ? process.argv.slice(process.argv.indexOf('--') + 1)
+  : []
+
 // Set up temporary directories
 const tempDir = await tmp.dir({
   prefix: 'megajs-tests',
@@ -121,7 +125,12 @@ let wasFailed = false
 // Run tests
 if (testedPlatform === 'node') {
   await new Promise(resolve => {
-    const subprocess = cp.spawn('npx', ['ava', '--', path.join(buildDir, '*.js')], {
+    const subprocess = cp.spawn('npx', [
+      'ava',
+      '--',
+      path.join(buildDir, '*.js'),
+      ...extraArguments
+    ], {
       stdio: 'inherit',
       shell: os.platform() === 'win32',
       env: {
@@ -145,7 +154,12 @@ if (testedPlatform === 'node') {
   })
 } else {
   await new Promise(resolve => {
-    const subprocess = cp.spawn('deno', ['test', '--allow-env=MEGA_MOCK_URL', '--allow-net=' + gateway.slice(7)], {
+    const subprocess = cp.spawn('deno', [
+      'test',
+      '--allow-env=MEGA_MOCK_URL',
+      '--allow-net=' + gateway.slice(7),
+      ...extraArguments
+    ], {
       cwd: buildDir,
       stdio: 'inherit',
       shell: os.platform() === 'win32',
