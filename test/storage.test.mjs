@@ -10,6 +10,21 @@ const gatewayUrl = typeof Deno !== 'undefined'
   : process.env.MEGA_MOCK_URL
 if (!gatewayUrl) throw Error('Missing MEGA_MOCK_URL environment variable')
 
+// Reused between tests
+let storage
+
+test.serial('Should allow creating a Storage object', t => {
+  storage = new Storage({
+    email: 'mock@test',
+    password: 'mock',
+    autologin: false,
+    gateway: gatewayUrl
+  })
+  t.is(storage.status, 'closed')
+
+  return storage.ready
+})
+
 test.serial('Should require an email when logging to MEGA', t => {
   return new Promise((resolve, reject) => {
     // eslint-disable-next-line no-new
@@ -23,9 +38,6 @@ test.serial('Should require an email when logging to MEGA', t => {
       reject(Error('Unexpected success'))
     })
   })
-}, {
-  sanitizeResources: false,
-  sanitizeOps: false
 })
 
 test.serial('Should require an email when logging to MEGA using promises', t => {
@@ -36,9 +48,6 @@ test.serial('Should require an email when logging to MEGA using promises', t => 
   }, error => {
     t.is(error.message, "starting a session without credentials isn't supported")
   })
-}, {
-  sanitizeResources: false,
-  sanitizeOps: false
 })
 
 test.serial('Should require an email when logging to MEGA using .login()', t => {
@@ -69,9 +78,6 @@ test.serial('Should require an email when logging to MEGA using .login() and pro
   }, error => {
     t.is(error.message, "starting a session without credentials isn't supported")
   })
-}, {
-  sanitizeResources: false,
-  sanitizeOps: false
 })
 
 test.serial('Should require valid credentials when logging to MEGA', t => {
@@ -87,13 +93,6 @@ test.serial('Should require valid credentials when logging to MEGA', t => {
   }, error => {
     t.is(error.message, 'ENOENT (-9): Object (typically, node or user) not found. Wrong password?')
   })
-})
-
-const storage = new Storage({
-  email: 'mock@test',
-  password: 'mock',
-  autologin: false,
-  gateway: gatewayUrl
 })
 
 test.serial('Should login to MEGA', t => {
