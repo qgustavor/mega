@@ -4,9 +4,7 @@ name: Test library
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches: [ next ]
 
 jobs:
   pre_check:
