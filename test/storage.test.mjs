@@ -10,11 +10,89 @@ const gatewayUrl = typeof Deno !== 'undefined'
   : process.env.MEGA_MOCK_URL
 if (!gatewayUrl) throw Error('Missing MEGA_MOCK_URL environment variable')
 
-const storage = new Storage({
-  email: 'mock@test',
-  password: 'mock',
-  autologin: false,
-  gateway: gatewayUrl
+// Reused between tests
+let storage
+
+test.serial('Should allow creating a Storage object', t => {
+  storage = new Storage({
+    email: 'mock@test',
+    password: 'mock',
+    autologin: false,
+    gateway: gatewayUrl
+  })
+  t.is(storage.status, 'closed')
+
+  return storage.ready
+})
+
+test.serial('Should require an email when logging to MEGA', t => {
+  return new Promise((resolve, reject) => {
+    // eslint-disable-next-line no-new
+    new Storage({
+      gateway: gatewayUrl
+    }, error => {
+      if (error) {
+        t.is(error.message, "starting a session without credentials isn't supported")
+        return resolve()
+      }
+      reject(Error('Unexpected success'))
+    })
+  })
+})
+
+test.serial('Should require an email when logging to MEGA using promises', t => {
+  return new Storage({
+    gateway: gatewayUrl
+  }).ready.then(() => {
+    throw Error('Unexpected success')
+  }, error => {
+    t.is(error.message, "starting a session without credentials isn't supported")
+  })
+})
+
+test.serial('Should require an email when logging to MEGA using .login()', t => {
+  return new Promise((resolve, reject) => {
+    const storage = new Storage({
+      autologin: false,
+      gateway: gatewayUrl
+    })
+
+    return storage.login(error => {
+      if (error) {
+        t.is(error.message, "starting a session without credentials isn't supported")
+        return resolve()
+      }
+      reject(Error('Unexpected success'))
+    })
+  })
+})
+
+test.serial('Should require an email when logging to MEGA using .login() and promises', t => {
+  const storage = new Storage({
+    autologin: false,
+    gateway: gatewayUrl
+  })
+
+  return storage.login().then(() => {
+    throw Error('Unexpected success')
+  }, error => {
+    t.is(error.message, "starting a session without credentials isn't supported")
+  })
+})
+
+test.serial('Should require valid credentials when logging to MEGA', t => {
+  const storage = new Storage({
+    email: 'invalid@credentials',
+    password: 'invalid',
+    autologin: false,
+    gateway: gatewayUrl
+  })
+
+  return storage.login().then(() => {
+    throw Error('Unexpected success')
+  }, error => {
+    t.is(error.message, 'ENOENT (-9): Object (typically, node or user) not found. Wrong password?')
+  })
 })
 
 test.serial('Should login to MEGA', t => {

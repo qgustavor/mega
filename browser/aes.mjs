@@ -5,13 +5,16 @@ export function prepareKey (password) {
   let i, j, r
   let pkey = [0x93C467E3, 0x7DB0C7A4, 0xD1BE3F81, 0x0152CB56]
 
+  const paddedPassword = Buffer.alloc(Math.ceil(password.length / 4) * 4)
+  paddedPassword.set(password, 0)
+
   for (r = 65536; r--;) {
     for (j = 0; j < password.length; j += 16) {
       const key = [0, 0, 0, 0]
 
       for (i = 0; i < 16; i += 4) {
-        if (i + j < password.length - 3) {
-          key[i / 4] = password.readInt32BE(i + j)
+        if (i + j < password.length) {
+          key[i / 4] = paddedPassword.readInt32BE(i + j)
         }
       }
 
