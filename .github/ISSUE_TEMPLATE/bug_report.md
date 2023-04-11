@@ -8,6 +8,8 @@ assignees: ''
 ---
 
 <!--
+IMPORTANT! Read this before continuing: https://github.com/qgustavor/mega/discussions/138
+
 Please only post issues here. Since 1.0 was released other kind of messages such as questions and feature requests are now available in the discussions tab since it's better suited for that.
 -->
 
@@ -21,10 +23,6 @@ Run this code in Node X.XX (or Deno/Firefox/Chromium/Cloudflare Workers/etc):
 ```js
 import { Storage } from 'megajs'
 // edit this with your code
-
-// if your code includes passwords and you think the issue
-// is in the password hashing code replace those with
-// "*n-length password*" (where "n" is the length of the password)
 ```
 
 **Expected behavior**
