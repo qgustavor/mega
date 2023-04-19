@@ -59,6 +59,9 @@
     "Gustavo Rodrigues (https://qgustavor.tk)"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "provenance": true
+  },
   "dependencies": {
     "abort-controller": "^3.0.0",
     "node-fetch": "^2.6.7",
