@@ -19,7 +19,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-      with: 
+      with:
         ref: 'next'
         fetch-depth: 0
 
@@ -35,17 +35,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
     # The following will publish the release to npm
-    - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc  
-      name: Setup NPM Auth                                                
-      env:                                                                
-        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}                               
-    - run: npm publish                                                    
-      name: Publish                                                       
-
-
-
-
-
-
-
-
+    - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
+      name: Setup NPM Auth
+      env:
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    - run: npm publish --provenance
+      name: Publish
