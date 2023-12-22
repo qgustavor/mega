@@ -1,4 +1,16 @@
 
+# Release v1.1.6
+
+### Patch Changes
+
+#### [Fix Angular link (@qgustavor)](https://github.com/qgustavor/mega/pull/171)
+
+The old link was for old Angular, not modern Angular.
+#### [Handle upload progress better and don't minify browser-es (@qgustavor)](https://github.com/qgustavor/mega/pull/170)
+
+Upload progress can be monitored by checking progress events.
+#### [Update readme.md (@qgustavor)](https://github.com/qgustavor/mega/pull/168)
+
 # Release v1.1.5
 
 ### Patch Changes
