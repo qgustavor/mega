@@ -20,7 +20,7 @@ const formats = [{
   // to be loaded with ES Module compatible loader
   name: 'browser-es',
   bundleExternals: true,
-  minifyResult: true,
+  minifyResult: false,
   entryPoints: ['lib/mega.mjs'],
   bundleFormat: 'esm',
   platform: 'browser',
