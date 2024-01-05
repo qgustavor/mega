@@ -1,4 +1,12 @@
 
+# Release v1.1.7
+
+### Patch Changes
+
+#### [Fix upload progress (@qgustavor)](https://github.com/qgustavor/mega/pull/173)
+
+bytesUploaded was defined inside sendChunk, not inside _uploadWithSize.
+
 # Release v1.1.6
 
 ### Patch Changes
