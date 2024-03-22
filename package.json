@@ -64,14 +64,14 @@
   },
   "dependencies": {
     "abort-controller": "^3.0.0",
-    "node-fetch": "^2.6.7",
+    "node-fetch": "^3.3.2",
     "pumpify": "^2.0.1",
     "secure-random": "^1.1.2",
     "stream-skip": "^1.0.3"
   },
   "devDependencies": {
     "@types/node": "^17.0.14",
-    "@types/node-fetch": "^2.5.12",
+    "@types/node-fetch": "^2.6.11",
     "ava": "^5.1.0",
     "buffer": "^6.0.3",
     "core-js": "^3.20.3",
