@@ -3,5 +3,5 @@
     "strictNullChecks": true,
     "checkJs": true
   },
-  "include": ["types/cjs.d.ts"]
+  "include": ["types/cjs.d.ts", "types/es.d.ts"]
 }

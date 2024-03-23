@@ -13,7 +13,9 @@ test('AES-CBC', t => {
 
   const d0d = Buffer.from(d0e)
   aes.decryptCBC(d0d)
-  t.deepEqual(d0, d0d)
+
+  // Compare sha1 because Deno's deepEqual (assertEquals from std/testing/asserts) fails in this case
+  t.is(sha1(d0), sha1(d0d))
 })
 
 test('AES wrong key size', t => {
