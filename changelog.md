@@ -1,4 +1,18 @@
 
+# Release v1.1.8
+
+### Patch Changes
+
+#### [Update Node.js versions in test runner (@qgustavor)](https://github.com/qgustavor/mega/pull/179)
+
+
+#### [bump node-fetch version to 3.3.2 (@franklygeorgy)](https://github.com/qgustavor/mega/pull/178)
+
+`punycode` is deprecated.  Bumped node-fetch version to a newer version that doesn't depend on `punycode`.
+#### [Export MutableFile (@super-v-2038)](https://github.com/qgustavor/mega/pull/176)
+
+Thank you for your work! This package has saved me a lot of time.  It seems that `MutableFile` has not been exported, which may be an oversight.
+
 # Release v1.1.7
 
 ### Patch Changes
