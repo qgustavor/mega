@@ -64,26 +64,26 @@
   },
   "dependencies": {
     "abort-controller": "^3.0.0",
-    "node-fetch": "^2.6.7",
+    "node-fetch": "^3.3.2",
     "pumpify": "^2.0.1",
     "secure-random": "^1.1.2",
     "stream-skip": "^1.0.3"
   },
   "devDependencies": {
-    "@types/node": "^17.0.14",
-    "@types/node-fetch": "^2.5.12",
-    "ava": "^5.1.0",
+    "@types/node": "^20.11.30",
+    "@types/node-fetch": "^2.6.11",
+    "ava": "^6.1.2",
     "buffer": "^6.0.3",
-    "core-js": "^3.20.3",
-    "esbuild": "^0.14.11",
+    "core-js": "^3.36.1",
+    "esbuild": "^0.20.2",
     "esbuild-plugin-alias": "^0.2.1",
     "events": "^3.3.0",
     "mega-mock": "^0.4.2",
-    "readable-stream": "^3.6.0",
-    "regenerator-runtime": "^0.13.9",
-    "standard": "^17.0.0-2",
+    "readable-stream": "^4.5.2",
+    "regenerator-runtime": "^0.14.1",
+    "standard": "^17.1.0",
     "tmp-promise": "^3.0.3",
-    "ts-standard": "^11.0.0",
-    "util": "^0.12.4"
+    "ts-standard": "^12.0.2",
+    "util": "^0.12.5"
   }
 }

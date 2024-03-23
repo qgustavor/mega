@@ -93,7 +93,7 @@ async function doBundle (format) {
           'node-fetch': require.resolve('./browser/fetch.mjs'),
           './crypto/rsa.mjs': require.resolve('./browser/rsa.mjs'),
           './aes.mjs': require.resolve('./browser/aes.mjs'),
-          stream: require.resolve('readable-stream/readable-browser.js')
+          stream: require.resolve('readable-stream')
         })],
     write: false
   })
