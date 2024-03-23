@@ -18,6 +18,9 @@ function test (name, fn, denoOpts = {}) {
   Deno.test({
     name,
     fn: () => fn(testContext),
+    // Disable sanitizers as those throw up because of the shared Storage instance
+    sanitizeResources: false,
+    sanitizeOps: false,
     ...denoOpts
   })
 }

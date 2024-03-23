@@ -83,6 +83,7 @@ if (testedPlatform === 'node') {
       'process.version': '""',
       global: 'window'
     },
+    inject: ['./browser/process-shim.mjs'],
     plugins: [alias({
       ava: fileURLToPath(new URL('ava-deno.mjs', import.meta.url)),
       './helpers/test-utils.mjs': fileURLToPath(new URL('test-utils-deno.mjs', import.meta.url)),
@@ -94,7 +95,7 @@ if (testedPlatform === 'node') {
       'node-fetch': require.resolve('../../browser/fetch.mjs'),
       './crypto/rsa.mjs': require.resolve('../../browser/rsa.mjs'),
       './aes.mjs': require.resolve('../../browser/aes.mjs'),
-      stream: require.resolve('readable-stream/readable-browser.js')
+      stream: require.resolve('readable-stream')
     })]
   })
 }
