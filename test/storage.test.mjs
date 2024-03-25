@@ -3,6 +3,7 @@
 import test from 'ava'
 import { testBuffer, sha1 } from './helpers/test-utils.mjs'
 import { Storage, File } from '../dist/main.node-es.mjs'
+import { Readable } from 'stream'
 
 // Set up Storage to use test server and credentials
 const gatewayUrl = typeof Deno !== 'undefined'
@@ -498,6 +499,29 @@ test.serial('Should allowUploadBuffering ', async t => {
 
   const file = await uploadStream.complete
   t.is(file.name, 'test file streams')
+  t.is(file.key.toString('hex'), '0000000000000000831f1ab870f945580000000000000000831f1ab870f94558')
+  t.is(file.size, dataSize)
+})
+
+test.serial('Should stream as upload arguments', async t => {
+  const dataSize = 2 * 1024 * 1024
+  const uploadedData = testBuffer(dataSize)
+  let readBytes = 0
+  const inputStream = new Readable({
+    read (size) {
+      const newPointer = readBytes + size
+      this.push(readBytes < dataSize ? uploadedData.slice(readBytes, newPointer) : null)
+      readBytes = newPointer
+    }
+  })
+  const uploadStream = storage.upload({
+    name: 'test file streams 2',
+    key: Buffer.alloc(24),
+    size: dataSize
+  }, inputStream)
+
+  const file = await uploadStream.complete
+  t.is(file.name, 'test file streams 2')
   t.is(file.key.toString('hex'), '0000000000000000831f1ab870f945580000000000000000831f1ab870f94558')
   t.is(file.size, dataSize)
 })
