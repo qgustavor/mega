@@ -1,4 +1,18 @@
 
+# Release v1.2.0
+
+### Minor Changes
+
+#### [Find and fetch (@qgustavor)](https://github.com/qgustavor/mega/pull/183)
+
+Implement find, search and navigate functions, and fix fetch related issues.
+   
+### Patch Changes
+
+#### [Add test for providing a stream as an input (@qgustavor)](https://github.com/qgustavor/mega/pull/181)
+
+No, that's not because of the guy who doesn't read things, that's because I noticed there was not a test for that.
+
 # Release v1.1.8
 
 ### Patch Changes
