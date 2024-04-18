@@ -3,6 +3,7 @@
 import test from 'ava'
 import { testBuffer, sha1 } from './helpers/test-utils.mjs'
 import { Storage, File } from '../dist/main.node-es.mjs'
+import { Readable } from 'stream'
 
 // Set up Storage to use test server and credentials
 const gatewayUrl = typeof Deno !== 'undefined'
@@ -500,6 +501,69 @@ test.serial('Should allowUploadBuffering ', async t => {
   t.is(file.name, 'test file streams')
   t.is(file.key.toString('hex'), '0000000000000000831f1ab870f945580000000000000000831f1ab870f94558')
   t.is(file.size, dataSize)
+})
+
+test.serial('Should stream as upload arguments', async t => {
+  const dataSize = 2 * 1024 * 1024
+  const uploadedData = testBuffer(dataSize)
+  let readBytes = 0
+  const inputStream = new Readable({
+    read (size) {
+      const newPointer = readBytes + size
+      this.push(readBytes < dataSize ? uploadedData.slice(readBytes, newPointer) : null)
+      readBytes = newPointer
+    }
+  })
+  const uploadStream = storage.upload({
+    name: 'test file streams 2',
+    key: Buffer.alloc(24),
+    size: dataSize
+  }, inputStream)
+
+  const file = await uploadStream.complete
+  t.is(file.name, 'test file streams 2')
+  t.is(file.key.toString('hex'), '0000000000000000831f1ab870f945580000000000000000831f1ab870f94558')
+  t.is(file.size, dataSize)
+})
+
+test.serial('Should find files using functions', t => {
+  const matchingFile = storage.find(e => e.name.includes('test file streams'))
+  t.is(matchingFile.size, 2097152)
+})
+
+test.serial('Should find files using string', t => {
+  const matchingFile = storage.find('file in folder 2', true)
+  t.is(matchingFile.size, 16)
+})
+
+test.serial('Should find files using arrays', t => {
+  const matchingFile = storage.find(['file in folder 2'], true)
+  t.is(matchingFile.size, 16)
+})
+
+test.serial('Should filter files using functions', t => {
+  const matchingFiles = storage.filter(e => e.name.includes('test file streams'))
+  t.is(matchingFiles.length, 4)
+})
+
+test.serial('Should filter files using string', t => {
+  const matchingFiles = storage.filter('file in folder 2', true)
+  t.is(matchingFiles.length, 1)
+})
+
+test.serial('Should filter files using arrays', t => {
+  const matchingFiles = storage.filter(['test file streams', 'test file streams 2', 'file in folder 2'], true)
+  t.is(matchingFiles.length, 5)
+})
+
+test.serial('Should navigate to files using arrays', t => {
+  const matchingFile = storage.navigate(['test folder', 'test folder 2', 'file in folder 2'])
+  t.is(matchingFile.size, 16)
+})
+
+test.serial('Should navigate to files using strings', t => {
+  const matchingFile = storage.navigate('test folder/test folder 2/file in folder 2')
+  t.is(matchingFile.size, 16)
 })
 
 test.serial('Should logout from MEGA', t => {
