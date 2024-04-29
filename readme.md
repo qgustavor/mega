@@ -2,10 +2,8 @@
 
 Unofficial JavaScript SDK for MEGA
 
-> **Project status:**  
-> Development stalled. [Issue and discussion requesting locked only to supporters](https://github.com/qgustavor/mega/discussions/138). Looking for someone to lead this project as, me, qgustavor, I don't want to continue leading this project. As an example, I accepted [this PR](https://github.com/qgustavor/megajs-docs/pull/6) just because **at least** someone wanted to help! On the other hand it made the home page uglier! Why adding a `npm install` and `import` instructions in the home page?! Come on! [It's already in the tutorial](https://mega.js.org/docs/1.0/tutorial/install)! Focus on the library main points in the home page instead! [React](https://react.dev/) does not have a `npm install` in the homepage, neither [Vue](https://vuejs.org/), nor [Angular](https://angular.io/). [Svelte](https://svelte.dev/) does but it's below the fold, after showing the main points of the library!  
->  
-> I don't care anymore! If someone wants to lead this project then make a fork, show that you really care about this project and I will let you to lead this project. You don't need to maintain the fork like me after tonistiigi, I will transfer the project to you.
+> **IMPORTANT**  
+> [Collaboration restricted to only pull requests. Only supporters can open discussions. Issues opened by non-supporters will be closed immediately.](https://github.com/qgustavor/mega/discussions/138).
 
 **API documentation and examples are available in the website: [https://mega.js.org/](https://mega.js.org/)**
 
