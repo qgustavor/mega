@@ -1,4 +1,21 @@
 
+# Release v1.2.1
+
+### Patch Changes
+
+#### [Fix repository URL (@qgustavor)](https://github.com/qgustavor/mega/pull/190)
+
+
+#### [Fix GitHub Actions (@qgustavor)](https://github.com/qgustavor/mega/pull/189)
+
+Use always the last Node version.  Update action packages.
+#### [Fix package.json's exports (@qgustavor)](https://github.com/qgustavor/mega/pull/188)
+
+
+#### [Simplify the readme warning message (@qgustavor)](https://github.com/qgustavor/mega/pull/186)
+
+I hope that makes people read it.
+
 # Release v1.2.0
 
 ### Minor Changes
