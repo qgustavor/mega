@@ -8,15 +8,21 @@
     ".": {
       "import": {
         "types": "./types/es.d.ts",
+        "deno": "./dist/main.browser-es.mjs",
         "node": "./dist/main.node-es.mjs",
         "default": "./dist/main.browser-es.mjs"
       },
       "require": {
         "types": "./types/cjs.d.ts",
+        "deno": "./dist/main.browser-umd.js",
         "node": "./dist/main.node-cjs.js",
-        "default": "./dist/main.browser-cjs.js"
+        "default": "./dist/main.browser-umd.js"
       }
-    }
+    },
+    "./dist/main.node-cjs.js": "./dist/main.node-cjs.js",
+    "./dist/main.browser-es.mjs": "./dist/main.browser-es.mjs",
+    "./dist/main.node-es.mjs": "./dist/main.node-es.mjs",
+    "./dist/main.browser-umd.js": "./dist/main.browser-umd.js"
   },
   "files": [
     "dist",
@@ -25,7 +31,7 @@
   "homepage": "https://mega.js.org/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/qgustavor/mega.git"
+    "url": "git+https://github.com/qgustavor/mega.git"
   },
   "keywords": [
     "mega",
