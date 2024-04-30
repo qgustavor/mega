@@ -31,7 +31,7 @@
   "homepage": "https://mega.js.org/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/qgustavor/mega.git"
+    "url": "git+https://github.com/qgustavor/mega.git"
   },
   "keywords": [
     "mega",
