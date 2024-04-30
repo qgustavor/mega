@@ -10,26 +10,17 @@ concurrency: prr:deploy
 
 jobs:
   merge:
-
     runs-on: ubuntu-latest
-
     permissions:
       id-token: write
-
-    strategy:
-      matrix:
-        node-version: [16.x]
-
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         ref: 'next'
         fetch-depth: 0
-
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v2
+    - name: Use Node.js
+      uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
     - run: npm run build --if-present

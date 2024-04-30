@@ -25,9 +25,9 @@ jobs:
         node-version: [18.x, 20.x]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
@@ -35,7 +35,6 @@ jobs:
     - run: npm run build --if-present
     - run: npm run lint-js
     - run: npm run lint-ts
-      if: ${{ matrix.node-version != '14.x' }}
     - run: npm run test-runner node
 
   test-deno:
@@ -48,12 +47,11 @@ jobs:
         deno-version: [v1.x]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     # Testing code still depends on Node
     # (mostly because mega-mock: no plan to migrate it to Deno)
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v4
       with:
-        node-version: 16.x
         cache: 'npm'
     - name: Use Deno ${{ matrix.deno-version }}
       uses: denoland/setup-deno@v1
