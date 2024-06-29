@@ -21,7 +21,7 @@ import { Storage } from 'megajs'
 // edit this with your code
 ```
 
-<!-- THIS IS IMPORTANT! It's really hard to debug an issue, sometimes impossible, without a reproductible example! -->
+<!-- THIS IS IMPORTANT! It's really hard to debug an issue, sometimes impossible, without a reproducible example! -->
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
