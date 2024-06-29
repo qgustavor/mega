@@ -1,4 +1,27 @@
 
+# Release v1.3.0
+
+### Minor Changes
+
+#### [Remove node-fetch (@qgustavor)](https://github.com/qgustavor/mega/pull/196)
+
+node-fetch is no longer going to be included with the library since all currently supported Node.js versions include a `fetch` global.
+   
+### Patch Changes
+
+#### [Fix issue on handleForceHttps implementation. (@qgustavor)](https://github.com/qgustavor/mega/pull/199)
+
+I was certain I tested this! :expressionless:
+#### [Create config.yml (@qgustavor)](https://github.com/qgustavor/mega/pull/198)
+
+
+#### [Add checks for Firefox and Deno (@qgustavor)](https://github.com/qgustavor/mega/pull/197)
+
+Add checks for Firefox and Deno so having to set `userAgent: null` or `forceHttps: false` is no longer required.
+#### [Bump braces from 3.0.2 to 3.0.3 (@dependabot[bot])](https://github.com/qgustavor/mega/pull/194)
+
+Bumps [braces](https://github.com/micromatch/braces) from 3.0.2 to 3.0.3.
+
 # Release v1.2.1
 
 ### Patch Changes
