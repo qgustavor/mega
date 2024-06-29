@@ -70,7 +70,6 @@
   },
   "dependencies": {
     "abort-controller": "^3.0.0",
-    "node-fetch": "^3.3.2",
     "pumpify": "^2.0.1",
     "secure-random": "^1.1.2",
     "stream-skip": "^1.0.3"

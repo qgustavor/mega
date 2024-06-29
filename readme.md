@@ -2,9 +2,6 @@
 
 Unofficial JavaScript SDK for MEGA
 
-> **IMPORTANT**  
-> [Collaboration restricted to only pull requests. Only supporters can open discussions. Issues opened by non-supporters will be closed immediately.](https://github.com/qgustavor/mega/discussions/138).
-
 **API documentation and examples are available in the website: [https://mega.js.org/](https://mega.js.org/)**
 
 * This is based on [tonistiigi's mega library](https://github.com/tonistiigi/mega).
@@ -13,13 +10,23 @@ Unofficial JavaScript SDK for MEGA
 
 ## Contributing
 
+Whenever you can, try contributing using pull requests!
+
+**IMPORTANT!** Before opening issues or discussions, look at the documentation, look at the examples, look for existent issues, look for existent discussions, then, if you still think that's a issue, follow the issue template!
+
 [![pr-release](https://img.shields.io/badge/-pr--release-blueviolet)](https://pr-release.org/) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com/)
+
+How to contribute using pull requests:
 
 - Fork the project
 - Clone it
 - Run `npm install`
 - Switch to a feature branch
-- Change the library as you want
+- Change the library
+   - Fix issues
+   - Add features
+   - Refactor things
+- `npm run lint-fix` to fix common issues
 - Build the bundled versions using `npm run build`
 - Run at least Node tests using `npm test node` to test Node
 - Optionally run `npm test deno` to test Deno if you have it installed (CI will test Deno anyway)
