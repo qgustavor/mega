@@ -149,6 +149,7 @@ type noop = () => void
 interface StorageOpts extends APIOpts {
   email: string
   password: BufferString
+  secondFactorCode?: string
   autoload?: boolean
   autologin?: boolean
   keepalive?: boolean
