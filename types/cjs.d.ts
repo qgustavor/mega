@@ -157,6 +157,7 @@ declare namespace megajs {
     interface StorageOpts extends APIOpts {
       email: string
       password: BufferString
+      secondFactorCode?: string
       autoload?: boolean
       autologin?: boolean
       keepalive?: boolean
