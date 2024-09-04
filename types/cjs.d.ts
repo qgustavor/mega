@@ -31,7 +31,7 @@ declare namespace megajs {
     inbox: MutableFile
     mounts: MutableFile[]
     files: { [id in string]: MutableFile }
-    filter (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile
+    filter (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile[]
     find (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile | null
     RSAPrivateKey: Array<number | number[]>
     ready: Promise<this>
