@@ -25,7 +25,7 @@ export declare class Storage extends EventEmitter {
   mounts: MutableFile[]
   files: { [id in string]: MutableFile }
   filter (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile
-  find (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile
+  find (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile | null
   RSAPrivateKey: Array<number | number[]>
   ready: Promise<this>
   constructor (options: StorageOpts, cb?: errorCb)
