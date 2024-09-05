@@ -24,6 +24,8 @@ export declare class Storage extends EventEmitter {
   inbox: MutableFile
   mounts: MutableFile[]
   files: { [id in string]: MutableFile }
+  filter (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile[]
+  find (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile | null
   RSAPrivateKey: Array<number | number[]>
   ready: Promise<this>
   constructor (options: StorageOpts, cb?: errorCb)
@@ -116,6 +118,7 @@ declare class MutableFile extends File {
   moveTo (target: File | string, cb?: (error: err, data?: any) => void): Promise<void>
   upload (opts: uploadOpts | string, source?: BufferString, cb?: uploadCb): Writable
   mkdir (opts: mkdirOpts | string, cb?: (error: err, file: MutableFile) => void): Promise<MutableFile>
+  navigate (query: string | string[]): MutableFile | undefined
   uploadAttribute (type: uploadAttrType, data: Buffer, cb?: (error: err, file?: this) => void): Promise<this>
   importFile (sharedFile: string | File, cb?: (error: err, file?: this) => void): Promise<MutableFile>
   on (event: 'move', listener: (oldDir: File) => void): this
