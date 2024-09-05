@@ -26,6 +26,7 @@ How to contribute using pull requests:
    - Fix issues
    - Add features
    - Refactor things
+- Update TypeScript types if needed
 - `npm run lint-fix` to fix common issues
 - Build the bundled versions using `npm run build`
 - Run at least Node tests using `npm test node` to test Node
