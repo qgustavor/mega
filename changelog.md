@@ -1,4 +1,34 @@
 
+# Release v1.3.1
+
+### Patch Changes
+
+#### [Simplify handleForceHttps (@qgustavor)](https://github.com/qgustavor/mega/pull/211)
+
+Use `globalThis.isSecureContext`.  Advantages and disadvantages shown in detail [here](https://github.com/qgustavor/mega/issues/205#issuecomment-2333901645).
+#### [Handle `ssl` in API's pull request so Storage works in browsers (@qgustavor)](https://github.com/qgustavor/mega/pull/209)
+
+Should fix issue #205 where the Storage class does not work on HTTPS websites.
+#### [Fix .filter implementation (@qgustavor)](https://github.com/qgustavor/mega/pull/210)
+
+It was calling .find instead of calling .filter to recurse directories.
+#### [Add a note about updating TypeScript types (@qgustavor)](https://github.com/qgustavor/mega/pull/208)
+
+I always forget about that, so is better to put it in the readme.
+#### [Fix Deno tests (@qgustavor)](https://github.com/qgustavor/mega/pull/207)
+
+--allow-net should not include a trailing slash.
+#### [TS fix: find,filter,navigate in `storage` (@xmok)](https://github.com/qgustavor/mega/pull/206)
+
+I'm not sure if the return type of `navigate` is correct - could anyone verify?.
+#### [TS fix: `secondFactorCode` type was missing in Storage constructor (TS) (@xmok)](https://github.com/qgustavor/mega/pull/204)
+
+
+#### [Fix typo in the template (@qgustavor)](https://github.com/qgustavor/mega/pull/202)
+
+
+#### [Improve bug report template (@qgustavor)](https://github.com/qgustavor/mega/pull/200)
+
 # Release v1.3.0
 
 ### Minor Changes
