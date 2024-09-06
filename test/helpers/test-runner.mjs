@@ -158,7 +158,7 @@ if (testedPlatform === 'node') {
     const subprocess = cp.spawn('deno', [
       'test',
       '--allow-env=MEGA_MOCK_URL',
-      '--allow-net=' + gateway.slice(7),
+      '--allow-net=' + gateway.slice(7, -1),
       ...extraArguments
     ], {
       cwd: buildDir,

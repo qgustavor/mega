@@ -31,6 +31,8 @@ declare namespace megajs {
     inbox: MutableFile
     mounts: MutableFile[]
     files: { [id in string]: MutableFile }
+    filter (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile[]
+    find (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile | null
     RSAPrivateKey: Array<number | number[]>
     ready: Promise<this>
     constructor (options: StorageOpts, cb?: errorCb)
@@ -66,6 +68,8 @@ declare namespace megajs {
     sn?: AbortController
     static globalApi?: API
     static getGlobalApi (): API
+    static handleForceHttps (userOpt?: boolean): boolean
+    static getShouldAvoidUA (): boolean
     constructor (keepalive: boolean, opts?: APIOpts)
     close (): void
     pull (sn: AbortController, retryno?: number): void
@@ -123,6 +127,7 @@ declare namespace megajs {
     moveTo (target: File | string, cb?: (error: err, data?: any) => void): Promise<void>
     upload (opts: uploadOpts | string, source?: BufferString, cb?: uploadCb): Writable
     mkdir (opts: mkdirOpts | string, cb?: (error: err, file: MutableFile) => void): Promise<MutableFile>
+    navigate (query: string | string[]): MutableFile | undefined
     uploadAttribute (type: uploadAttrType, data: Buffer, cb?: (error: err, file?: this) => void): Promise<this>
     importFile (sharedFile: string | File, cb?: (error: err, file?: this) => void): Promise<MutableFile>
     on (event: 'move', listener: (oldDir: File) => void): this
@@ -157,6 +162,7 @@ declare namespace megajs {
     interface StorageOpts extends APIOpts {
       email: string
       password: BufferString
+      secondFactorCode?: string
       autoload?: boolean
       autologin?: boolean
       keepalive?: boolean
