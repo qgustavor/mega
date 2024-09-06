@@ -68,6 +68,8 @@ declare namespace megajs {
     sn?: AbortController
     static globalApi?: API
     static getGlobalApi (): API
+    static handleForceHttps (userOpt?: boolean): boolean
+    static getShouldAvoidUA (): boolean
     constructor (keepalive: boolean, opts?: APIOpts)
     close (): void
     pull (sn: AbortController, retryno?: number): void
