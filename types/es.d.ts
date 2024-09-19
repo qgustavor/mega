@@ -101,6 +101,8 @@ export declare class File extends EventEmitter {
   download (options: downloadOpts, cb?: (error: err, data?: Buffer) => void): Readable
   downloadBuffer (options: downloadOpts, cb?: (error: err, data?: Buffer) => void): Promise<Buffer>
   link (options: linkOpts | boolean, cb?: (error: err, url?: string) => void): Promise<string>
+  filter (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile[]
+  find (query: string | string[] | ((file: MutableFile) => boolean), deep?: boolean): MutableFile | null
 }
 
 declare class MutableFile extends File {
