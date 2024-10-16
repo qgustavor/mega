@@ -1,4 +1,12 @@
 
+# Release v1.3.3
+
+### Patch Changes
+
+#### [All directories should contain a .children property (@qgustavor)](https://github.com/qgustavor/mega/pull/224)
+
+Moved `.children = []` handling from the code that handles children to the code that creates the node. Fixes a lot of possible and existing bugs.
+
 # Release v1.3.1
 
 ### Patch Changes
