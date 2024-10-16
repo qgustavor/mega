@@ -566,6 +566,12 @@ test.serial('Should navigate to files using strings', t => {
   t.is(matchingFile.size, 16)
 })
 
+test.serial('All directories should have children', t => {
+  for (const node of Object.values(storage.files)) {
+    t.is(!!node.directory, !!node.children)
+  }
+})
+
 test.serial('Should logout from MEGA', t => {
   return new Promise((resolve, reject) => {
     storage.close((error) => {
