@@ -81,7 +81,7 @@ if (testedPlatform === 'node') {
       'process.env.PACKAGE_VERSION': JSON.stringify(packageJson.version),
       'process.env.MEGA_MOCK_URL': JSON.stringify(null),
       'process.version': '""',
-      global: 'window'
+      global: 'globalThis'
     },
     inject: ['./browser/process-shim.mjs'],
     plugins: [alias({
@@ -96,7 +96,13 @@ if (testedPlatform === 'node') {
       './crypto/rsa.mjs': require.resolve('../../browser/rsa.mjs'),
       './aes.mjs': require.resolve('../../browser/aes.mjs'),
       stream: require.resolve('readable-stream')
-    })]
+    })],
+    external: [
+      'jsr:@std/crypto/crypto',
+      'jsr:@std/encoding',
+      'jsr:@std/assert',
+      'node:buffer'
+    ]
   })
 }
 

@@ -1,6 +1,6 @@
-import { crypto } from 'https://cdn.deno.land/std/versions/0.122.0/raw/crypto/mod.ts'
-import { Buffer } from 'https://cdn.deno.land/std/versions/0.122.0/raw/node/buffer.ts'
-import { encode as hexEncode } from 'https://cdn.deno.land/std/versions/0.122.0/raw/encoding/hex.ts'
+import { crypto } from 'jsr:@std/crypto/crypto'
+import { encodeHex } from 'jsr:@std/encoding'
+import { Buffer } from 'node:buffer'
 
 export function stream2cb (stream, cb) {
   const chunks = []
@@ -56,5 +56,5 @@ export function testBuffer (size, start = 0, step = 1) {
 
 // Helper for getting hex-sha1 for a buffer.
 export function sha1 (buf) {
-  return new TextDecoder().decode(hexEncode(new Uint8Array(crypto.subtle.digestSync('SHA-1', buf))))
+  return encodeHex(new Uint8Array(crypto.subtle.digestSync('SHA-1', buf)))
 }

@@ -35,16 +35,18 @@ export function prepareKeyV2 (password, info, cb) {
   const iterations = 100000
   const digest = 'SHA-512'
 
-  window.crypto.subtle.importKey('raw', password, 'PBKDF2', false, ['deriveKey', 'deriveBits']).then(key => {
-    return window.crypto.subtle.deriveBits({
-      name: 'PBKDF2',
-      salt,
-      iterations,
-      hash: { name: digest }
-    }, key, 256)
-  }).then(result => {
-    cb(null, Buffer.from(result))
-  }).catch(cb)
+  Promise.resolve()
+    .then(() => globalThis.crypto.subtle.importKey('raw', password, 'PBKDF2', false, ['deriveKey', 'deriveBits']))
+    .then(key => {
+      return globalThis.crypto.subtle.deriveBits({
+        name: 'PBKDF2',
+        salt,
+        iterations,
+        hash: { name: digest }
+      }, key, 256)
+    }).then(result => {
+      cb(null, Buffer.from(result))
+    }).catch(cb)
 }
 
 class AES {
