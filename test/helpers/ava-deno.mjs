@@ -1,8 +1,8 @@
 // Ava compatibility layer for Deno
 /* global Deno */
 
-import { assert, assertEquals, assertStrictEquals, assertThrows } from 'https://deno.land/std@0.122.0/testing/asserts.ts'
-import { Buffer } from 'https://cdn.deno.land/std/versions/0.122.0/raw/node/buffer.ts'
+import { assert, assertEquals, assertStrictEquals, assertThrows } from 'jsr:@std/assert'
+import { Buffer } from 'node:buffer'
 
 const testContext = {
   assert,
@@ -37,5 +37,5 @@ test.skip = test.serial.skip = (name, fn, denoOpts = {}) => {
   })
 }
 
-window.Buffer = Buffer
+globalThis.Buffer = Buffer
 export default test

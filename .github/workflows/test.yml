@@ -22,7 +22,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [20.x, 22.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -44,7 +44,7 @@ jobs:
 
     strategy:
       matrix:
-        deno-version: [v1.x]
+        deno-version: [v2.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
       with:
         cache: 'npm'
     - name: Use Deno ${{ matrix.deno-version }}
-      uses: denoland/setup-deno@v1
+      uses: denoland/setup-deno@v2
       with:
         deno-version: ${{ matrix.deno-version }}
     - run: npm ci
