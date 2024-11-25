@@ -1,4 +1,15 @@
 
+# Release v1.3.4
+
+### Patch Changes
+
+#### [Remove Node 18 from testing, add Node 22 (@qgustavor)](https://github.com/qgustavor/mega/pull/232)
+
+Users of Node 18 should use `--experimental-global-webcrypto` flag.  Support for it ends in 5 months anyway.
+#### [Fix various issues (@qgustavor)](https://github.com/qgustavor/mega/pull/230)
+
+Should fix #226 and #227.
+
 # Release v1.3.3
 
 ### Patch Changes
