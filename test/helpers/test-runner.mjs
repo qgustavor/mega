@@ -91,7 +91,6 @@ if (testedPlatform === 'node') {
       // The below aliases are copied from build.js
       http: require.resolve('../../browser/noop.mjs'),
       https: require.resolve('../../browser/noop.mjs'),
-      'abort-controller': require.resolve('../../browser/noop.mjs'),
       'node-fetch': require.resolve('../../browser/fetch.mjs'),
       './crypto/rsa.mjs': require.resolve('../../browser/rsa.mjs'),
       './aes.mjs': require.resolve('../../browser/aes.mjs'),

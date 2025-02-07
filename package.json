@@ -69,7 +69,6 @@
     "provenance": true
   },
   "dependencies": {
-    "abort-controller": "^3.0.0",
     "pumpify": "^2.0.1",
     "stream-skip": "^1.0.3"
   },

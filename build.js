@@ -72,7 +72,6 @@ async function doBundle (format) {
     external: format.bundleExternals
       ? []
       : [
-          'abort-controller',
           'agentkeepalive',
           'multistream',
           'node-fetch',
@@ -89,7 +88,6 @@ async function doBundle (format) {
       : [alias({
           http: require.resolve('./browser/noop.mjs'),
           https: require.resolve('./browser/noop.mjs'),
-          'abort-controller': require.resolve('./browser/noop.mjs'),
           'node-fetch': require.resolve('./browser/fetch.mjs'),
           './crypto/rsa.mjs': require.resolve('./browser/rsa.mjs'),
           './aes.mjs': require.resolve('./browser/aes.mjs'),
