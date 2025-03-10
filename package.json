@@ -69,7 +69,6 @@
     "provenance": true
   },
   "dependencies": {
-    "abort-controller": "^3.0.0",
     "pumpify": "^2.0.1",
     "stream-skip": "^1.0.3"
   },
@@ -79,7 +78,7 @@
     "ava": "^6.1.2",
     "buffer": "^6.0.3",
     "core-js": "^3.36.1",
-    "esbuild": "^0.20.2",
+    "esbuild": "^0.25.0",
     "esbuild-plugin-alias": "^0.2.1",
     "events": "^3.3.0",
     "mega-mock": "^0.4.2",

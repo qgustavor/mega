@@ -4,7 +4,6 @@ import { EventEmitter } from 'events'
 import { Agent as HttpAgent } from 'http'
 import { Agent as HttpsAgent } from 'https'
 
-import AbortController from 'abort-controller'
 import type * as fetch from 'node-fetch'
 
 declare function megajs (options: megajs.StorageOpts, cb?: megajs.errorCb): megajs.Storage
