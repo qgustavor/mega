@@ -1,4 +1,13 @@
 
+# Release v1.3.6
+
+### Patch Changes
+
+#### [Bump esbuild from 0.20.2 to 0.25.0 (@dependabot[bot])](https://github.com/qgustavor/mega/pull/238)
+
+Bumps [esbuild](https://github.com/evanw/esbuild) from 0.20.2 to 0.25.0.  Release notes.  Sourced from esbuild's releases.  v0.25.0.
+#### [Remove redundant AbortController polyfill (@talentlessguy)](https://github.com/qgustavor/mega/pull/236)
+
 # Release v1.3.4
 
 ### Patch Changes
