@@ -1,4 +1,15 @@
 
+# Release v1.3.7
+
+### Patch Changes
+
+#### [Fix request ids when handling hashcash (@qgustavor)](https://github.com/qgustavor/mega/pull/244)
+
+As noticed by [@angelvega93](https://github.com/qgustavor/mega/pull/241#issuecomment-2731242807).  Also improve comments as the BrowserStack link stopped working.
+#### [Implement hashcash (@qgustavor)](https://github.com/qgustavor/mega/pull/241)
+
+The implementation is largely the same as official's web client.
+
 # Release v1.3.6
 
 ### Patch Changes
