@@ -1,6 +1,6 @@
 {
   "name": "megajs",
-  "version": "1.3.7",
+  "version": "1.3.8",
   "description": "Unofficial JavaScript SDK for MEGA",
   "main": "dist/main.node-cjs.js",
   "typings": "types/cjs.d.ts",

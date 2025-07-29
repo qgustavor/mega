@@ -1,4 +1,12 @@
 
+# Release v1.3.8
+
+### Patch Changes
+
+#### [Bump form-data from 4.0.0 to 4.0.4 (@dependabot[bot])](https://github.com/qgustavor/mega/pull/250)
+
+Bumps [form-data](https://github.com/form-data/form-data) from 4.0.0 to 4.0.4.  Release notes.  Sourced from form-data's releases.  v4.0.1.  Fixes.
+
 # Release v1.3.7
 
 ### Patch Changes
