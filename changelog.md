@@ -1,4 +1,15 @@
 
+# Release v1.3.9
+
+### Patch Changes
+
+#### [Bump tmp from 0.2.1 to 0.2.4 (@dependabot[bot])](https://github.com/qgustavor/mega/pull/254)
+
+Bumps [tmp](https://github.com/raszi/node-tmp) from 0.2.1 to 0.2.4.  Changelog.  Sourced from tmp's changelog.  v0.2.2 (2024-02-28).  :bug: Bug Fix.
+#### [Fix getShouldAvoidUA (@qgustavor)](https://github.com/qgustavor/mega/pull/255)
+
+The old implementation broke.  I guess it was due a Firefox update.  Fixes #252.
+
 # Release v1.3.8
 
 ### Patch Changes
