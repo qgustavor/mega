@@ -124,6 +124,7 @@ declare namespace megajs {
     setAttributes (attributes: JSON, cb?: noop): Promise<void>
     delete (permanent?: boolean, cb?: (error: err, data?: any) => void): Promise<void>
     moveTo (target: File | string, cb?: (error: err, data?: any) => void): Promise<void>
+    copyTo (target: File | string, cb?: (error: err, data?: any) => void): Promise<void>
     upload (opts: uploadOpts | string, source?: BufferString, cb?: uploadCb): Writable
     mkdir (opts: mkdirOpts | string, cb?: (error: err, file: MutableFile) => void): Promise<MutableFile>
     navigate (query: string | string[]): MutableFile | undefined
