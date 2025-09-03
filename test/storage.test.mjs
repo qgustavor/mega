@@ -305,6 +305,18 @@ test.serial('Should upload files in folders in shared folders', t => {
   })
 })
 
+// See issue #240
+// SKIPPED: depends on fixing mega-mock shared file key handling
+test.serial.skip('.link() should work in files in shared folders', async t => {
+  const folder = File.fromURL('https://mega.nz/folder/AAAAAAAG#AAAAAAAAAAAAAAAAAAAAAA')
+  folder.api = storage.api
+  await folder.loadAttributes()
+
+  const file = folder.children[0]
+  const link = await file.link()
+  t.is(link, 'https://mega.nz/folder/AAAAAAAG#AAAAAAAAAAAAAAAAAAAAAA')
+})
+
 // TODO implement test for download files shared in folders
 // Depends on fixing mega-mock shared file key handling
 
