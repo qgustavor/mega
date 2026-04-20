@@ -162,6 +162,7 @@ if (testedPlatform === 'node') {
   await new Promise(resolve => {
     const subprocess = cp.spawn('deno', [
       'test',
+      '--no-check',
       '--allow-env=MEGA_MOCK_URL',
       '--allow-net=' + gateway.slice(7, -1),
       ...extraArguments
