@@ -1,10 +1,10 @@
 // This script handles test preparation, running in Node and Deno then cleanup
 import alias from 'esbuild-plugin-alias'
 import { fileURLToPath } from 'node:url'
-import cp from 'node:child_process'
 import fs from 'node:fs/promises'
 import megamock from 'mega-mock'
 import crypto from 'node:crypto'
+import spawn from 'cross-spawn'
 import esbuild from 'esbuild'
 import tmp from 'tmp-promise'
 import path from 'node:path'
@@ -131,14 +131,13 @@ let wasFailed = false
 // Run tests
 if (testedPlatform === 'node') {
   await new Promise(resolve => {
-    const subprocess = cp.spawn('npx', [
+    const subprocess = spawn('npx', [
       'ava',
       '--',
       path.join(buildDir, '*.js'),
       ...extraArguments
     ], {
       stdio: 'inherit',
-      shell: os.platform() === 'win32',
       env: {
         ...process.env,
         MEGA_MOCK_URL: gateway
@@ -160,7 +159,7 @@ if (testedPlatform === 'node') {
   })
 } else {
   await new Promise(resolve => {
-    const subprocess = cp.spawn('deno', [
+    const subprocess = spawn('deno', [
       'test',
       '--no-check',
       '--allow-env=MEGA_MOCK_URL',
@@ -169,7 +168,6 @@ if (testedPlatform === 'node') {
     ], {
       cwd: buildDir,
       stdio: 'inherit',
-      shell: os.platform() === 'win32',
       env: {
         ...process.env,
         MEGA_MOCK_URL: gateway
