@@ -572,6 +572,18 @@ test.serial('All directories should have children', t => {
   }
 })
 
+test.serial('Should upload strings using their size in bytes', async t => {
+  // A string's length counts UTF-16 code units, but the uploaded data is its UTF-8 bytes
+  const text = 'some text💲🆓middle⚠️ end'
+  const file = await storage.upload({
+    name: 'test file string',
+    key: Buffer.alloc(24)
+  }, text).complete
+
+  t.is(file.size, Buffer.byteLength(text))
+  t.not(file.size, text.length)
+})
+
 test.serial('Should logout from MEGA', t => {
   return new Promise((resolve, reject) => {
     storage.close((error) => {
